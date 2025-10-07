@@ -25,13 +25,17 @@ export function useUserRole() {
           .single();
 
         if (error) {
-          console.error("Error fetching user role:", error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error("Error fetching user role:", error);
+          }
           setRole(null);
         } else {
           setRole(data?.role as UserRole);
         }
       } catch (error) {
-        console.error("Error fetching user role:", error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Error fetching user role:", error);
+        }
         setRole(null);
       } finally {
         setLoading(false);

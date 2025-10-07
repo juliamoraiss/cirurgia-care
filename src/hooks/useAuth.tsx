@@ -53,6 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Login realizado com sucesso!");
       navigate("/");
     } catch (error: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Login error:", error);
+      }
       toast.error(error.message || "Erro ao fazer login");
       throw error;
     }
@@ -76,6 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Conta criada com sucesso!");
       navigate("/");
     } catch (error: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Signup error:", error);
+      }
       toast.error(error.message || "Erro ao criar conta");
       throw error;
     }
@@ -89,6 +95,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Logout realizado com sucesso!");
       navigate("/auth");
     } catch (error: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Logout error:", error);
+      }
       toast.error(error.message || "Erro ao fazer logout");
       throw error;
     }
