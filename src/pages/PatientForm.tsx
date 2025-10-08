@@ -345,6 +345,64 @@ const PatientForm = () => {
     }
   };
 
+  const createAutomaticTasks = async (patientId: string, surgeryDateISO: string, patientName: string, procedure: string) => {
+    try {
+      const surgeryDate = new Date(surgeryDateISO);
+      
+      // Tarefa de instruções pré-operatórias (1 dia antes, meia-noite)
+      const preOpDate = new Date(surgeryDate);
+      preOpDate.setDate(preOpDate.getDate() - 1);
+      preOpDate.setHours(0, 0, 0, 0);
+      
+      // Verificar se já existe tarefa pré-op não concluída
+      const { data: existingPreOp } = await supabase
+        .from("patient_tasks")
+        .select("id")
+        .eq("patient_id", patientId)
+        .eq("task_type", "pre_op_instructions")
+        .eq("completed", false)
+        .single();
+      
+      if (!existingPreOp) {
+        await supabase.from("patient_tasks").insert({
+          patient_id: patientId,
+          task_type: "pre_op_instructions",
+          title: "Enviar instruções pré-operatórias",
+          description: `Enviar instruções ao paciente ${patientName} para a cirurgia de ${procedure}`,
+          due_date: preOpDate.toISOString(),
+          created_by: user!.id,
+        });
+      }
+      
+      // Tarefa de recomendações pós-operatórias (mesma data, 5 horas após)
+      const postOpDate = new Date(surgeryDate);
+      postOpDate.setHours(postOpDate.getHours() + 5);
+      
+      // Verificar se já existe tarefa pós-op não concluída
+      const { data: existingPostOp } = await supabase
+        .from("patient_tasks")
+        .select("id")
+        .eq("patient_id", patientId)
+        .eq("task_type", "post_op_instructions")
+        .eq("completed", false)
+        .single();
+      
+      if (!existingPostOp) {
+        await supabase.from("patient_tasks").insert({
+          patient_id: patientId,
+          task_type: "post_op_instructions",
+          title: "Enviar recomendações pós-operatórias",
+          description: `Enviar recomendações ao paciente ${patientName}`,
+          due_date: postOpDate.toISOString(),
+          created_by: user!.id,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao criar tarefas automáticas:", error);
+      // Não lançar erro para não interromper o fluxo principal
+    }
+  };
+
   const handleDeletePatient = async () => {
     if (!id || !user) return;
 
@@ -464,6 +522,11 @@ const PatientForm = () => {
       }
 
       if (error) throw error;
+
+      // Criar tarefas automaticamente se houver data de cirurgia
+      if (utcSurgeryDate && savedPatientId) {
+        await createAutomaticTasks(savedPatientId, utcSurgeryDate, validatedData.name, validatedData.procedure);
+      }
 
       if (files.length > 0 && savedPatientId) {
         await uploadFiles(savedPatientId);

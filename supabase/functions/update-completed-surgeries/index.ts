@@ -72,10 +72,10 @@ Deno.serve(async (req) => {
           .single()
 
         if (!existingTask) {
-          // Criar tarefa para o dia antes da cirurgia
+          // Criar tarefa para o dia antes da cirurgia (sem horário específico - meia-noite)
           const taskDueDate = new Date(surgery.surgery_date)
           taskDueDate.setDate(taskDueDate.getDate() - 1)
-          taskDueDate.setHours(8, 0, 0, 0) // 8h da manhã do dia anterior
+          taskDueDate.setHours(0, 0, 0, 0) // Meia-noite do dia anterior
 
           const { error: taskError } = await supabase
             .from('patient_tasks')
@@ -110,10 +110,9 @@ Deno.serve(async (req) => {
           .single()
 
         if (!existingTask) {
-          // Criar tarefa para 1 dia após a cirurgia
+          // Criar tarefa para o mesmo dia da cirurgia, 5 horas após
           const taskDueDate = new Date(surgery.surgery_date)
-          taskDueDate.setDate(taskDueDate.getDate() + 1)
-          taskDueDate.setHours(9, 0, 0, 0) // 9h da manhã do dia seguinte
+          taskDueDate.setHours(taskDueDate.getHours() + 5) // 5 horas após a cirurgia
 
           const { error: taskError } = await supabase
             .from('patient_tasks')

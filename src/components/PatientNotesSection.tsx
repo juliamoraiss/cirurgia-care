@@ -4,6 +4,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -24,6 +34,7 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -66,6 +77,7 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
 
       toast.success("Nota salva com sucesso!");
       setNewNote("");
+      setDialogOpen(false);
       loadNotes();
     } catch (error) {
       console.error("Error saving note:", error);
@@ -82,48 +94,71 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Notas e Interações</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Notas e Interações</CardTitle>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Nota
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Nova Nota</DialogTitle>
+                <DialogDescription>
+                  Registre interações e observações sobre o paciente
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="note">Nota *</Label>
+                  <Textarea
+                    id="note"
+                    placeholder="Adicione uma nota sobre a conversa com o paciente..."
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    rows={5}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={saveNote} disabled={saving || !newNote.trim()}>
+                  {saving ? "Salvando..." : "Adicionar Nota"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Textarea
-              placeholder="Adicione uma nota sobre a conversa com o paciente..."
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              rows={3}
-            />
-            <Button onClick={saveNote} disabled={saving || !newNote.trim()}>
-              <Plus className="h-4 w-4 mr-2" />
-              {saving ? "Salvando..." : "Adicionar Nota"}
-            </Button>
-          </div>
-
-          {notes.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              Nenhuma nota registrada ainda
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <h4 className="font-semibold text-sm">Histórico de Notas</h4>
-              {notes.map((note) => (
-                <div
-                  key={note.id}
-                  className="p-3 rounded-lg border bg-muted/50"
-                >
-                  <p className="text-sm whitespace-pre-wrap">{note.note}</p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                    <span>
-                      {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                        locale: ptBR,
-                      })}
-                    </span>
-                  </div>
+        {notes.length === 0 ? (
+          <p className="text-center text-muted-foreground py-4">
+            Nenhuma nota registrada ainda
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm">Histórico de Notas</h4>
+            {notes.map((note) => (
+              <div
+                key={note.id}
+                className="p-3 rounded-lg border bg-muted/50"
+              >
+                <p className="text-sm whitespace-pre-wrap">{note.note}</p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                  <span>
+                    {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", {
+                      locale: ptBR,
+                    })}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
