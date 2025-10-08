@@ -14,6 +14,7 @@ interface Patient {
   procedure: string;
   hospital: string | null;
   surgery_date: string | null;
+  birth_date: string | null;
 }
 
 interface PatientFile {
@@ -46,7 +47,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date")
+        .select("id, name, procedure, hospital, surgery_date, birth_date")
         .eq("id", id)
         .single();
 
@@ -144,6 +145,16 @@ const PatientExams = () => {
         <h1 className="text-3xl font-bold text-foreground">Exames Pré-Operatórios</h1>
         <p className="text-muted-foreground">
           Paciente: {patient.name}
+          {patient.birth_date && (() => {
+            const today = new Date();
+            const birthDate = new Date(patient.birth_date);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+            }
+            return ` • ${age} anos`;
+          })()}
         </p>
       </div>
 

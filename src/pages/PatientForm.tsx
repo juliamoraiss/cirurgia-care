@@ -750,10 +750,12 @@ const PatientForm = () => {
                   <SelectContent>
                     <SelectItem value="ASSEFAZ">ASSEFAZ</SelectItem>
                     <SelectItem value="FUSEX">FUSEX</SelectItem>
-                    <SelectItem value="QUALLITY">QUALLITY</SelectItem>
-                    <SelectItem value="Plenum saúde">Plenum saúde</SelectItem>
-                    <SelectItem value="Sulamerica">Sulamerica</SelectItem>
+                    <SelectItem value="INAS (GDF Saúde)">INAS (GDF Saúde)</SelectItem>
+                    <SelectItem value="PLENUM SAÚDE">PLENUM SAÚDE</SelectItem>
+                    <SelectItem value="PORTO SEGURO - SEGURO SAUDE S/A">PORTO SEGURO - SEGURO SAUDE S/A</SelectItem>
                     <SelectItem value="POSTAL SAUDE">POSTAL SAUDE</SelectItem>
+                    <SelectItem value="QUALLITY">QUALLITY</SelectItem>
+                    <SelectItem value="SULAMERICA">SULAMERICA</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
