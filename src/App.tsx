@@ -69,6 +69,14 @@ const App = () => (
               }
             />
             <Route
+              path="/patients/:id"
+              element={
+                <ProtectedRoute>
+                  <PatientForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/calendar"
               element={
                 <ProtectedRoute>

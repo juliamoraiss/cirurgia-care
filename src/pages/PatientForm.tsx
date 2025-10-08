@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,12 @@ const patientSchema = z.object({
 
 const PatientForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(!!id);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const isEditMode = !!id;
   
   const [formData, setFormData] = useState({
     name: "",
@@ -52,6 +55,48 @@ const PatientForm = () => {
     status: "awaiting_authorization",
     notes: "",
   });
+
+  useEffect(() => {
+    if (id) {
+      loadPatientData(id);
+    }
+  }, [id]);
+
+  async function loadPatientData(patientId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .eq("id", patientId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormData({
+          name: data.name || "",
+          cpf: data.cpf || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          birth_date: data.birth_date || "",
+          procedure: data.procedure || "",
+          hospital: data.hospital || "",
+          insurance: data.insurance || "",
+          insurance_number: data.insurance_number || "",
+          status: data.status || "awaiting_authorization",
+          notes: data.notes || "",
+        });
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error loading patient:", error);
+      }
+      toast.error("Erro ao carregar dados do paciente");
+      navigate("/patients");
+    } finally {
+      setLoadingData(false);
+    }
+  }
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -76,26 +121,38 @@ const PatientForm = () => {
       // Validate form data
       const validatedData = patientSchema.parse(formData);
 
-      const { error } = await supabase.from("patients").insert([
-        {
-          name: validatedData.name,
-          cpf: validatedData.cpf || null,
-          phone: validatedData.phone || null,
-          email: validatedData.email || null,
-          birth_date: validatedData.birth_date || null,
-          procedure: validatedData.procedure,
-          hospital: validatedData.hospital || null,
-          insurance: validatedData.insurance || null,
-          insurance_number: validatedData.insurance_number || null,
-          status: validatedData.status as any,
-          notes: validatedData.notes || null,
-          created_by: user.id,
-        },
-      ]);
+      const patientData = {
+        name: validatedData.name,
+        cpf: validatedData.cpf || null,
+        phone: validatedData.phone || null,
+        email: validatedData.email || null,
+        birth_date: validatedData.birth_date || null,
+        procedure: validatedData.procedure,
+        hospital: validatedData.hospital || null,
+        insurance: validatedData.insurance || null,
+        insurance_number: validatedData.insurance_number || null,
+        status: validatedData.status as any,
+        notes: validatedData.notes || null,
+      };
+
+      let error;
+
+      if (isEditMode && id) {
+        const result = await supabase
+          .from("patients")
+          .update(patientData)
+          .eq("id", id);
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from("patients")
+          .insert([{ ...patientData, created_by: user.id }]);
+        error = result.error;
+      }
 
       if (error) throw error;
 
-      toast.success("Paciente cadastrado com sucesso!");
+      toast.success(isEditMode ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
       navigate("/patients");
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -118,6 +175,17 @@ const PatientForm = () => {
     }
   };
 
+  if (loadingData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
@@ -129,9 +197,11 @@ const PatientForm = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">Novo Paciente</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          {isEditMode ? "Editar Paciente" : "Novo Paciente"}
+        </h1>
         <p className="text-muted-foreground">
-          Cadastre um novo paciente no sistema
+          {isEditMode ? "Atualize as informações do paciente" : "Cadastre um novo paciente no sistema"}
         </p>
       </div>
 
@@ -289,7 +359,7 @@ const PatientForm = () => {
                 Cancelar
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Salvando..." : "Cadastrar Paciente"}
+                {loading ? "Salvando..." : isEditMode ? "Atualizar Paciente" : "Cadastrar Paciente"}
               </Button>
             </div>
           </CardContent>
