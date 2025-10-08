@@ -103,6 +103,7 @@ export type Database = {
           created_by: string
           email: string | null
           exams_checklist: string[] | null
+          gender: string | null
           guide_validity_date: string | null
           hospital: string | null
           id: string
@@ -125,6 +126,7 @@ export type Database = {
           created_by: string
           email?: string | null
           exams_checklist?: string[] | null
+          gender?: string | null
           guide_validity_date?: string | null
           hospital?: string | null
           id?: string
@@ -147,6 +149,7 @@ export type Database = {
           created_by?: string
           email?: string | null
           exams_checklist?: string[] | null
+          gender?: string | null
           guide_validity_date?: string | null
           hospital?: string | null
           id?: string

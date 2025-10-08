@@ -44,6 +44,7 @@ const patientSchema = z.object({
   phone: z.string().regex(/^\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}$/, "Telefone inválido. Formato: (XX) XXXXX-XXXX").optional().or(z.literal("")),
   email: z.string().email("Email inválido").max(255, "Email deve ter no máximo 255 caracteres").optional().or(z.literal("")),
   birth_date: z.string().optional(),
+  gender: z.enum(["masculino", "feminino"]).optional(),
   procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(500, "Procedimento deve ter no máximo 500 caracteres"),
   hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
@@ -68,6 +69,7 @@ const PatientForm = () => {
     phone: "",
     email: "",
     birth_date: "",
+    gender: "",
     procedure: "",
     hospital: "",
     insurance: "",
@@ -125,6 +127,7 @@ const PatientForm = () => {
           phone: data.phone || "",
           email: data.email || "",
           birth_date: data.birth_date || "",
+          gender: data.gender || "",
           procedure: data.procedure || "",
           hospital: data.hospital || "",
           insurance: data.insurance || "",
@@ -425,6 +428,7 @@ const PatientForm = () => {
         phone: validatedData.phone || null,
         email: validatedData.email || null,
         birth_date: validatedData.birth_date || null,
+        gender: validatedData.gender || null,
         procedure: validatedData.procedure,
         hospital: validatedData.hospital || null,
         insurance: validatedData.insurance || null,
@@ -578,6 +582,22 @@ const PatientForm = () => {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="gender">Gênero</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) => handleChange("gender", value)}
+                >
+                  <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Selecione o gênero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="feminino">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="guide_validity_date">Validade da Guia</Label>
                 <Input
                   id="guide_validity_date"
@@ -704,10 +724,19 @@ const PatientForm = () => {
                 className="w-full"
                 onClick={() => {
                   const phoneNumber = formData.phone.replace(/\D/g, '');
-                  const examsText = examsChecklist.length > 0 
-                    ? examsChecklist.join(', ')
-                    : 'exames necessários';
-                  const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'hospital'}, gostaria de confirmar se o(a) senhor(a) já realizou o(s) exame(s) ${examsText}.\n\nObrigada`;
+                  
+                  // Determinar tratamento baseado no gênero
+                  const treatment = formData.gender === "masculino" ? "o senhor" : formData.gender === "feminino" ? "a senhora" : "o(a) senhor(a)";
+                  
+                  // Determinar se é singular ou plural para exames
+                  const examCount = checkedExams.length;
+                  const examWord = examCount === 1 ? "o exame" : "os exames";
+                  
+                  // Montar lista de exames com checkmarks
+                  const examsWithCheckmarks = checkedExams.map(exam => `✅ ${exam}`).join('\n');
+                  const examsSection = examsWithCheckmarks || 'exames necessários';
+                  
+                  const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'Hospital Brasília'}, gostaria de confirmar se ${treatment} já realizou ${examWord}:\n${examsSection}\n\nQualquer dúvida estou à disposição.\nObrigada.`;
                   const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
                   window.open(whatsappUrl, '_blank');
                 }}
