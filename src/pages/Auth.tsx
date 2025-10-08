@@ -32,7 +32,9 @@ const Auth = () => {
     try {
       await signIn(loginEmail, loginPassword);
     } catch (error) {
-      console.error("Login error:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Login error:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +46,9 @@ const Auth = () => {
     try {
       await signUp(signupEmail, signupPassword, signupFullName);
     } catch (error) {
-      console.error("Signup error:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Signup error:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -130,12 +134,15 @@ const Auth = () => {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Mínimo 8 caracteres"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Mínimo 8 caracteres com letra maiúscula, minúscula e número
+                  </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Criando conta..." : "Criar conta"}
