@@ -218,7 +218,7 @@ const Patients = () => {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(isAdmin ? `/patients/${patient.id}` : `/patients/${patient.id}/exams`)}
+                      onClick={() => navigate(isAdmin ? `/patients/${patient.id}` : `/patients/${patient.id}/exams?from=patients`)}
                     >
                       <TableCell className="font-medium">{patient.name}</TableCell>
                       <TableCell className="capitalize">{patient.procedure}</TableCell>
@@ -253,7 +253,7 @@ const Patients = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(isAdmin ? `/patients/${patient.id}` : `/patients/${patient.id}/exams`);
+                            navigate(isAdmin ? `/patients/${patient.id}` : `/patients/${patient.id}/exams?from=patients`);
                           }}
                         >
                           {isAdmin ? "Editar" : "Ver Exames"}

@@ -193,7 +193,7 @@ const Calendar = () => {
                 className={`cursor-pointer hover:shadow-lg transition-shadow ${
                   selectedDaySurgeries.length > 1 ? getColorForIndex(index) : ""
                 }`}
-                onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+                onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
               >
                 <CardContent className="p-4">
                   <div className="space-y-2">

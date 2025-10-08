@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ interface PatientFile {
 const PatientExams = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromPage = searchParams.get("from") || "calendar";
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,11 +52,8 @@ const PatientExams = () => {
       if (error) throw error;
       setPatient(data);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error loading patient:", error);
-      }
       toast.error("Erro ao carregar dados do paciente");
-      navigate("/calendar");
+      navigate(fromPage === "patients" ? "/patients" : "/calendar");
     } finally {
       setLoading(false);
     }
@@ -71,9 +70,6 @@ const PatientExams = () => {
       if (error) throw error;
       setFiles(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error loading patient files:", error);
-      }
       toast.error("Erro ao carregar exames do paciente");
     }
   }
@@ -89,9 +85,6 @@ const PatientExams = () => {
         setViewingFile({ url: data.signedUrl, name: fileName });
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error viewing file:", error);
-      }
       toast.error("Erro ao carregar arquivo");
     }
   };
@@ -113,9 +106,6 @@ const PatientExams = () => {
         toast.success("Download iniciado");
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error downloading file:", error);
-      }
       toast.error("Erro ao fazer download do arquivo");
     }
   };
@@ -144,11 +134,11 @@ const PatientExams = () => {
       <div>
         <Button
           variant="ghost"
-          onClick={() => navigate("/calendar")}
+          onClick={() => navigate(fromPage === "patients" ? "/patients" : "/calendar")}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para Agenda
+          {fromPage === "patients" ? "Voltar para Pacientes" : "Voltar para Agenda"}
         </Button>
         <h1 className="text-3xl font-bold text-foreground">Exames Pré-Operatórios</h1>
         <p className="text-muted-foreground">
