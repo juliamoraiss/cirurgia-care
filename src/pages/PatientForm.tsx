@@ -623,6 +623,9 @@ const PatientForm = () => {
                     <SelectItem value="pending_scheduling">
                       Pendente de Marcação
                     </SelectItem>
+                    <SelectItem value="scheduled">Agendado</SelectItem>
+                    <SelectItem value="completed">Cirurgia Realizada</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
