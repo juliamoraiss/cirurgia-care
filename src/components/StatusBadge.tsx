@@ -4,8 +4,8 @@ type PatientStatus =
   | "awaiting_authorization"
   | "authorized"
   | "pending_scheduling"
-  | "surgery_scheduled"
-  | "surgery_completed"
+  | "scheduled"
+  | "completed"
   | "cancelled";
 
 interface StatusBadgeProps {
@@ -25,17 +25,17 @@ const statusConfig = {
     label: "Pendente de Marcação",
     variant: "pending" as const,
   },
-  surgery_scheduled: {
+  scheduled: {
     label: "Cirurgia Marcada",
     variant: "default" as const,
   },
-  surgery_completed: {
-    label: "Realizado",
+  completed: {
+    label: "Cirurgia Realizada",
     variant: "success" as const,
   },
   cancelled: {
     label: "Cancelado",
-    variant: "secondary" as const,
+    variant: "destructive" as const,
   },
 };
 
