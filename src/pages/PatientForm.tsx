@@ -14,6 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -59,6 +65,7 @@ const PatientForm = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -145,6 +152,24 @@ const PatientForm = () => {
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const viewFile = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("patient-files")
+        .createSignedUrl(filePath, 3600); // URL válida por 1 hora
+
+      if (error) throw error;
+      if (data?.signedUrl) {
+        setViewingFile({ url: data.signedUrl, name: fileName });
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error viewing file:", error);
+      }
+      toast.error("Erro ao carregar arquivo");
+    }
   };
 
   const deleteExistingFile = async (fileId: string, filePath: string) => {
@@ -483,10 +508,14 @@ const PatientForm = () => {
                   <p className="text-sm text-muted-foreground">Arquivos já enviados:</p>
                   {existingFiles.map((file) => (
                     <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => viewFile(file.file_path, file.file_name)}
+                        className="flex items-center gap-2 flex-1 text-left hover:opacity-70 transition-opacity"
+                      >
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">{file.file_name}</span>
-                      </div>
+                      </button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -562,6 +591,23 @@ const PatientForm = () => {
           </CardContent>
         </Card>
       </form>
+
+      <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{viewingFile?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 w-full h-full">
+            {viewingFile && (
+              <iframe
+                src={viewingFile.url}
+                className="w-full h-full border-0"
+                title={viewingFile.name}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
