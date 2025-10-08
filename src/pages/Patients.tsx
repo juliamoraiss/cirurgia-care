@@ -26,6 +26,7 @@ interface Patient {
   status: string;
   surgery_date: string | null;
   created_at: string;
+  exams_checklist: string[] | null;
 }
 
 const Patients = () => {
@@ -43,7 +44,7 @@ const Patients = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, status, surgery_date, created_at")
+        .select("id, name, procedure, hospital, status, surgery_date, created_at, exams_checklist")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -110,6 +111,7 @@ const Patients = () => {
                     <TableHead>Procedimento</TableHead>
                     <TableHead>Hospital</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Exames</TableHead>
                     <TableHead>Data da Cirurgia</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -126,6 +128,13 @@ const Patients = () => {
                       <TableCell>{patient.hospital || "-"}</TableCell>
                       <TableCell>
                         <StatusBadge status={patient.status as any} />
+                      </TableCell>
+                      <TableCell>
+                        {patient.exams_checklist && patient.exams_checklist.length > 0 ? (
+                          <span className="text-sm font-medium text-green-600">Ok</span>
+                        ) : (
+                          <span className="text-sm font-medium text-orange-600">Aguardando envio</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {patient.surgery_date

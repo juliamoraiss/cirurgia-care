@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,6 +20,8 @@ const Calendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedDaySurgeries, setSelectedDaySurgeries] = useState<Surgery[]>([]);
 
   useEffect(() => {
     loadSurgeries();
@@ -54,6 +57,25 @@ const Calendar = () => {
     return surgeries
       .filter((surgery) => isSameDay(new Date(surgery.surgery_date), day))
       .sort((a, b) => new Date(a.surgery_date).getTime() - new Date(b.surgery_date).getTime());
+  };
+
+  const getColorForIndex = (index: number) => {
+    const colors = [
+      "bg-blue-100 border-blue-500 text-blue-900",
+      "bg-green-100 border-green-500 text-green-900",
+      "bg-purple-100 border-purple-500 text-purple-900",
+      "bg-orange-100 border-orange-500 text-orange-900",
+      "bg-pink-100 border-pink-500 text-pink-900",
+      "bg-cyan-100 border-cyan-500 text-cyan-900",
+    ];
+    return colors[index % colors.length];
+  };
+
+  const handleDayClick = (day: Date, daySurgeries: Surgery[]) => {
+    if (daySurgeries.length > 0) {
+      setSelectedDay(day);
+      setSelectedDaySurgeries(daySurgeries);
+    }
   };
 
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -113,9 +135,12 @@ const Calendar = () => {
                 return (
                   <div
                     key={index}
+                    onClick={() => handleDayClick(day, daySurgeries)}
                     className={`min-h-[120px] border rounded-lg p-2 ${
                       isCurrentMonth ? "bg-background" : "bg-muted/30"
-                    } ${isToday ? "ring-2 ring-primary" : ""}`}
+                    } ${isToday ? "ring-2 ring-primary" : ""} ${
+                      daySurgeries.length > 0 ? "cursor-pointer hover:shadow-md transition-shadow" : ""
+                    }`}
                   >
                     <div className={`text-sm font-semibold mb-1 ${
                       isCurrentMonth ? "text-foreground" : "text-muted-foreground"
@@ -123,21 +148,25 @@ const Calendar = () => {
                       {format(day, "d")}
                     </div>
                     <div className="space-y-1">
-                      {daySurgeries.map((surgery) => (
+                      {daySurgeries.map((surgery, surgeryIndex) => (
                         <div
                           key={surgery.id}
-                          className="text-xs p-1.5 rounded bg-primary/10 border-l-2 border-primary space-y-0.5"
+                          className={`text-xs p-1.5 rounded border-l-2 space-y-0.5 ${
+                            daySurgeries.length > 1 
+                              ? getColorForIndex(surgeryIndex)
+                              : "bg-primary/10 border-primary text-primary"
+                          }`}
                         >
-                          <div className="font-semibold text-primary">
+                          <div className="font-semibold">
                             {format(new Date(surgery.surgery_date), "HH:mm")}
                           </div>
                           <div className="font-medium truncate" title={surgery.name}>
                             {surgery.name}
                           </div>
-                          <div className="text-muted-foreground truncate" title={surgery.hospital || 'Hospital não informado'}>
+                          <div className="truncate opacity-80" title={surgery.hospital || 'Hospital não informado'}>
                             {surgery.hospital || 'Hospital não informado'}
                           </div>
-                          <div className="text-muted-foreground italic truncate" title={surgery.procedure}>
+                          <div className="italic truncate opacity-80" title={surgery.procedure}>
                             {surgery.procedure}
                           </div>
                         </div>
@@ -150,6 +179,44 @@ const Calendar = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={selectedDay !== null} onOpenChange={(open) => !open && setSelectedDay(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              Cirurgias de {selectedDay && format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {selectedDaySurgeries.map((surgery, index) => (
+              <Card key={surgery.id} className={`${
+                selectedDaySurgeries.length > 1 ? getColorForIndex(index) : ""
+              }`}>
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold">{surgery.name}</h3>
+                      <span className="text-lg font-semibold">
+                        {format(new Date(surgery.surgery_date), "HH:mm")}
+                      </span>
+                    </div>
+                    <div className="grid gap-2 text-sm">
+                      <div>
+                        <span className="font-semibold">Procedimento:</span>{" "}
+                        <span>{surgery.procedure}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold">Hospital:</span>{" "}
+                        <span>{surgery.hospital || "Não informado"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
