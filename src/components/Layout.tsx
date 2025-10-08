@@ -10,6 +10,7 @@ import {
   Calendar,
   LogOut,
   Menu,
+  UserPlus,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
-  const { role, loading: roleLoading } = useUserRole();
+  const { role, loading: roleLoading, isAdmin } = useUserRole();
 
   const menuItems = [
     {
@@ -95,6 +96,17 @@ export function Layout({ children }: LayoutProps) {
             </Button>
           );
         })}
+        
+        {isAdmin && (
+          <Button
+            variant={location.pathname === "/users" ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => navigate("/users")}
+          >
+            <UserPlus className="h-4 w-4 mr-3" />
+            Gerenciar Usuários
+          </Button>
+        )}
       </nav>
 
       <div className="p-4 border-t border-sidebar-border space-y-3">
