@@ -26,15 +26,18 @@ import { ArrowLeft, Upload, X, FileText, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-// Validation schema
+// Validation schema with enhanced security
 const patientSchema = z.object({
-  name: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
+  name: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(200, "Nome deve ter no máximo 200 caracteres"),
+  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido. Formato: XXX.XXX.XXX-XX").optional().or(z.literal("")),
   phone: z.string().regex(/^\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}$/, "Telefone inválido. Formato: (XX) XXXXX-XXXX").optional().or(z.literal("")),
+  email: z.string().email("Email inválido").max(255, "Email deve ter no máximo 255 caracteres").optional().or(z.literal("")),
   birth_date: z.string().optional(),
-  procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(200, "Procedimento deve ter no máximo 200 caracteres"),
+  procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(500, "Procedimento deve ter no máximo 500 caracteres"),
   hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
-  notes: z.string().max(2000, "Observações devem ter no máximo 2000 caracteres").optional().or(z.literal("")),
+  insurance_number: z.string().max(100, "Número do convênio deve ter no máximo 100 caracteres").optional().or(z.literal("")),
+  notes: z.string().max(5000, "Observações devem ter no máximo 5000 caracteres").optional().or(z.literal("")),
   status: z.enum(["awaiting_authorization", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
 });
 
@@ -126,9 +129,6 @@ const PatientForm = () => {
         setCheckedExams(savedExams);
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error loading patient:", error);
-      }
       toast.error("Erro ao carregar dados do paciente");
       navigate("/patients");
     } finally {
@@ -147,9 +147,7 @@ const PatientForm = () => {
       if (error) throw error;
       setExistingFiles(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error loading patient files:", error);
-      }
+      // Error logged server-side
     }
   }
 
@@ -264,9 +262,6 @@ const PatientForm = () => {
         setViewingFile({ url: data.signedUrl, name: fileName });
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error viewing file:", error);
-      }
       toast.error("Erro ao carregar arquivo");
     }
   };
@@ -289,9 +284,6 @@ const PatientForm = () => {
       setExistingFiles(prev => prev.filter(f => f.id !== fileId));
       toast.success("Arquivo removido com sucesso");
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error deleting file:", error);
-      }
       toast.error("Erro ao remover arquivo");
     }
   };
@@ -330,9 +322,6 @@ const PatientForm = () => {
         await loadPatientFiles(id);
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error uploading files:", error);
-      }
       throw error;
     } finally {
       setUploadingFiles(false);
@@ -373,11 +362,14 @@ const PatientForm = () => {
       
       const patientData = {
         name: validatedData.name,
+        cpf: validatedData.cpf || null,
         phone: validatedData.phone || null,
+        email: validatedData.email || null,
         birth_date: validatedData.birth_date || null,
         procedure: validatedData.procedure,
         hospital: validatedData.hospital || null,
         insurance: validatedData.insurance || null,
+        insurance_number: validatedData.insurance_number || null,
         status: validatedData.status as any,
         notes: validatedData.notes || null,
         surgery_date: utcSurgeryDate,
@@ -425,9 +417,6 @@ const PatientForm = () => {
         setErrors(fieldErrors);
         toast.error("Por favor, corrija os erros no formulário");
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.error("Error creating patient:", error);
-        }
         toast.error("Erro ao cadastrar paciente");
       }
     } finally {

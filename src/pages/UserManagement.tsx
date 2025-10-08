@@ -65,7 +65,6 @@ const UserManagement = () => {
         role: "user",
       });
     } catch (error: any) {
-      console.error("Error creating user:", error);
       toast.error(error.message || "Erro ao criar usuário");
     } finally {
       setLoading(false);
@@ -124,10 +123,12 @@ const UserManagement = () => {
                   setFormData((prev) => ({ ...prev, password: e.target.value }))
                 }
                 placeholder="Digite a senha"
-                minLength={6}
+                minLength={8}
+                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
+                title="A senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas e números"
               />
               <p className="text-xs text-muted-foreground">
-                Mínimo de 6 caracteres
+                Mínimo de 8 caracteres, incluindo letras maiúsculas, minúsculas e números
               </p>
             </div>
 
