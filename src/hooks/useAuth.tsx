@@ -75,13 +75,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      // Se o erro for "session not found", considerar como logout bem-sucedido
+      // já que o objetivo (não estar autenticado) já foi atingido
+      if (error && !error.message?.includes("Session not found")) {
+        throw error;
+      }
+      
+      // Limpar estado local
+      setSession(null);
+      setUser(null);
       
       toast.success("Logout realizado com sucesso!");
       navigate("/auth");
     } catch (error: any) {
       toast.error("Erro ao fazer logout");
-      throw error;
+      // Mesmo com erro, limpar estado e redirecionar
+      setSession(null);
+      setUser(null);
+      navigate("/auth");
     }
   };
 
