@@ -7,13 +7,13 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get all patients with scheduled surgeries in the past
+    // Get all patients with authorized surgeries in the past
     const now = new Date().toISOString()
     
     const { data: patients, error: fetchError } = await supabase
       .from('patients')
       .select('id, name, surgery_date')
-      .eq('status', 'scheduled')
+      .eq('status', 'authorized')
       .lt('surgery_date', now)
       .not('surgery_date', 'is', null)
 

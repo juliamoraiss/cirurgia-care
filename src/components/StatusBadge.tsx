@@ -3,8 +3,6 @@ import { Badge } from "@/components/ui/badge";
 type PatientStatus = 
   | "awaiting_authorization"
   | "authorized"
-  | "pending_scheduling"
-  | "scheduled"
   | "completed"
   | "cancelled";
 
@@ -21,20 +19,12 @@ const statusConfig = {
     label: "Autorizado",
     variant: "success" as const,
   },
-  pending_scheduling: {
-    label: "Pendente de Marcação",
-    variant: "pending" as const,
-  },
-  scheduled: {
-    label: "Cirurgia Marcada",
-    variant: "default" as const,
-  },
   completed: {
     label: "Cirurgia Realizada",
-    variant: "success" as const,
+    variant: "default" as const,
   },
   cancelled: {
-    label: "Cancelado",
+    label: "Cirurgia Cancelada",
     variant: "destructive" as const,
   },
 };
