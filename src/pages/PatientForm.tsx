@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -54,11 +54,16 @@ const PatientForm = () => {
     insurance_number: "",
     status: "awaiting_authorization",
     notes: "",
+    surgery_date: "",
   });
+  const [files, setFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<any[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadPatientData(id);
+      loadPatientFiles(id);
     }
   }, [id]);
 
@@ -85,6 +90,7 @@ const PatientForm = () => {
           insurance_number: data.insurance_number || "",
           status: data.status || "awaiting_authorization",
           notes: data.notes || "",
+          surgery_date: data.surgery_date ? new Date(data.surgery_date).toISOString().slice(0, 16) : "",
         });
       }
     } catch (error) {
@@ -98,15 +104,114 @@ const PatientForm = () => {
     }
   }
 
+  async function loadPatientFiles(patientId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("patient_files")
+        .select("*")
+        .eq("patient_id", patientId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setExistingFiles(data || []);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error loading patient files:", error);
+      }
+    }
+  }
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field when user types
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const pdfFiles = selectedFiles.filter(file => file.type === "application/pdf");
+    
+    if (pdfFiles.length !== selectedFiles.length) {
+      toast.error("Apenas arquivos PDF são permitidos");
+    }
+    
+    setFiles(prev => [...prev, ...pdfFiles]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const deleteExistingFile = async (fileId: string, filePath: string) => {
+    try {
+      const { error: storageError } = await supabase.storage
+        .from("patient-files")
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from("patient_files")
+        .delete()
+        .eq("id", fileId);
+
+      if (dbError) throw dbError;
+
+      setExistingFiles(prev => prev.filter(f => f.id !== fileId));
+      toast.success("Arquivo removido com sucesso");
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error deleting file:", error);
+      }
+      toast.error("Erro ao remover arquivo");
+    }
+  };
+
+  const uploadFiles = async (patientId: string) => {
+    if (files.length === 0) return;
+
+    setUploadingFiles(true);
+    try {
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${patientId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("patient-files")
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { error: dbError } = await supabase
+          .from("patient_files")
+          .insert({
+            patient_id: patientId,
+            file_path: fileName,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: user!.id,
+          });
+
+        if (dbError) throw dbError;
+      }
+
+      setFiles([]);
+      if (id) {
+        await loadPatientFiles(id);
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error uploading files:", error);
+      }
+      throw error;
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -133,9 +238,11 @@ const PatientForm = () => {
         insurance_number: validatedData.insurance_number || null,
         status: validatedData.status as any,
         notes: validatedData.notes || null,
+        surgery_date: formData.surgery_date ? new Date(formData.surgery_date).toISOString() : null,
       };
 
       let error;
+      let savedPatientId = id;
 
       if (isEditMode && id) {
         const result = await supabase
@@ -146,11 +253,20 @@ const PatientForm = () => {
       } else {
         const result = await supabase
           .from("patients")
-          .insert([{ ...patientData, created_by: user.id }]);
+          .insert([{ ...patientData, created_by: user.id }])
+          .select()
+          .single();
         error = result.error;
+        if (result.data) {
+          savedPatientId = result.data.id;
+        }
       }
 
       if (error) throw error;
+
+      if (files.length > 0 && savedPatientId) {
+        await uploadFiles(savedPatientId);
+      }
 
       toast.success(isEditMode ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
       navigate("/patients");
@@ -269,6 +385,15 @@ const PatientForm = () => {
                   onChange={(e) => handleChange("birth_date", e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="surgery_date">Data da Cirurgia</Label>
+                <Input
+                  id="surgery_date"
+                  type="datetime-local"
+                  value={formData.surgery_date}
+                  onChange={(e) => handleChange("surgery_date", e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -350,6 +475,78 @@ const PatientForm = () => {
               {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
             </div>
 
+            <div className="space-y-4">
+              <Label>Exames (PDF)</Label>
+              
+              {existingFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Arquivos já enviados:</p>
+                  {existingFiles.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{file.file_name}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteExistingFile(file.id, file.file_path)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById("file-upload")?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Adicionar Exames
+                  </Button>
+                </div>
+
+                {files.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Novos arquivos a serem enviados:</p>
+                    {files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{file.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({(file.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-2 pt-4">
               <Button
                 type="button"
@@ -358,8 +555,8 @@ const PatientForm = () => {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Salvando..." : isEditMode ? "Atualizar Paciente" : "Cadastrar Paciente"}
+              <Button type="submit" disabled={loading || uploadingFiles}>
+                {loading || uploadingFiles ? "Salvando..." : isEditMode ? "Atualizar Paciente" : "Cadastrar Paciente"}
               </Button>
             </div>
           </CardContent>
