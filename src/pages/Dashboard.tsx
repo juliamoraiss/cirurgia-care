@@ -65,22 +65,31 @@ const Dashboard = () => {
 
     async function fetchStats() {
       try {
+        const now = new Date();
+
         // Total patients with details
         const { data: allPatientsData, count: totalPatients } = await supabase
           .from("patients")
           .select("id, name, procedure, surgery_date, insurance", { count: "exact" });
 
-        // Scheduled surgeries
-        const { data: scheduledData, count: scheduledSurgeries } = await supabase
+        // Patients with surgery dates
+        const { data: patientsWithSurgery } = await supabase
           .from("patients")
-          .select("id, name, procedure, surgery_date, insurance", { count: "exact" })
-          .eq("status", "surgery_scheduled");
+          .select("id, name, procedure, surgery_date, insurance")
+          .not("surgery_date", "is", null);
 
-        // Completed surgeries
-        const { data: completedData, count: completedSurgeries } = await supabase
-          .from("patients")
-          .select("id, name, procedure, surgery_date, insurance", { count: "exact" })
-          .eq("status", "surgery_completed");
+        // Filter scheduled (future) and completed (past) surgeries based on date
+        const scheduledData: Patient[] = [];
+        const completedData: Patient[] = [];
+
+        (patientsWithSurgery || []).forEach((patient) => {
+          const surgeryDate = new Date(patient.surgery_date);
+          if (surgeryDate > now) {
+            scheduledData.push(patient);
+          } else {
+            completedData.push(patient);
+          }
+        });
 
         // Pending authorization
         const { data: pendingData, count: pendingAuthorization } = await supabase
@@ -90,14 +99,14 @@ const Dashboard = () => {
 
         setStats({
           totalPatients: totalPatients || 0,
-          scheduledSurgeries: scheduledSurgeries || 0,
-          completedSurgeries: completedSurgeries || 0,
+          scheduledSurgeries: scheduledData.length,
+          completedSurgeries: completedData.length,
           pendingAuthorization: pendingAuthorization || 0,
         });
 
         setAllPatients(allPatientsData || []);
-        setScheduledPatients(scheduledData || []);
-        setCompletedPatients(completedData || []);
+        setScheduledPatients(scheduledData);
+        setCompletedPatients(completedData);
         setPendingPatients(pendingData || []);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
