@@ -90,9 +90,7 @@ const Patients = () => {
       if (error) throw error;
       setPatients(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error fetching patients:", error);
-      }
+      toast.error("Erro ao carregar pacientes");
     } finally {
       setLoading(false);
     }
