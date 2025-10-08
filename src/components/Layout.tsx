@@ -47,10 +47,8 @@ export function Layout({ children }: LayoutProps) {
     switch (role) {
       case "admin":
         return "Administrador";
-      case "doctor":
-        return "Médico";
-      case "secretary":
-        return "Secretária";
+      case "user":
+        return "Usuário";
       default:
         return "Sem permissão";
     }
@@ -60,10 +58,8 @@ export function Layout({ children }: LayoutProps) {
     switch (role) {
       case "admin":
         return "destructive";
-      case "doctor":
+      case "user":
         return "default";
-      case "secretary":
-        return "secondary";
       default:
         return "outline";
     }
