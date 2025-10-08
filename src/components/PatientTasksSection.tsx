@@ -171,7 +171,7 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
 
   const getTaskTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      exam_followup: "Cobrança de Exame",
+      exam_followup: "Cobrança de Exames",
       pre_op_instructions: "Instruções Pré-Op",
       post_op_instructions: "Recomendações Pós-Op",
       custom: "Personalizado",
@@ -220,13 +220,7 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                     <SelectContent>
                       <SelectItem value="custom">Personalizado</SelectItem>
                       <SelectItem value="exam_followup">
-                        Cobrança de Exame
-                      </SelectItem>
-                      <SelectItem value="pre_op_instructions">
-                        Instruções Pré-Operatórias
-                      </SelectItem>
-                      <SelectItem value="post_op_instructions">
-                        Recomendações Pós-Operatórias
+                        Cobrança de Exames
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -329,14 +323,12 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                               locale: ptBR,
                             })}
                           </p>
-                          {task.task_type === "pre_op_instructions" && patient && (
+                          {(task.task_type === "custom" || task.task_type === "exam_followup" || task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions") && patient && (
                             <div className="mt-3">
-                              <WhatsAppTemplates patient={patient} type="pre_op" />
-                            </div>
-                          )}
-                          {task.task_type === "post_op_instructions" && patient && (
-                            <div className="mt-3">
-                              <WhatsAppTemplates patient={patient} type="post_op" />
+                              <WhatsAppTemplates 
+                                patient={patient} 
+                                type={task.task_type === "post_op_instructions" ? "post_op" : "pre_op"} 
+                              />
                             </div>
                           )}
                         </div>
