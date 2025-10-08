@@ -4,6 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Calendar, CheckCircle, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DashboardStats {
   totalPatients: number;
@@ -12,8 +19,17 @@ interface DashboardStats {
   pendingAuthorization: number;
 }
 
+interface Patient {
+  id: string;
+  name: string;
+  procedure: string;
+  surgery_date: string;
+  insurance: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     scheduledSurgeries: 0,
@@ -21,31 +37,55 @@ const Dashboard = () => {
     pendingAuthorization: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string>("");
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [scheduledPatients, setScheduledPatients] = useState<Patient[]>([]);
+  const [completedPatients, setCompletedPatients] = useState<Patient[]>([]);
+  const [pendingPatients, setPendingPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
+    async function fetchUserName() {
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        
+        if (data?.full_name) {
+          const names = data.full_name.split(" ");
+          if (names.length > 1) {
+            setUserName(`${names[0]} ${names[names.length - 1]}`);
+          } else {
+            setUserName(names[0]);
+          }
+        }
+      }
+    }
+
     async function fetchStats() {
       try {
-        // Total patients
-        const { count: totalPatients } = await supabase
+        // Total patients with details
+        const { data: allPatientsData, count: totalPatients } = await supabase
           .from("patients")
-          .select("*", { count: "exact", head: true });
+          .select("id, name, procedure, surgery_date, insurance", { count: "exact" });
 
         // Scheduled surgeries
-        const { count: scheduledSurgeries } = await supabase
+        const { data: scheduledData, count: scheduledSurgeries } = await supabase
           .from("patients")
-          .select("*", { count: "exact", head: true })
+          .select("id, name, procedure, surgery_date, insurance", { count: "exact" })
           .eq("status", "surgery_scheduled");
 
         // Completed surgeries
-        const { count: completedSurgeries } = await supabase
+        const { data: completedData, count: completedSurgeries } = await supabase
           .from("patients")
-          .select("*", { count: "exact", head: true })
+          .select("id, name, procedure, surgery_date, insurance", { count: "exact" })
           .eq("status", "surgery_completed");
 
         // Pending authorization
-        const { count: pendingAuthorization } = await supabase
+        const { data: pendingData, count: pendingAuthorization } = await supabase
           .from("patients")
-          .select("*", { count: "exact", head: true })
+          .select("id, name, procedure, surgery_date, insurance", { count: "exact" })
           .eq("status", "awaiting_authorization");
 
         setStats({
@@ -54,6 +94,11 @@ const Dashboard = () => {
           completedSurgeries: completedSurgeries || 0,
           pendingAuthorization: pendingAuthorization || 0,
         });
+
+        setAllPatients(allPatientsData || []);
+        setScheduledPatients(scheduledData || []);
+        setCompletedPatients(completedData || []);
+        setPendingPatients(pendingData || []);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       } finally {
@@ -61,8 +106,9 @@ const Dashboard = () => {
       }
     }
 
+    fetchUserName();
     fetchStats();
-  }, []);
+  }, [user]);
 
   const statCards = [
     {
@@ -96,42 +142,107 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do sistema de gestão cirúrgica
-          </p>
+    <TooltipProvider>
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Bem-vindo, {userName || "..."}
+            </h1>
+            <p className="text-muted-foreground">
+              Visão geral do sistema de gestão cirúrgica
+            </p>
+          </div>
+          <Button onClick={() => navigate("/patients/new")}>
+            Novo Paciente
+          </Button>
         </div>
-        <Button onClick={() => navigate("/patients/new")}>
-          Novo Paciente
-        </Button>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "..." : stat.value}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+            let tooltipContent = null;
+
+            if (stat.title === "Total de Pacientes" && allPatients.length > 0) {
+              tooltipContent = (
+                <div className="space-y-1">
+                  {allPatients.map((patient) => (
+                    <div key={patient.id} className="text-sm">
+                      {patient.name}
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              );
+            } else if (stat.title === "Cirurgias Agendadas" && scheduledPatients.length > 0) {
+              tooltipContent = (
+                <div className="space-y-1">
+                  {scheduledPatients.map((patient) => (
+                    <div key={patient.id} className="text-sm">
+                      <div className="font-medium">{patient.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {patient.procedure} - {patient.surgery_date ? new Date(patient.surgery_date).toLocaleDateString('pt-BR') : 'Data não definida'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            } else if (stat.title === "Cirurgias Realizadas" && completedPatients.length > 0) {
+              tooltipContent = (
+                <div className="space-y-1">
+                  {completedPatients.map((patient) => (
+                    <div key={patient.id} className="text-sm">
+                      <div className="font-medium">{patient.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {patient.procedure} - {patient.surgery_date ? new Date(patient.surgery_date).toLocaleDateString('pt-BR') : 'Data não definida'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            } else if (stat.title === "Aguardando Autorização" && pendingPatients.length > 0) {
+              tooltipContent = (
+                <div className="space-y-1">
+                  {pendingPatients.map((patient) => (
+                    <div key={patient.id} className="text-sm">
+                      <div className="font-medium">{patient.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {patient.insurance || 'Sem convênio'} - {patient.procedure}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+
+            return (
+              <Tooltip key={stat.title}>
+                <TooltipTrigger asChild>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        {stat.title}
+                      </CardTitle>
+                      <Icon className={`h-4 w-4 ${stat.color}`} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {loading ? "..." : stat.value}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {stat.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                {tooltipContent && (
+                  <TooltipContent side="bottom" className="max-w-xs max-h-96 overflow-y-auto">
+                    {tooltipContent}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+        </div>
 
       <Card>
         <CardHeader>
@@ -159,7 +270,7 @@ const Dashboard = () => {
             </li>
             <li className="flex items-center">
               <CheckCircle className="h-4 w-4 mr-2 text-success" />
-              Histórico completo de alterações
+              Calendário de cirurgias
             </li>
           </ul>
           <div className="pt-4">
@@ -169,7 +280,8 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 

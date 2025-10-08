@@ -480,6 +480,29 @@ const PatientForm = () => {
               {errors.procedure && <p className="text-sm text-destructive">{errors.procedure}</p>}
             </div>
 
+            {examsChecklist.length > 0 && (
+              <div className="space-y-3">
+                <Label>Checklist de Exames</Label>
+                <div className="space-y-2 border rounded-lg p-4">
+                  {examsChecklist.map((exam) => (
+                    <div key={exam} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={exam}
+                        checked={checkedExams.includes(exam)}
+                        onCheckedChange={() => toggleExam(exam)}
+                      />
+                      <label
+                        htmlFor={exam}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {exam}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="hospital">Hospital</Label>
@@ -570,29 +593,6 @@ const PatientForm = () => {
               />
               {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
             </div>
-
-            {examsChecklist.length > 0 && (
-              <div className="space-y-3">
-                <Label>Checklist de Exames</Label>
-                <div className="space-y-2 border rounded-lg p-4">
-                  {examsChecklist.map((exam) => (
-                    <div key={exam} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={exam}
-                        checked={checkedExams.includes(exam)}
-                        onCheckedChange={() => toggleExam(exam)}
-                      />
-                      <label
-                        htmlFor={exam}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {exam}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="space-y-4">
               <Label>Exames (PDF)</Label>
