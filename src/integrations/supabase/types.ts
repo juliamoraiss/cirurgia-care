@@ -215,6 +215,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_user_with_username: {
+        Args: { _full_name?: string; _password: string; _username: string }
+        Returns: Json
+      }
       get_email_by_username: {
         Args: { _username: string }
         Returns: string
