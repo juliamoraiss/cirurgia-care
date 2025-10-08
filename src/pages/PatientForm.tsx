@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ const patientSchema = z.object({
 const PatientForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { isSecretary, isAdmin, isDoctor } = useUserRole();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!id);
@@ -427,27 +429,31 @@ const PatientForm = () => {
                 />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="(XX) XXXXX-XXXX"
-                  className={errors.phone ? "border-destructive" : ""}
-                />
-                {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="birth_date">Data de Nascimento</Label>
-                <Input
-                  id="birth_date"
-                  type="date"
-                  value={formData.birth_date}
-                  onChange={(e) => handleChange("birth_date", e.target.value)}
-                />
-              </div>
+              {(isAdmin || isDoctor) && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleChange("phone", e.target.value)}
+                      placeholder="(XX) XXXXX-XXXX"
+                      className={errors.phone ? "border-destructive" : ""}
+                    />
+                    {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="birth_date">Data de Nascimento</Label>
+                    <Input
+                      id="birth_date"
+                      type="date"
+                      value={formData.birth_date}
+                      onChange={(e) => handleChange("birth_date", e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="surgery_date">Data da Cirurgia</Label>
                 <Input
@@ -537,18 +543,20 @@ const PatientForm = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                rows={4}
-                placeholder="Informações adicionais sobre o paciente ou procedimento..."
-                className={errors.notes ? "border-destructive" : ""}
-              />
-              {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
-            </div>
+            {(isAdmin || isDoctor) && (
+              <div className="space-y-2">
+                <Label htmlFor="notes">Observações</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => handleChange("notes", e.target.value)}
+                  rows={4}
+                  placeholder="Informações adicionais sobre o paciente ou procedimento..."
+                  className={errors.notes ? "border-destructive" : ""}
+                />
+                {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
+              </div>
+            )}
 
             {examsChecklist.length > 0 && (
               <div className="space-y-3">
