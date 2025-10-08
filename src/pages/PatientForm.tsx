@@ -27,14 +27,11 @@ import { z } from "zod";
 // Validation schema
 const patientSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
-  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido. Formato: XXX.XXX.XXX-XX").optional().or(z.literal("")),
   phone: z.string().regex(/^\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}$/, "Telefone inválido. Formato: (XX) XXXXX-XXXX").optional().or(z.literal("")),
-  email: z.string().email("E-mail inválido").max(255, "E-mail muito longo").optional().or(z.literal("")),
   birth_date: z.string().optional(),
   procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(200, "Procedimento deve ter no máximo 200 caracteres"),
   hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
-  insurance_number: z.string().max(100, "Número da carteirinha deve ter no máximo 100 caracteres").optional().or(z.literal("")),
   notes: z.string().max(2000, "Observações devem ter no máximo 2000 caracteres").optional().or(z.literal("")),
   status: z.enum(["awaiting_authorization", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
 });
@@ -128,8 +125,37 @@ const PatientForm = () => {
     }
   }
 
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    }
+    return value;
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2');
+    }
+    return value;
+  };
+
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let formattedValue = value;
+    
+    if (field === 'cpf') {
+      formattedValue = formatCPF(value);
+    } else if (field === 'phone') {
+      formattedValue = formatPhone(value);
+    }
+    
+    setFormData((prev) => ({ ...prev, [field]: formattedValue }));
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -253,14 +279,11 @@ const PatientForm = () => {
 
       const patientData = {
         name: validatedData.name,
-        cpf: validatedData.cpf || null,
         phone: validatedData.phone || null,
-        email: validatedData.email || null,
         birth_date: validatedData.birth_date || null,
         procedure: validatedData.procedure,
         hospital: validatedData.hospital || null,
         insurance: validatedData.insurance || null,
-        insurance_number: validatedData.insurance_number || null,
         status: validatedData.status as any,
         notes: validatedData.notes || null,
         surgery_date: formData.surgery_date ? new Date(formData.surgery_date).toISOString() : null,
@@ -368,17 +391,6 @@ const PatientForm = () => {
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
-                <Input
-                  id="cpf"
-                  value={formData.cpf}
-                  onChange={(e) => handleChange("cpf", e.target.value)}
-                  placeholder="XXX.XXX.XXX-XX"
-                  className={errors.cpf ? "border-destructive" : ""}
-                />
-                {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="phone">Telefone</Label>
                 <Input
                   id="phone"
@@ -389,17 +401,6 @@ const PatientForm = () => {
                   className={errors.phone ? "border-destructive" : ""}
                 />
                 {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  className={errors.email ? "border-destructive" : ""}
-                />
-                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="birth_date">Data de Nascimento</Label>
@@ -437,12 +438,18 @@ const PatientForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="hospital">Hospital</Label>
-                <Input
-                  id="hospital"
+                <Select
                   value={formData.hospital}
-                  onChange={(e) => handleChange("hospital", e.target.value)}
-                  className={errors.hospital ? "border-destructive" : ""}
-                />
+                  onValueChange={(value) => handleChange("hospital", value)}
+                >
+                  <SelectTrigger className={errors.hospital ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Selecione o hospital" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
+                    <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
+                  </SelectContent>
+                </Select>
                 {errors.hospital && <p className="text-sm text-destructive">{errors.hospital}</p>}
               </div>
               <div className="space-y-2">
@@ -454,16 +461,6 @@ const PatientForm = () => {
                   className={errors.insurance ? "border-destructive" : ""}
                 />
                 {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="insurance_number">Número da Carteirinha</Label>
-                <Input
-                  id="insurance_number"
-                  value={formData.insurance_number}
-                  onChange={(e) => handleChange("insurance_number", e.target.value)}
-                  className={errors.insurance_number ? "border-destructive" : ""}
-                />
-                {errors.insurance_number && <p className="text-sm text-destructive">{errors.insurance_number}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status Inicial</Label>
@@ -593,15 +590,15 @@ const PatientForm = () => {
       </form>
 
       <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
-        <DialogContent className="max-w-4xl h-[90vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[95vh] h-[95vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-4">
             <DialogTitle>{viewingFile?.name}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 w-full h-full">
+          <div className="flex-1 px-6 pb-6 overflow-hidden">
             {viewingFile && (
               <iframe
                 src={viewingFile.url}
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 rounded-lg"
                 title={viewingFile.name}
               />
             )}
