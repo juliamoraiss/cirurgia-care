@@ -729,11 +729,11 @@ const PatientForm = () => {
                   const treatment = formData.gender === "masculino" ? "o senhor" : formData.gender === "feminino" ? "a senhora" : "o(a) senhor(a)";
                   
                   // Determinar se é singular ou plural para exames
-                  const examCount = checkedExams.length;
+                  const examCount = examsChecklist.length;
                   const examWord = examCount === 1 ? "o exame" : "os exames";
                   
                   // Montar lista de exames com checkmarks
-                  const examsWithCheckmarks = checkedExams.map(exam => `✅ ${exam}`).join('\n');
+                  const examsWithCheckmarks = examsChecklist.map(exam => `✅ ${exam}`).join('\n');
                   const examsSection = examsWithCheckmarks || 'exames necessários';
                   
                   const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'Hospital Brasília'}, gostaria de confirmar se ${treatment} já realizou ${examWord}:\n${examsSection}\n\nQualquer dúvida estou à disposição.\nObrigada.`;
