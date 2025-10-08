@@ -21,8 +21,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload, X, FileText, MessageCircle } from "lucide-react";
+import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -72,6 +83,7 @@ const PatientForm = () => {
   const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
   const [examsChecklist, setExamsChecklist] = useState<string[]>([]);
   const [checkedExams, setCheckedExams] = useState<string[]>([]);
+  const [deletingPatient, setDeletingPatient] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -325,6 +337,53 @@ const PatientForm = () => {
       throw error;
     } finally {
       setUploadingFiles(false);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (!id || !user) return;
+
+    setDeletingPatient(true);
+    try {
+      // Primeiro, excluir todos os arquivos do storage
+      const { data: filesData } = await supabase
+        .from("patient_files")
+        .select("file_path")
+        .eq("patient_id", id);
+
+      if (filesData && filesData.length > 0) {
+        const filePaths = filesData.map(f => f.file_path);
+        await supabase.storage
+          .from("patient-files")
+          .remove(filePaths);
+      }
+
+      // Excluir registros de arquivos
+      await supabase
+        .from("patient_files")
+        .delete()
+        .eq("patient_id", id);
+
+      // Excluir histórico do paciente
+      await supabase
+        .from("patient_history")
+        .delete()
+        .eq("patient_id", id);
+
+      // Excluir o paciente
+      const { error } = await supabase
+        .from("patients")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Paciente excluído com sucesso!");
+      navigate("/patients");
+    } catch (error) {
+      toast.error("Erro ao excluir paciente");
+    } finally {
+      setDeletingPatient(false);
     }
   };
 
@@ -747,17 +806,51 @@ const PatientForm = () => {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/patients")}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading || uploadingFiles}>
-                {loading || uploadingFiles ? "Salvando..." : isEditMode ? "Atualizar Paciente" : "Cadastrar Paciente"}
-              </Button>
+            <div className="flex justify-between items-center pt-4">
+              {isEditMode && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={deletingPatient}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir Paciente
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Isso irá excluir permanentemente o paciente
+                        <strong> {formData.name}</strong>, todos os seus arquivos e histórico.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeletePatient}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        {deletingPatient ? "Excluindo..." : "Excluir"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <div className="flex space-x-2 ml-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/patients")}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading || uploadingFiles}>
+                  {loading || uploadingFiles ? "Salvando..." : isEditMode ? "Atualizar Paciente" : "Cadastrar Paciente"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
