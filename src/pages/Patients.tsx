@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -53,6 +53,8 @@ const Patients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     fetchPatients();
@@ -96,11 +98,54 @@ const Patients = () => {
     }
   }
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.procedure.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (patient.hospital && patient.hospital.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handleSort = (column: "name" | "procedure" | "surgery_date" | "created_at") => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (column: "name" | "procedure" | "surgery_date" | "created_at") => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 inline" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="h-4 w-4 ml-1 inline" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1 inline" />
+    );
+  };
+
+  const filteredPatients = patients
+    .filter((patient) =>
+      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.procedure.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (patient.hospital && patient.hospital.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortColumn) {
+        case "name":
+          compareValue = a.name.localeCompare(b.name);
+          break;
+        case "procedure":
+          compareValue = a.procedure.localeCompare(b.procedure);
+          break;
+        case "surgery_date":
+          const dateA = a.surgery_date ? new Date(a.surgery_date).getTime() : 0;
+          const dateB = b.surgery_date ? new Date(b.surgery_date).getTime() : 0;
+          compareValue = dateA - dateB;
+          break;
+        case "created_at":
+          compareValue = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+      }
+      
+      return sortDirection === "asc" ? compareValue : -compareValue;
+    });
 
   return (
     <div className="p-6 space-y-6">
@@ -145,12 +190,27 @@ const Patients = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Procedimento</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort("name")}
+                    >
+                      Nome{getSortIcon("name")}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort("procedure")}
+                    >
+                      Procedimento{getSortIcon("procedure")}
+                    </TableHead>
                     <TableHead>Hospital</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Exames</TableHead>
-                    <TableHead>Data da Cirurgia</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort("surgery_date")}
+                    >
+                      Data da Cirurgia{getSortIcon("surgery_date")}
+                    </TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
