@@ -87,6 +87,22 @@ const PatientForm = () => {
       if (error) throw error;
 
       if (data) {
+        // Extract checklist before setting formData to preserve it
+        const savedExams = data.exams_checklist || [];
+        
+        // Convert UTC timestamp to local datetime-local format
+        let localSurgeryDate = "";
+        if (data.surgery_date) {
+          const date = new Date(data.surgery_date);
+          // Format to YYYY-MM-DDTHH:mm for datetime-local input
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          localSurgeryDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
         setFormData({
           name: data.name || "",
           cpf: data.cpf || "",
@@ -99,9 +115,13 @@ const PatientForm = () => {
           insurance_number: data.insurance_number || "",
           status: data.status || "awaiting_authorization",
           notes: data.notes || "",
-          surgery_date: data.surgery_date ? new Date(data.surgery_date).toISOString().slice(0, 16) : "",
+          surgery_date: localSurgeryDate,
         });
-        setCheckedExams(data.exams_checklist || []);
+        
+        // Set checklist for the procedure and restore checked exams
+        const procedureExams = getExamsForProcedure(data.procedure || "");
+        setExamsChecklist(procedureExams);
+        setCheckedExams(savedExams);
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -183,7 +203,10 @@ const PatientForm = () => {
     if (field === 'procedure') {
       const newExams = getExamsForProcedure(value);
       setExamsChecklist(newExams);
-      setCheckedExams([]);
+      // Only clear checked exams if not in edit mode or if procedure actually changed
+      if (!isEditMode || formData.procedure !== value) {
+        setCheckedExams([]);
+      }
     }
     
     if (errors[field]) {
@@ -315,6 +338,15 @@ const PatientForm = () => {
       // Validate form data
       const validatedData = patientSchema.parse(formData);
 
+      // Convert local datetime-local to UTC for storage
+      let utcSurgeryDate = null;
+      if (formData.surgery_date) {
+        // datetime-local gives us "YYYY-MM-DDTHH:mm" in local time
+        // Create date object from local time string
+        const localDate = new Date(formData.surgery_date);
+        utcSurgeryDate = localDate.toISOString();
+      }
+      
       const patientData = {
         name: validatedData.name,
         phone: validatedData.phone || null,
@@ -324,7 +356,7 @@ const PatientForm = () => {
         insurance: validatedData.insurance || null,
         status: validatedData.status as any,
         notes: validatedData.notes || null,
-        surgery_date: formData.surgery_date ? new Date(formData.surgery_date).toISOString() : null,
+        surgery_date: utcSurgeryDate,
         exams_checklist: checkedExams,
       };
 

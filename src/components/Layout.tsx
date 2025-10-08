@@ -112,7 +112,7 @@ export function Layout({ children }: LayoutProps) {
       <div className="p-4 border-t border-sidebar-border space-y-3">
         <div className="px-2 py-1">
           <p className="text-sm font-medium text-sidebar-foreground truncate">
-            {user?.email}
+            {user?.email?.split('@')[0]}
           </p>
           <Badge variant={getRoleBadgeVariant()} className="mt-2">
             {getRoleLabel()}
