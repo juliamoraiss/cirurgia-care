@@ -228,6 +228,10 @@ const Patients = () => {
                       </TableCell>
                       <TableCell>
                         {(() => {
+                          if (patient.status === 'cancelled') {
+                            return '-';
+                          }
+                          
                           const requiredExams = getExamsForProcedure(patient.procedure);
                           const checkedExams = patient.exams_checklist || [];
                           const allExamsChecked = requiredExams.length > 0 && 
