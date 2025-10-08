@@ -61,6 +61,7 @@ const PatientForm = () => {
     status: "awaiting_authorization",
     notes: "",
     surgery_date: "",
+    guide_validity_date: "",
   });
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
@@ -116,6 +117,7 @@ const PatientForm = () => {
           status: data.status || "awaiting_authorization",
           notes: data.notes || "",
           surgery_date: localSurgeryDate,
+          guide_validity_date: data.guide_validity_date || "",
         });
         
         // Set checklist for the procedure and restore checked exams
@@ -357,6 +359,18 @@ const PatientForm = () => {
         utcSurgeryDate = localDate.toISOString();
       }
       
+      // Validate that surgery_date doesn't exceed guide_validity_date
+      if (formData.surgery_date && formData.guide_validity_date) {
+        const surgeryDate = new Date(formData.surgery_date);
+        const validityDate = new Date(formData.guide_validity_date);
+        
+        if (surgeryDate > validityDate) {
+          toast.error("A data da cirurgia não pode ultrapassar a validade da guia");
+          setLoading(false);
+          return;
+        }
+      }
+      
       const patientData = {
         name: validatedData.name,
         phone: validatedData.phone || null,
@@ -368,6 +382,7 @@ const PatientForm = () => {
         notes: validatedData.notes || null,
         surgery_date: utcSurgeryDate,
         exams_checklist: checkedExams,
+        guide_validity_date: formData.guide_validity_date || null,
       };
 
       let error;
@@ -490,6 +505,15 @@ const PatientForm = () => {
                   type="date"
                   value={formData.birth_date}
                   onChange={(e) => handleChange("birth_date", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="guide_validity_date">Validade da Guia</Label>
+                <Input
+                  id="guide_validity_date"
+                  type="date"
+                  value={formData.guide_validity_date}
+                  onChange={(e) => handleChange("guide_validity_date", e.target.value)}
                 />
               </div>
               <div className="space-y-2">

@@ -30,6 +30,23 @@ interface Patient {
   exams_checklist: string[] | null;
 }
 
+const getExamsForProcedure = (procedure: string): string[] => {
+  const examsMap: Record<string, string[]> = {
+    simpatectomia: ["Risco Cirúrgico Cardiológico"],
+    lobectomia: [
+      "PET - CT",
+      "Risco cardiológico",
+      "Risco Pneumologico",
+      "Ressonância Magnética de Crânio",
+      "Resultado de biopsia",
+      "Última tomografia do tórax (opcional)"
+    ],
+    rinoplastia: [],
+    broncoscopia: ["Risco cardiológico (opcional)"]
+  };
+  return examsMap[procedure] || [];
+};
+
 const Patients = () => {
   const navigate = useNavigate();
   const { canEdit } = useUserRole();
@@ -151,11 +168,18 @@ const Patients = () => {
                         <StatusBadge status={patient.status as any} />
                       </TableCell>
                       <TableCell>
-                        {patient.exams_checklist && patient.exams_checklist.length > 0 ? (
-                          <Badge variant="success">Entregues</Badge>
-                        ) : (
-                          <Badge variant="warning">Aguardando envio</Badge>
-                        )}
+                        {(() => {
+                          const requiredExams = getExamsForProcedure(patient.procedure);
+                          const checkedExams = patient.exams_checklist || [];
+                          const allExamsChecked = requiredExams.length > 0 && 
+                            requiredExams.every(exam => checkedExams.includes(exam));
+                          
+                          return allExamsChecked ? (
+                            <Badge variant="success">Entregues</Badge>
+                          ) : (
+                            <Badge variant="warning">Aguardando envio</Badge>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         {patient.surgery_date
