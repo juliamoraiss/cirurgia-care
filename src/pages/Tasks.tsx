@@ -10,6 +10,7 @@ import { AlertCircle, CheckCircle2, Clock, User } from "lucide-react";
 import { toast } from "sonner";
 import { format, isPast, isToday, isFuture } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { WhatsAppTemplates } from "@/components/WhatsAppTemplates";
 
 interface Task {
   id: string;
@@ -23,6 +24,10 @@ interface Task {
   patient: {
     name: string;
     phone: string;
+    procedure: string;
+    hospital: string | null;
+    surgery_date: string | null;
+    gender: string | null;
   };
 }
 
@@ -41,7 +46,7 @@ const Tasks = () => {
         .from("patient_tasks")
         .select(`
           *,
-          patient:patients(name, phone)
+          patient:patients(name, phone, procedure, hospital, surgery_date, gender)
         `)
         .order("due_date", { ascending: true });
 
@@ -139,7 +144,7 @@ const Tasks = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-1">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <User className="h-4 w-4" />
                 <button
@@ -154,12 +159,27 @@ const Tasks = () => {
                 {format(dueDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
               </div>
             </div>
-            {task.completed && task.completed_at && (
-              <div className="flex items-center gap-1 text-green-600">
-                <CheckCircle2 className="h-4 w-4" />
-                Concluída em {format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {task.completed && task.completed_at && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Concluída em {format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}
+                </div>
+              )}
+              {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions") && (
+                <WhatsAppTemplates
+                  patient={{
+                    name: task.patient.name,
+                    phone: task.patient.phone || "",
+                    procedure: task.patient.procedure,
+                    hospital: task.patient.hospital || "",
+                    surgery_date: task.patient.surgery_date || "",
+                    gender: task.patient.gender || "",
+                  }}
+                  type={task.task_type === "pre_op_instructions" ? "pre_op" : "post_op"}
+                />
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
