@@ -69,7 +69,10 @@ export function Layout({ children }: LayoutProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center space-x-3">
+        <div 
+          className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate("/")}
+        >
           <div className="p-2 bg-primary rounded-lg">
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
@@ -149,7 +152,10 @@ export function Layout({ children }: LayoutProps) {
             <SidebarContent />
           </SheetContent>
         </Sheet>
-        <div className="flex items-center space-x-2 ml-3">
+        <div 
+          className="flex items-center space-x-2 ml-3 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate("/")}
+        >
           <Activity className="h-5 w-5 text-primary" />
           <span className="font-bold text-sidebar-foreground">MedSystem</span>
         </div>

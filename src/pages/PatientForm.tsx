@@ -189,6 +189,14 @@ const PatientForm = () => {
     return examsMap[procedure] || [];
   };
 
+  const formatNameToTitleCase = (name: string) => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const handleChange = (field: string, value: string) => {
     let formattedValue = value;
     
@@ -196,6 +204,8 @@ const PatientForm = () => {
       formattedValue = formatCPF(value);
     } else if (field === 'phone') {
       formattedValue = formatPhone(value);
+    } else if (field === 'name') {
+      formattedValue = formatNameToTitleCase(value);
     }
     
     setFormData((prev) => ({ ...prev, [field]: formattedValue }));
@@ -591,27 +601,28 @@ const PatientForm = () => {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {formData.status === "authorized" && formData.phone && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      const phoneNumber = formData.phone.replace(/\D/g, '');
-                      const examsText = examsChecklist.length > 0 
-                        ? examsChecklist.join(', ')
-                        : 'exames necessários';
-                      const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'hospital'}, gostaria de confirmar se o(a) senhor(a) já realizou o(s) exame(s) ${examsText}.\n\nObrigada`;
-                      const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-                      window.open(whatsappUrl, '_blank');
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Enviar mensagem
-                  </Button>
-                )}
               </div>
             </div>
+
+            {formData.status === "authorized" && formData.phone && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const phoneNumber = formData.phone.replace(/\D/g, '');
+                  const examsText = examsChecklist.length > 0 
+                    ? examsChecklist.join(', ')
+                    : 'exames necessários';
+                  const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'hospital'}, gostaria de confirmar se o(a) senhor(a) já realizou o(s) exame(s) ${examsText}.\n\nObrigada`;
+                  const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, '_blank');
+                }}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Enviar mensagem
+              </Button>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="notes">Observações</Label>
@@ -627,7 +638,7 @@ const PatientForm = () => {
             </div>
 
             <div className="space-y-4">
-              <Label>Exames (PDF)</Label>
+              <Label>Exames</Label>
               
               {existingFiles.length > 0 && (
                 <div className="space-y-2">

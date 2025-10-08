@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ interface Surgery {
 }
 
 const Calendar = () => {
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -189,9 +191,13 @@ const Calendar = () => {
           </DialogHeader>
           <div className="space-y-4 mt-4">
             {selectedDaySurgeries.map((surgery, index) => (
-              <Card key={surgery.id} className={`${
-                selectedDaySurgeries.length > 1 ? getColorForIndex(index) : ""
-              }`}>
+              <Card 
+                key={surgery.id} 
+                className={`cursor-pointer hover:shadow-lg transition-shadow ${
+                  selectedDaySurgeries.length > 1 ? getColorForIndex(index) : ""
+                }`}
+                onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+              >
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -203,13 +209,16 @@ const Calendar = () => {
                     <div className="grid gap-2 text-sm">
                       <div>
                         <span className="font-semibold">Procedimento:</span>{" "}
-                        <span>{surgery.procedure}</span>
+                        <span className="capitalize">{surgery.procedure}</span>
                       </div>
                       <div>
                         <span className="font-semibold">Hospital:</span>{" "}
                         <span>{surgery.hospital || "Não informado"}</span>
                       </div>
                     </div>
+                    <p className="text-xs text-muted-foreground italic mt-2">
+                      Clique para ver os exames pré operatórios do paciente
+                    </p>
                   </div>
                 </CardContent>
               </Card>

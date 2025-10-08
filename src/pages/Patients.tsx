@@ -125,14 +125,14 @@ const Patients = () => {
                       onClick={() => navigate(`/patients/${patient.id}`)}
                     >
                       <TableCell className="font-medium">{patient.name}</TableCell>
-                      <TableCell>{patient.procedure}</TableCell>
+                      <TableCell className="capitalize">{patient.procedure}</TableCell>
                       <TableCell>{patient.hospital || "-"}</TableCell>
                       <TableCell>
                         <StatusBadge status={patient.status as any} />
                       </TableCell>
                       <TableCell>
                         {patient.exams_checklist && patient.exams_checklist.length > 0 ? (
-                          <Badge variant="success">Ok</Badge>
+                          <Badge variant="success">Entregues</Badge>
                         ) : (
                           <Badge variant="warning">Aguardando envio</Badge>
                         )}

@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import PatientForm from "./pages/PatientForm";
+import PatientExams from "./pages/PatientExams";
 import Calendar from "./pages/Calendar";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
@@ -74,6 +75,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PatientForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:id/exams"
+              element={
+                <ProtectedRoute>
+                  <PatientExams />
                 </ProtectedRoute>
               }
             />
