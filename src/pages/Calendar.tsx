@@ -126,13 +126,20 @@ const Calendar = () => {
                       {daySurgeries.map((surgery) => (
                         <div
                           key={surgery.id}
-                          className="text-xs p-1 rounded bg-primary/10 border-l-2 border-primary truncate"
-                          title={`${format(new Date(surgery.surgery_date), "HH:mm")} - ${surgery.name} - ${surgery.procedure}`}
+                          className="text-xs p-1.5 rounded bg-primary/10 border-l-2 border-primary space-y-0.5"
                         >
                           <div className="font-semibold text-primary">
                             {format(new Date(surgery.surgery_date), "HH:mm")}
                           </div>
-                          <div className="truncate">{surgery.name}</div>
+                          <div className="font-medium truncate" title={surgery.name}>
+                            {surgery.name}
+                          </div>
+                          <div className="text-muted-foreground truncate" title={surgery.hospital || 'Hospital não informado'}>
+                            {surgery.hospital || 'Hospital não informado'}
+                          </div>
+                          <div className="text-muted-foreground italic truncate" title={surgery.procedure}>
+                            {surgery.procedure}
+                          </div>
                         </div>
                       ))}
                     </div>

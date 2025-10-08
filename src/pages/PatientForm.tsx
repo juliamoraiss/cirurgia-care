@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -63,6 +64,8 @@ const PatientForm = () => {
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
+  const [examsChecklist, setExamsChecklist] = useState<string[]>([]);
+  const [checkedExams, setCheckedExams] = useState<string[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -96,6 +99,7 @@ const PatientForm = () => {
           notes: data.notes || "",
           surgery_date: data.surgery_date ? new Date(data.surgery_date).toISOString().slice(0, 16) : "",
         });
+        setCheckedExams(data.exams_checklist || []);
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -146,6 +150,23 @@ const PatientForm = () => {
     return value;
   };
 
+  const getExamsForProcedure = (procedure: string): string[] => {
+    const examsMap: Record<string, string[]> = {
+      simpatectomia: ["Risco Cirúrgico Cardiológico"],
+      lobectomia: [
+        "PET - CT",
+        "Risco cardiológico",
+        "Risco Pneumologico",
+        "Ressonância Magnética de Crânio",
+        "Resultado de biopsia",
+        "Última tomografia do tórax (opcional)"
+      ],
+      rinoplastia: [],
+      broncoscopia: ["Risco cardiológico (opcional)"]
+    };
+    return examsMap[procedure] || [];
+  };
+
   const handleChange = (field: string, value: string) => {
     let formattedValue = value;
     
@@ -156,6 +177,13 @@ const PatientForm = () => {
     }
     
     setFormData((prev) => ({ ...prev, [field]: formattedValue }));
+    
+    if (field === 'procedure') {
+      const newExams = getExamsForProcedure(value);
+      setExamsChecklist(newExams);
+      setCheckedExams([]);
+    }
+    
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -163,6 +191,14 @@ const PatientForm = () => {
         return newErrors;
       });
     }
+  };
+
+  const toggleExam = (exam: string) => {
+    setCheckedExams(prev => 
+      prev.includes(exam) 
+        ? prev.filter(e => e !== exam)
+        : [...prev, exam]
+    );
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,6 +323,7 @@ const PatientForm = () => {
         status: validatedData.status as any,
         notes: validatedData.notes || null,
         surgery_date: formData.surgery_date ? new Date(formData.surgery_date).toISOString() : null,
+        exams_checklist: checkedExams,
       };
 
       let error;
@@ -424,14 +461,20 @@ const PatientForm = () => {
 
             <div className="space-y-2">
               <Label htmlFor="procedure">Procedimento *</Label>
-              <Input
-                id="procedure"
-                required
+              <Select
                 value={formData.procedure}
-                onChange={(e) => handleChange("procedure", e.target.value)}
-                placeholder="Ex: Artroscopia de joelho"
-                className={errors.procedure ? "border-destructive" : ""}
-              />
+                onValueChange={(value) => handleChange("procedure", value)}
+              >
+                <SelectTrigger className={errors.procedure ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Selecione o procedimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simpatectomia">Simpatectomia</SelectItem>
+                  <SelectItem value="lobectomia">Lobectomia</SelectItem>
+                  <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
+                  <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
+                </SelectContent>
+              </Select>
               {errors.procedure && <p className="text-sm text-destructive">{errors.procedure}</p>}
             </div>
 
@@ -454,16 +497,26 @@ const PatientForm = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="insurance">Convênio</Label>
-                <Input
-                  id="insurance"
+                <Select
                   value={formData.insurance}
-                  onChange={(e) => handleChange("insurance", e.target.value)}
-                  className={errors.insurance ? "border-destructive" : ""}
-                />
+                  onValueChange={(value) => handleChange("insurance", value)}
+                >
+                  <SelectTrigger className={errors.insurance ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Selecione o convênio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ASSEFAZ">ASSEFAZ</SelectItem>
+                    <SelectItem value="FUSEX">FUSEX</SelectItem>
+                    <SelectItem value="QUALLITY">QUALLITY</SelectItem>
+                    <SelectItem value="Plenum saúde">Plenum saúde</SelectItem>
+                    <SelectItem value="Sulamerica">Sulamerica</SelectItem>
+                    <SelectItem value="POSTAL SAUDE">POSTAL SAUDE</SelectItem>
+                  </SelectContent>
+                </Select>
                 {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="status">Status Inicial</Label>
+                <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => handleChange("status", value)}
@@ -496,6 +549,29 @@ const PatientForm = () => {
               />
               {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
             </div>
+
+            {examsChecklist.length > 0 && (
+              <div className="space-y-3">
+                <Label>Checklist de Exames</Label>
+                <div className="space-y-2 border rounded-lg p-4">
+                  {examsChecklist.map((exam) => (
+                    <div key={exam} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={exam}
+                        checked={checkedExams.includes(exam)}
+                        onCheckedChange={() => toggleExam(exam)}
+                      />
+                      <label
+                        htmlFor={exam}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {exam}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <Label>Exames (PDF)</Label>
