@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Search } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -131,9 +132,9 @@ const Patients = () => {
                       </TableCell>
                       <TableCell>
                         {patient.exams_checklist && patient.exams_checklist.length > 0 ? (
-                          <span className="text-sm font-medium text-green-600">Ok</span>
+                          <Badge variant="success">Ok</Badge>
                         ) : (
-                          <span className="text-sm font-medium text-orange-600">Aguardando envio</span>
+                          <Badge variant="warning">Aguardando envio</Badge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -141,7 +142,7 @@ const Patients = () => {
                           ? format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", {
                               locale: ptBR,
                             })
-                          : "-"}
+                          : "Marcação pendente"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
