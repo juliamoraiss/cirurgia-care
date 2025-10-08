@@ -435,6 +435,28 @@ const PatientForm = () => {
     );
   }
 
+  // Verificar se o usuário é admin
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Acesso Restrito</CardTitle>
+            <CardDescription>
+              Apenas administradores podem criar ou editar pacientes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate("/patients")} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar para Pacientes
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>

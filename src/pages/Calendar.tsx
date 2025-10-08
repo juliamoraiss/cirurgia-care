@@ -40,9 +40,6 @@ const Calendar = () => {
       if (error) throw error;
       setSurgeries(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Error loading surgeries:", error);
-      }
       toast.error("Erro ao carregar cirurgias agendadas");
     } finally {
       setLoading(false);

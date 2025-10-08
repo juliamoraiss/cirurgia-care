@@ -50,7 +50,7 @@ const getExamsForProcedure = (procedure: string): string[] => {
 
 const Patients = () => {
   const navigate = useNavigate();
-  const { canEdit } = useUserRole();
+  const { isAdmin } = useUserRole();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -155,7 +155,7 @@ const Patients = () => {
             Gerencie todos os pacientes e procedimentos
           </p>
         </div>
-        {canEdit && (
+        {isAdmin && (
           <Button onClick={() => navigate("/patients/new")}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Paciente
@@ -218,7 +218,7 @@ const Patients = () => {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/patients/${patient.id}`)}
+                      onClick={() => navigate(isAdmin ? `/patients/${patient.id}` : `/patients/${patient.id}/exams`)}
                     >
                       <TableCell className="font-medium">{patient.name}</TableCell>
                       <TableCell className="capitalize">{patient.procedure}</TableCell>
@@ -253,10 +253,10 @@ const Patients = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/patients/${patient.id}`);
+                            navigate(isAdmin ? `/patients/${patient.id}` : `/patients/${patient.id}/exams`);
                           }}
                         >
-                          Ver Detalhes
+                          {isAdmin ? "Editar" : "Ver Exames"}
                         </Button>
                       </TableCell>
                     </TableRow>

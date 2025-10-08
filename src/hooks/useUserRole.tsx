@@ -25,17 +25,11 @@ export function useUserRole() {
           .single();
 
         if (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error("Error fetching user role:", error);
-          }
           setRole(null);
         } else {
           setRole(data?.role as UserRole);
         }
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error("Error fetching user role:", error);
-        }
         setRole(null);
       } finally {
         setLoading(false);
@@ -47,7 +41,7 @@ export function useUserRole() {
 
   const isAdmin = role === "admin";
   const isUser = role === "user";
-  const canEdit = isAdmin || isUser; // todos podem editar
+  const canEdit = isAdmin; // apenas admin pode criar/editar
   const canDelete = isAdmin; // apenas admin pode deletar
 
   return {
