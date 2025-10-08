@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PatientNotesSection } from "@/components/PatientNotesSection";
 
 interface Patient {
   id: string;
@@ -223,6 +224,8 @@ const PatientExams = () => {
           )}
         </CardContent>
       </Card>
+
+      <PatientNotesSection patientId={id!} />
 
       <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
         <DialogContent className="max-w-5xl max-h-[95vh] h-[95vh] flex flex-col p-0">
