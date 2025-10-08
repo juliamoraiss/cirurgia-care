@@ -8,8 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -41,10 +40,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
     try {
+      // Buscar email pelo username
+      const { data: emailData, error: emailError } = await supabase
+        .rpc('get_email_by_username', { _username: username });
+      
+      if (emailError || !emailData) {
+        toast.error("Usuário não encontrado");
+        throw new Error("Usuário não encontrado");
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailData,
         password,
       });
       
@@ -57,32 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Login error:", error);
       }
       toast.error(error.message || "Erro ao fazer login");
-      throw error;
-    }
-  };
-
-  const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
-      
-      if (error) throw error;
-      
-      toast.success("Conta criada com sucesso!");
-      navigate("/");
-    } catch (error: any) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Signup error:", error);
-      }
-      toast.error(error.message || "Erro ao criar conta");
       throw error;
     }
   };
@@ -104,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
