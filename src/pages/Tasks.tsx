@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format, isPast, isToday, isFuture } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { WhatsAppTemplates } from "@/components/WhatsAppTemplates";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Task {
   id: string;
@@ -33,12 +34,21 @@ interface Task {
 
 const Tasks = () => {
   const navigate = useNavigate();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (!roleLoading && !isAdmin) {
+      toast.error("Acesso negado. Apenas administradores podem acessar esta página.");
+      navigate("/");
+      return;
+    }
+    
+    if (!roleLoading && isAdmin) {
+      loadTasks();
+    }
+  }, [isAdmin, roleLoading, navigate]);
 
   async function loadTasks() {
     try {
@@ -186,15 +196,19 @@ const Tasks = () => {
     );
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando tarefas...</p>
+          <p className="mt-4 text-muted-foreground">Carregando...</p>
         </div>
       </div>
     );
+  }
+
+  if (!isAdmin) {
+    return null;
   }
 
   return (

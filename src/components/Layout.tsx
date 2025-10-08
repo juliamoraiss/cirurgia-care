@@ -91,6 +91,11 @@ export function Layout({ children }: LayoutProps) {
 
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
+          // Esconde "Tarefas" para usuários não-admin
+          if (item.path === "/tasks" && !isAdmin) {
+            return null;
+          }
+          
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
