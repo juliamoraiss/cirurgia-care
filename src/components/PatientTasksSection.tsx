@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isPast, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -118,6 +118,21 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
       loadTasks();
     } catch (error) {
       toast.error("Erro ao atualizar tarefa");
+    }
+  }
+
+  async function deleteTask(taskId: string) {
+    try {
+      const { error } = await supabase
+        .from("patient_tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (error) throw error;
+      toast.success("Tarefa excluída com sucesso!");
+      loadTasks();
+    } catch (error) {
+      toast.error("Erro ao excluir tarefa");
     }
   }
 
@@ -325,6 +340,14 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                             </div>
                           )}
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTask(task.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     );
                   })}
@@ -356,6 +379,14 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                           {task.title}
                         </p>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteTask(task.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>

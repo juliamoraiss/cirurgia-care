@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -87,6 +87,21 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
     }
   }
 
+  async function deleteNote(noteId: string) {
+    try {
+      const { error } = await supabase
+        .from("patient_notes")
+        .delete()
+        .eq("id", noteId);
+
+      if (error) throw error;
+      toast.success("Nota excluída com sucesso!");
+      loadNotes();
+    } catch (error) {
+      toast.error("Erro ao excluir nota");
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-4">Carregando notas...</div>;
   }
@@ -145,16 +160,26 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
             {notes.map((note) => (
               <div
                 key={note.id}
-                className="p-3 rounded-lg border bg-muted/50"
+                className="p-3 rounded-lg border bg-muted/50 flex gap-3"
               >
-                <p className="text-sm whitespace-pre-wrap">{note.note}</p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                  <span>
-                    {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                      locale: ptBR,
-                    })}
-                  </span>
+                <div className="flex-1">
+                  <p className="text-sm whitespace-pre-wrap">{note.note}</p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <span>
+                      {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", {
+                        locale: ptBR,
+                      })}
+                    </span>
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteNote(note.id)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>

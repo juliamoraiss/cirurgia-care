@@ -51,7 +51,7 @@ const patientSchema = z.object({
   hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance_number: z.string().max(100, "Número do convênio deve ter no máximo 100 caracteres").optional().or(z.literal("")),
-  notes: z.string().max(5000, "Observações devem ter no máximo 5000 caracteres").optional().or(z.literal("")),
+  
   status: z.enum(["awaiting_authorization", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
 });
 
@@ -77,7 +77,6 @@ const PatientForm = () => {
     insurance: "",
     insurance_number: "",
     status: "awaiting_authorization",
-    notes: "",
     surgery_date: "",
     guide_validity_date: "",
   });
@@ -135,7 +134,6 @@ const PatientForm = () => {
           insurance: data.insurance || "",
           insurance_number: data.insurance_number || "",
           status: data.status || "awaiting_authorization",
-          notes: data.notes || "",
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
         });
@@ -494,7 +492,6 @@ const PatientForm = () => {
         insurance: validatedData.insurance || null,
         insurance_number: validatedData.insurance_number || null,
         status: validatedData.status as any,
-        notes: validatedData.notes || null,
         surgery_date: utcSurgeryDate,
         exams_checklist: checkedExams,
         guide_validity_date: formData.guide_validity_date || null,
@@ -811,18 +808,11 @@ const PatientForm = () => {
               </Button>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                rows={4}
-                placeholder="Informações adicionais sobre o paciente ou procedimento..."
-                className={errors.notes ? "border-destructive" : ""}
-              />
-              {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
-            </div>
+            {isEditMode && id && (
+              <div className="pt-4">
+                <PatientNotesSection patientId={id} />
+              </div>
+            )}
 
             <div className="space-y-4">
               <Label>Exames</Label>
@@ -951,9 +941,8 @@ const PatientForm = () => {
       </form>
 
       {isEditMode && id && (
-        <div className="grid gap-6 md:grid-cols-2 mt-6">
+        <div className="mt-6">
           <PatientTasksSection patientId={id} />
-          <PatientNotesSection patientId={id} />
         </div>
       )}
 
