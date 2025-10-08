@@ -1,1 +1,4 @@
 project_id = "yzvqgzjclmrtndvpqzgk"
+
+[functions.update-completed-surgeries]
+verify_jwt = true
