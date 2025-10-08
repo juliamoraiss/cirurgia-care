@@ -13,6 +13,7 @@ import PatientForm from "./pages/PatientForm";
 import PatientExams from "./pages/PatientExams";
 import Calendar from "./pages/Calendar";
 import UserManagement from "./pages/UserManagement";
+import Tasks from "./pages/Tasks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Calendar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <Tasks />
                 </ProtectedRoute>
               }
             />

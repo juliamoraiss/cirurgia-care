@@ -1,61 +1,160 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get all patients with authorized surgeries in the past
+    console.log('Starting surgery status update...')
+
+    // 1. Atualizar status de cirurgias concluídas (data/hora já passou)
     const now = new Date().toISOString()
     
-    const { data: patients, error: fetchError } = await supabase
-      .from('patients')
-      .select('id, name, surgery_date')
-      .eq('status', 'authorized')
-      .lt('surgery_date', now)
-      .not('surgery_date', 'is', null)
-
-    if (fetchError) {
-      throw fetchError
-    }
-
-    if (!patients || patients.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No surgeries to update', count: 0 }),
-        { headers: { 'Content-Type': 'application/json' }, status: 200 }
-      )
-    }
-
-    // Update all patients to completed status
-    const patientIds = patients.map(p => p.id)
-    
-    const { error: updateError } = await supabase
+    const { data: completedSurgeries, error: updateError } = await supabase
       .from('patients')
       .update({ status: 'completed' })
-      .in('id', patientIds)
+      .eq('status', 'scheduled')
+      .not('surgery_date', 'is', null)
+      .lt('surgery_date', now)
+      .select()
 
     if (updateError) {
+      console.error('Error updating completed surgeries:', updateError)
       throw updateError
     }
 
-    console.log(`Updated ${patients.length} surgeries to completed status`)
+    console.log(`Updated ${completedSurgeries?.length || 0} surgeries to completed status`)
+
+    // 2. Criar tarefas de lembrete pré-operatório (1 dia antes da cirurgia)
+    const oneDayFromNow = new Date()
+    oneDayFromNow.setDate(oneDayFromNow.getDate() + 1)
+    oneDayFromNow.setHours(0, 0, 0, 0)
+
+    const twoDaysFromNow = new Date()
+    twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2)
+    twoDaysFromNow.setHours(0, 0, 0, 0)
+
+    const { data: upcomingSurgeries, error: fetchError } = await supabase
+      .from('patients')
+      .select('id, name, procedure, hospital, surgery_date')
+      .in('status', ['authorized', 'scheduled'])
+      .not('surgery_date', 'is', null)
+      .gte('surgery_date', oneDayFromNow.toISOString())
+      .lt('surgery_date', twoDaysFromNow.toISOString())
+
+    if (fetchError) {
+      console.error('Error fetching upcoming surgeries:', fetchError)
+      throw fetchError
+    }
+
+    console.log(`Found ${upcomingSurgeries?.length || 0} surgeries in the next 24 hours`)
+
+    // Criar tarefas de pré-operatório para cirurgias que ainda não têm
+    if (upcomingSurgeries && upcomingSurgeries.length > 0) {
+      for (const surgery of upcomingSurgeries) {
+        // Verificar se já existe tarefa de pré-op para este paciente
+        const { data: existingTask } = await supabase
+          .from('patient_tasks')
+          .select('id')
+          .eq('patient_id', surgery.id)
+          .eq('task_type', 'pre_op_instructions')
+          .eq('completed', false)
+          .single()
+
+        if (!existingTask) {
+          // Criar tarefa para o dia antes da cirurgia
+          const taskDueDate = new Date(surgery.surgery_date)
+          taskDueDate.setDate(taskDueDate.getDate() - 1)
+          taskDueDate.setHours(8, 0, 0, 0) // 8h da manhã do dia anterior
+
+          const { error: taskError } = await supabase
+            .from('patient_tasks')
+            .insert({
+              patient_id: surgery.id,
+              task_type: 'pre_op_instructions',
+              title: 'Enviar instruções pré-operatórias',
+              description: `Enviar instruções ao paciente ${surgery.name} para a cirurgia de ${surgery.procedure}`,
+              due_date: taskDueDate.toISOString(),
+              created_by: '00000000-0000-0000-0000-000000000000', // System user
+            })
+
+          if (taskError) {
+            console.error(`Error creating pre-op task for patient ${surgery.id}:`, taskError)
+          } else {
+            console.log(`Created pre-op task for patient ${surgery.name}`)
+          }
+        }
+      }
+    }
+
+    // 3. Criar tarefas pós-operatórias para cirurgias recém concluídas
+    if (completedSurgeries && completedSurgeries.length > 0) {
+      for (const surgery of completedSurgeries) {
+        // Verificar se já existe tarefa pós-op para este paciente
+        const { data: existingTask } = await supabase
+          .from('patient_tasks')
+          .select('id')
+          .eq('patient_id', surgery.id)
+          .eq('task_type', 'post_op_instructions')
+          .eq('completed', false)
+          .single()
+
+        if (!existingTask) {
+          // Criar tarefa para 1 dia após a cirurgia
+          const taskDueDate = new Date(surgery.surgery_date)
+          taskDueDate.setDate(taskDueDate.getDate() + 1)
+          taskDueDate.setHours(9, 0, 0, 0) // 9h da manhã do dia seguinte
+
+          const { error: taskError } = await supabase
+            .from('patient_tasks')
+            .insert({
+              patient_id: surgery.id,
+              task_type: 'post_op_instructions',
+              title: 'Enviar recomendações pós-operatórias',
+              description: `Enviar recomendações ao paciente ${surgery.name}`,
+              due_date: taskDueDate.toISOString(),
+              created_by: '00000000-0000-0000-0000-000000000000', // System user
+            })
+
+          if (taskError) {
+            console.error(`Error creating post-op task for patient ${surgery.id}:`, taskError)
+          } else {
+            console.log(`Created post-op task for patient ${surgery.name}`)
+          }
+        }
+      }
+    }
 
     return new Response(
-      JSON.stringify({ 
-        message: 'Successfully updated surgeries', 
-        count: patients.length,
-        patients: patients.map(p => ({ id: p.id, name: p.name }))
+      JSON.stringify({
+        success: true,
+        completedSurgeriesCount: completedSurgeries?.length || 0,
+        upcomingSurgeriesCount: upcomingSurgeries?.length || 0,
       }),
-      { headers: { 'Content-Type': 'application/json' }, status: 200 }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
     )
   } catch (error) {
-    console.error('Error updating surgeries:', error)
+    console.error('Error in update-completed-surgeries function:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { headers: { 'Content-Type': 'application/json' }, status: 500 }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
     )
   }
 })

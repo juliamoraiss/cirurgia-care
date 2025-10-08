@@ -36,6 +36,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { PatientTasksSection } from "@/components/PatientTasksSection";
+import { PatientNotesSection } from "@/components/PatientNotesSection";
 
 // Validation schema with enhanced security
 const patientSchema = z.object({
@@ -884,6 +886,13 @@ const PatientForm = () => {
           </CardContent>
         </Card>
       </form>
+
+      {isEditMode && id && (
+        <div className="grid gap-6 md:grid-cols-2 mt-6">
+          <PatientTasksSection patientId={id} />
+          <PatientNotesSection patientId={id} />
+        </div>
+      )}
 
       <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
         <DialogContent className="max-w-5xl max-h-[95vh] h-[95vh] flex flex-col p-0">

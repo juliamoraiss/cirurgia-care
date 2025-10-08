@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   UserPlus,
+  CheckSquare,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,11 @@ export function Layout({ children }: LayoutProps) {
       icon: Calendar,
       label: "Agenda",
       path: "/calendar",
+    },
+    {
+      icon: CheckSquare,
+      label: "Tarefas",
+      path: "/tasks",
     },
   ];
 

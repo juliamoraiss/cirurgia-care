@@ -93,6 +93,94 @@ export type Database = {
           },
         ]
       }
+      patient_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          note: string
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          note: string
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_tasks: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string
+          id: string
+          patient_id: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date: string
+          id?: string
+          patient_id: string
+          task_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          patient_id?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_tasks_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           authorization_date: string | null
