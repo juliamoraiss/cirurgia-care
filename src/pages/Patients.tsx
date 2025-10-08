@@ -39,6 +39,26 @@ const Patients = () => {
 
   useEffect(() => {
     fetchPatients();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('patients-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'patients'
+        },
+        () => {
+          fetchPatients();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchPatients() {

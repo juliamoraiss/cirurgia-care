@@ -604,7 +604,7 @@ const PatientForm = () => {
               </div>
             </div>
 
-            {formData.status === "authorized" && formData.phone && (
+            {formData.status === "authorized" && formData.phone.trim() !== "" && (
               <Button
                 type="button"
                 variant="outline"
