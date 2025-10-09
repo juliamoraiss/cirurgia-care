@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,7 @@ const getExamsForProcedure = (procedure: string): string[] => {
 
 const Patients = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAdmin } = useUserRole();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,13 @@ const Patients = () => {
   const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
   const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  // Apply filter from navigation state
+  useEffect(() => {
+    if (location.state?.filterStatus) {
+      setFilterStatuses([location.state.filterStatus]);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     fetchPatients();

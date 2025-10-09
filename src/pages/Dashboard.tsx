@@ -235,6 +235,12 @@ const Dashboard = () => {
                     onClick={() => {
                       if (stat.title === "Total de Pacientes") {
                         navigate("/patients");
+                      } else if (stat.title === "Cirurgias Agendadas") {
+                        navigate("/calendar");
+                      } else if (stat.title === "Cirurgias Realizadas") {
+                        navigate("/patients", { state: { filterStatus: "completed" } });
+                      } else if (stat.title === "Aguardando Autorização") {
+                        navigate("/patients", { state: { filterStatus: "awaiting_authorization" } });
                       }
                     }}
                   >
