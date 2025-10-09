@@ -245,11 +245,13 @@ const Patients = () => {
                         })()}
                       </TableCell>
                       <TableCell>
-                        {patient.surgery_date
-                          ? format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", {
-                              locale: ptBR,
-                            })
-                          : "Marcação pendente"}
+                        {patient.status === 'cancelled' 
+                          ? "-"
+                          : patient.surgery_date
+                            ? format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", {
+                                locale: ptBR,
+                              })
+                            : "Marcação pendente"}
                       </TableCell>
                       <TableCell className="text-right">
                         {isAdmin && (
