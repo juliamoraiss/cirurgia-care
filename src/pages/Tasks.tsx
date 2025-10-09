@@ -47,6 +47,26 @@ const Tasks = () => {
     
     if (!roleLoading && isAdmin) {
       loadTasks();
+
+      // Subscribe to realtime changes
+      const channel = supabase
+        .channel('patient-tasks-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'patient_tasks'
+          },
+          () => {
+            loadTasks();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAdmin, roleLoading, navigate]);
 

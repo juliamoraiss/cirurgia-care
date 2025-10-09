@@ -68,6 +68,27 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
   useEffect(() => {
     loadTasks();
     loadPatient();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('patient-tasks-section-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'patient_tasks',
+          filter: `patient_id=eq.${patientId}`
+        },
+        () => {
+          loadTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [patientId]);
 
   async function loadPatient() {
