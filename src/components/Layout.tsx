@@ -152,8 +152,8 @@ export function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-sidebar border-b border-sidebar-border z-50">
-        <div className="h-16 flex items-center px-4 safe-top">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-sidebar border-b border-sidebar-border z-50 pt-[env(safe-area-inset-top)]">
+        <div className="h-16 flex items-center px-4">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative z-50">
@@ -175,10 +175,8 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto md:pt-0">
-        <div className="safe-top md:pt-0">
-          {children}
-        </div>
+      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+4rem)] md:pt-0">
+        {children}
       </main>
     </div>
   );
