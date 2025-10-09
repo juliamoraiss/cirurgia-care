@@ -154,6 +154,12 @@ All colors MUST be HSL.
 
   /* iOS safe area support */
   .safe-top {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  
+  @supports (padding: max(0px)) {
+    .safe-top {
+      padding-top: max(env(safe-area-inset-top), 64px);
+    }
   }
 }

@@ -152,29 +152,33 @@ export function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b border-sidebar-border z-50 flex items-center px-4 safe-top">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-64 bg-sidebar">
-            <SidebarContent />
-          </SheetContent>
-        </Sheet>
-        <div 
-          className="flex items-center space-x-2 ml-3 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => navigate("/")}
-        >
-          <Activity className="h-5 w-5 text-primary" />
-          <span className="font-bold text-sidebar-foreground">MedSystem</span>
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-sidebar border-b border-sidebar-border z-50">
+        <div className="h-16 flex items-center px-4 safe-top">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative z-50">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-64 bg-sidebar">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+          <div 
+            className="flex items-center space-x-2 ml-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate("/")}
+          >
+            <Activity className="h-5 w-5 text-primary" />
+            <span className="font-bold text-sidebar-foreground">MedSystem</span>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto safe-top md:pt-0">
-        {children}
+      <main className="flex-1 overflow-y-auto md:pt-0">
+        <div className="safe-top md:pt-0">
+          {children}
+        </div>
       </main>
     </div>
   );
