@@ -83,7 +83,7 @@ export function Layout({ children }: LayoutProps) {
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">MedSystem</h1>
+            <h1 className="text-lg font-bold text-sidebar-foreground">MedAndre</h1>
             <p className="text-xs text-muted-foreground">Gestão Cirúrgica</p>
           </div>
         </div>
