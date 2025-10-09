@@ -5,6 +5,7 @@ import { Users, Calendar, CheckCircle, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Tooltip,
   TooltipContent,
@@ -30,6 +31,7 @@ interface Patient {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     scheduledSurgeries: 0,
@@ -162,9 +164,11 @@ const Dashboard = () => {
               Visão geral do sistema de gestão cirúrgica
             </p>
           </div>
-          <Button onClick={() => navigate("/patients/new")}>
-            Novo Paciente
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => navigate("/patients/new")}>
+              Novo Paciente
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -226,7 +230,14 @@ const Dashboard = () => {
             return (
               <Tooltip key={stat.title}>
                 <TooltipTrigger asChild>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                  <Card 
+                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (stat.title === "Total de Pacientes") {
+                        navigate("/patients");
+                      }
+                    }}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">
                         {stat.title}

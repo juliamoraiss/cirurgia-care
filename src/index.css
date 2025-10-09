@@ -151,4 +151,9 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* iOS safe area support */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
 }
