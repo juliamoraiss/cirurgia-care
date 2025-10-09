@@ -132,7 +132,7 @@ const PatientExams = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-3 md:p-6 max-w-4xl mx-auto space-y-4 md:space-y-6">
       <div>
         <Button
           variant="ghost"
@@ -142,8 +142,8 @@ const PatientExams = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           {fromPage === "patients" ? "Voltar para Pacientes" : "Voltar para Agenda"}
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">Exames Pré-Operatórios</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Exames Pré-Operatórios</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Paciente: {patient.name}
           {patient.birth_date && (() => {
             const today = new Date();
@@ -202,13 +202,13 @@ const PatientExams = () => {
               {files.map((file) => (
                 <div 
                   key={file.id} 
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex flex-col md:flex-row md:items-center gap-3 p-3 md:p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3 flex-1">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="font-medium">{file.file_name}</p>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm md:text-base truncate">{file.file_name}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         {(file.file_size / 1024).toFixed(1)} KB • {new Date(file.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
@@ -218,6 +218,7 @@ const PatientExams = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => viewFile(file.file_path, file.file_name)}
+                      className="flex-1 md:flex-initial"
                     >
                       Visualizar
                     </Button>
@@ -225,6 +226,7 @@ const PatientExams = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => downloadFile(file.file_path, file.file_name)}
+                      className="flex-1 md:flex-initial"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -239,11 +241,11 @@ const PatientExams = () => {
       <PatientNotesSection patientId={id!} />
 
       <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
-        <DialogContent className="max-w-5xl max-h-[95vh] h-[95vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-4">
-            <DialogTitle>{viewingFile?.name}</DialogTitle>
+        <DialogContent className="max-w-[95vw] md:max-w-5xl max-h-[90vh] md:max-h-[95vh] h-[90vh] md:h-[95vh] flex flex-col p-0">
+          <DialogHeader className="p-4 md:p-6 pb-3 md:pb-4 border-b">
+            <DialogTitle className="text-sm md:text-base pr-8">{viewingFile?.name}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 px-6 pb-6 overflow-hidden">
+          <div className="flex-1 p-2 md:px-6 md:pb-6 overflow-auto">
             {viewingFile && (
               <iframe
                 src={viewingFile.url}
