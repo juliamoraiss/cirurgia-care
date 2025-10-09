@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.4acdf0015ce94858b746f16af6b614e1',
+  appId: 'com.lovable.medsystem',
   appName: 'medsystem',
   webDir: 'dist',
   server: {
