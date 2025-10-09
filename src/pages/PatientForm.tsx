@@ -253,13 +253,22 @@ const PatientForm = () => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    const pdfFiles = selectedFiles.filter(file => file.type === "application/pdf");
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg", 
+      "image/png",
+      "image/gif",
+      "image/webp"
+    ];
     
-    if (pdfFiles.length !== selectedFiles.length) {
-      toast.error("Apenas arquivos PDF são permitidos");
+    const validFiles = selectedFiles.filter(file => allowedTypes.includes(file.type));
+    
+    if (validFiles.length !== selectedFiles.length) {
+      toast.error("Apenas arquivos PDF e imagens (JPEG, PNG, GIF, WEBP) são permitidos");
     }
     
-    setFiles(prev => [...prev, ...pdfFiles]);
+    setFiles(prev => [...prev, ...validFiles]);
   };
 
   const removeFile = (index: number) => {
@@ -850,7 +859,7 @@ const PatientForm = () => {
                   <Input
                     id="file-upload"
                     type="file"
-                    accept="application/pdf"
+                    accept="application/pdf,image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     multiple
                     onChange={handleFileSelect}
                     className="hidden"
