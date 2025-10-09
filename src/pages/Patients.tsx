@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -54,6 +61,9 @@ const Patients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterProcedure, setFilterProcedure] = useState<string>("all");
+  const [filterHospital, setFilterHospital] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -118,11 +128,17 @@ const Patients = () => {
   };
 
   const filteredPatients = patients
-    .filter((patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.procedure.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (patient.hospital && patient.hospital.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    .filter((patient) => {
+      const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.procedure.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (patient.hospital && patient.hospital.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesProcedure = filterProcedure === "all" || patient.procedure === filterProcedure;
+      const matchesHospital = filterHospital === "all" || patient.hospital === filterHospital;
+      const matchesStatus = filterStatus === "all" || patient.status === filterStatus;
+      
+      return matchesSearch && matchesProcedure && matchesHospital && matchesStatus;
+    })
     .sort((a, b) => {
       let compareValue = 0;
       
@@ -165,14 +181,61 @@ const Patients = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Search className="h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, procedimento ou hospital..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Search className="h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, procedimento ou hospital..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Select value={filterProcedure} onValueChange={setFilterProcedure}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por procedimento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os procedimentos</SelectItem>
+                    <SelectItem value="simpatectomia">Simpatectomia</SelectItem>
+                    <SelectItem value="lobectomia">Lobectomia</SelectItem>
+                    <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
+                    <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Select value={filterHospital} onValueChange={setFilterHospital}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por hospital" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os hospitais</SelectItem>
+                    <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
+                    <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="awaiting_authorization">Aguardando Autorização</SelectItem>
+                    <SelectItem value="authorized">Autorizado</SelectItem>
+                    <SelectItem value="completed">Cirurgia Realizada</SelectItem>
+                    <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
