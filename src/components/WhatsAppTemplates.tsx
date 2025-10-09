@@ -14,10 +14,11 @@ interface Patient {
 
 interface WhatsAppTemplatesProps {
   patient: Patient;
-  type: "pre_op" | "post_op";
+  type: "pre_op" | "post_op" | "exam_followup";
+  examName?: string;
 }
 
-export function WhatsAppTemplates({ patient, type }: WhatsAppTemplatesProps) {
+export function WhatsAppTemplates({ patient, type, examName }: WhatsAppTemplatesProps) {
   const firstName = patient.name.split(" ")[0];
   const treatment = patient.gender === "masculino" ? "o senhor" : patient.gender === "feminino" ? "a senhora" : "você";
   const phoneNumber = patient.phone.replace(/\D/g, "");
@@ -57,7 +58,17 @@ Qualquer dúvida, estou à disposição.
 Melhoras! 🌸`;
   }
 
-  const message = type === "pre_op" ? getPreOpMessage() : getPostOpMessage();
+  function getExamFollowupMessage() {
+    const exam = examName || "exame";
+    return `Olá, ${firstName}! Tudo bem?
+Gostaria de confirmar se você já realizou o exame ${exam}.
+Se sim, poderia me avisar se já tem os resultados em mãos?
+Caso ainda não tenha feito, tem previsão de quando pretende realizar?
+
+Obrigada pela atenção.`;
+  }
+
+  const message = type === "pre_op" ? getPreOpMessage() : type === "post_op" ? getPostOpMessage() : getExamFollowupMessage();
 
   function sendWhatsApp() {
     if (!phoneNumber || !message) {
@@ -77,10 +88,9 @@ Melhoras! 🌸`;
       variant="outline"
       className="w-full"
       onClick={sendWhatsApp}
-      disabled={!message}
     >
       <MessageCircle className="h-4 w-4 mr-2" />
-      {type === "pre_op" ? "Enviar Instruções Pré-Op" : "Enviar Recomendações Pós-Op"}
+      {type === "pre_op" ? "Enviar Instruções Pré-Op" : type === "post_op" ? "Enviar Recomendações Pós-Op" : "Enviar Cobrança de Exame"}
     </Button>
   );
 }

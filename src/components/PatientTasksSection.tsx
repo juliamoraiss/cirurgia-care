@@ -327,7 +327,14 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                             <div className="mt-3">
                               <WhatsAppTemplates 
                                 patient={patient} 
-                                type={task.task_type === "post_op_instructions" ? "post_op" : "pre_op"} 
+                                type={
+                                  task.task_type === "post_op_instructions" 
+                                    ? "post_op" 
+                                    : task.task_type === "exam_followup" 
+                                    ? "exam_followup" 
+                                    : "pre_op"
+                                } 
+                                examName={task.task_type === "exam_followup" ? task.title : undefined}
                               />
                             </div>
                           )}
