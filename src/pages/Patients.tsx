@@ -4,14 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -22,10 +15,13 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface Patient {
   id: string;
@@ -61,9 +57,9 @@ const Patients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterProcedure, setFilterProcedure] = useState<string>("all");
-  const [filterHospital, setFilterHospital] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterProcedures, setFilterProcedures] = useState<string[]>([]);
+  const [filterHospitals, setFilterHospitals] = useState<string[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
   const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -133,9 +129,9 @@ const Patients = () => {
         patient.procedure.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (patient.hospital && patient.hospital.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesProcedure = filterProcedure === "all" || patient.procedure === filterProcedure;
-      const matchesHospital = filterHospital === "all" || patient.hospital === filterHospital;
-      const matchesStatus = filterStatus === "all" || patient.status === filterStatus;
+      const matchesProcedure = filterProcedures.length === 0 || filterProcedures.includes(patient.procedure);
+      const matchesHospital = filterHospitals.length === 0 || (patient.hospital && filterHospitals.includes(patient.hospital));
+      const matchesStatus = filterStatuses.length === 0 || filterStatuses.includes(patient.status);
       
       return matchesSearch && matchesProcedure && matchesHospital && matchesStatus;
     })
@@ -193,48 +189,118 @@ const Patients = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Select value={filterProcedure} onValueChange={setFilterProcedure}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por procedimento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os procedimentos</SelectItem>
-                    <SelectItem value="simpatectomia">Simpatectomia</SelectItem>
-                    <SelectItem value="lobectomia">Lobectomia</SelectItem>
-                    <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
-                    <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-between">
+                    {filterProcedures.length > 0 
+                      ? `${filterProcedures.length} selecionado(s)` 
+                      : "Filtrar por procedimento"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
+                  <div className="p-4 space-y-2">
+                    {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
+                      <div key={procedure} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`procedure-${procedure}`}
+                          checked={filterProcedures.includes(procedure)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFilterProcedures([...filterProcedures, procedure]);
+                            } else {
+                              setFilterProcedures(filterProcedures.filter(p => p !== procedure));
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`procedure-${procedure}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
+                        >
+                          {procedure}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               
-              <div>
-                <Select value={filterHospital} onValueChange={setFilterHospital}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por hospital" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os hospitais</SelectItem>
-                    <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
-                    <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-between">
+                    {filterHospitals.length > 0 
+                      ? `${filterHospitals.length} selecionado(s)` 
+                      : "Filtrar por hospital"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
+                  <div className="p-4 space-y-2">
+                    {["Hospital Brasília", "Hospital Anchieta"].map((hospital) => (
+                      <div key={hospital} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`hospital-${hospital}`}
+                          checked={filterHospitals.includes(hospital)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFilterHospitals([...filterHospitals, hospital]);
+                            } else {
+                              setFilterHospitals(filterHospitals.filter(h => h !== hospital));
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`hospital-${hospital}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {hospital}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               
-              <div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="awaiting_authorization">Aguardando Autorização</SelectItem>
-                    <SelectItem value="authorized">Autorizado</SelectItem>
-                    <SelectItem value="completed">Cirurgia Realizada</SelectItem>
-                    <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-between">
+                    {filterStatuses.length > 0 
+                      ? `${filterStatuses.length} selecionado(s)` 
+                      : "Filtrar por status"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0 bg-background z-50" align="start">
+                  <div className="p-4 space-y-2">
+                    {[
+                      { value: "awaiting_authorization", label: "Aguardando Autorização" },
+                      { value: "authorized", label: "Autorizado" },
+                      { value: "completed", label: "Cirurgia Realizada" },
+                      { value: "cancelled", label: "Cirurgia Cancelada" }
+                    ].map((status) => (
+                      <div key={status.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`status-${status.value}`}
+                          checked={filterStatuses.includes(status.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFilterStatuses([...filterStatuses, status.value]);
+                            } else {
+                              setFilterStatuses(filterStatuses.filter(s => s !== status.value));
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`status-${status.value}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {status.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardHeader>
