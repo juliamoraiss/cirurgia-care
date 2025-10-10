@@ -244,7 +244,7 @@ const Patients = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
                   <div className="p-4 space-y-2">
-                    {["Hospital Brasília", "Hospital Anchieta"].map((hospital) => (
+                    {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte"].map((hospital) => (
                       <div key={hospital} className="flex items-center space-x-2">
                         <Checkbox
                           id={`hospital-${hospital}`}

@@ -743,6 +743,7 @@ const PatientForm = () => {
                   <SelectContent>
                     <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
                     <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
+                    <SelectItem value="Hospital Prontonorte">Hospital Prontonorte</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.hospital && <p className="text-sm text-destructive">{errors.hospital}</p>}
@@ -765,6 +766,7 @@ const PatientForm = () => {
                     <SelectItem value="POSTAL SAUDE">POSTAL SAUDE</SelectItem>
                     <SelectItem value="QUALLITY">QUALLITY</SelectItem>
                     <SelectItem value="SULAMERICA">SULAMERICA</SelectItem>
+                    <SelectItem value="PMDF">PMDF</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
