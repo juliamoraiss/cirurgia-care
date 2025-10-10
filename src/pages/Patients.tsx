@@ -60,7 +60,7 @@ const Patients = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterProcedures, setFilterProcedures] = useState<string[]>([]);
   const [filterHospitals, setFilterHospitals] = useState<string[]>([]);
-  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>(["authorized", "awaiting_authorization"]);
   const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 

@@ -819,6 +819,27 @@ const PatientForm = () => {
               </Button>
             )}
 
+            {formData.surgery_date && formData.phone.trim() !== "" && formData.hospital && (
+              <Button
+                type="button"
+                variant="default"
+                className="w-full mt-2"
+                onClick={() => {
+                  const phoneNumber = formData.phone.replace(/\D/g, '');
+                  const surgeryDate = new Date(formData.surgery_date);
+                  const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
+                  const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                  
+                  const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
+                  const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, '_blank');
+                }}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Enviar confirmação de agendamento
+              </Button>
+            )}
+
             {isEditMode && id && (
               <div className="pt-4">
                 <PatientNotesSection patientId={id} />
