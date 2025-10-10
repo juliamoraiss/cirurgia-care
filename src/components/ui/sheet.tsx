@@ -53,8 +53,7 @@ const SheetContent = React.forwardRef<
       ref={ref}
       className={cn(
         sheetVariants({ side }),
-        // Padding ajustado: menos padding no topo, mais espaçamento controlado
-        "flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] text-foreground",
+        "flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+3rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] text-foreground",
         className
       )}
       {...props}
