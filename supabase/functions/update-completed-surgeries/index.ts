@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     const { data: upcomingSurgeries, error: fetchError } = await supabase
       .from('patients')
       .select('id, name, procedure, hospital, surgery_date')
-      .in('status', ['authorized', 'scheduled'])
+      .eq('status', 'authorized')
       .not('surgery_date', 'is', null)
       .gte('surgery_date', oneDayFromNow.toISOString())
       .lt('surgery_date', twoDaysFromNow.toISOString())
