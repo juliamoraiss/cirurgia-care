@@ -25,7 +25,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { role, loading: roleLoading, isAdmin } = useUserRole();
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
     {
@@ -79,7 +79,10 @@ export function Layout({ children }: LayoutProps) {
       <div className="p-6 pt-12 border-b border-sidebar-border pr-12">
         <div 
           className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            navigate("/");
+            setIsOpen(false);
+          }}
         >
           <div className="p-2 bg-primary rounded-lg">
             <Activity className="h-6 w-6 text-primary-foreground" />
