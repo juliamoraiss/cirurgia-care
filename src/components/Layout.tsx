@@ -25,6 +25,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { role, loading: roleLoading, isAdmin } = useUserRole();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const menuItems = [
     {
