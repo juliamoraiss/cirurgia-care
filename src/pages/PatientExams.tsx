@@ -95,21 +95,28 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase.storage
         .from("patient-files")
-        .createSignedUrl(filePath, 60);
+        .download(filePath);
 
       if (error) throw error;
-      if (data?.signedUrl) {
+      if (data) {
+        const url = URL.createObjectURL(data);
         const link = document.createElement('a');
-        link.href = data.signedUrl;
+        link.href = url;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         toast.success("Download iniciado");
       }
     } catch (error) {
       toast.error("Erro ao fazer download do arquivo");
     }
+  };
+
+  const isImageFile = (fileName: string) => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
   };
 
   if (loading) {
@@ -241,17 +248,30 @@ const PatientExams = () => {
       <PatientNotesSection patientId={id!} />
 
       <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
-        <DialogContent className="max-w-[95vw] md:max-w-5xl max-h-[90vh] md:max-h-[95vh] h-[90vh] md:h-[95vh] flex flex-col p-0">
-          <DialogHeader className="p-4 md:p-6 pb-3 md:pb-4 border-b">
-            <DialogTitle className="text-sm md:text-base pr-8">{viewingFile?.name}</DialogTitle>
+        <DialogContent className="max-w-[100vw] max-h-[100vh] h-[100vh] md:max-w-5xl md:max-h-[95vh] md:h-[95vh] flex flex-col p-0 m-0 md:rounded-lg rounded-none">
+          <DialogHeader className="p-3 md:p-6 pb-2 md:pb-4 border-b flex-shrink-0">
+            <DialogTitle className="text-sm md:text-base pr-8 truncate">{viewingFile?.name}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 p-2 md:px-6 md:pb-6 overflow-auto">
-            {viewingFile && (
-              <iframe
+          <div className="flex-1 overflow-auto bg-black/5 md:p-4">
+            {viewingFile && isImageFile(viewingFile.name) ? (
+              <img
                 src={viewingFile.url}
-                className="w-full h-full border-0 rounded-lg"
-                title={viewingFile.name}
+                alt={viewingFile.name}
+                className="w-full h-full object-contain touch-manipulation"
+                style={{ 
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  imageRendering: 'crisp-edges'
+                }}
               />
+            ) : (
+              viewingFile && (
+                <iframe
+                  src={viewingFile.url}
+                  className="w-full h-full border-0"
+                  title={viewingFile.name}
+                />
+              )
             )}
           </div>
         </DialogContent>
