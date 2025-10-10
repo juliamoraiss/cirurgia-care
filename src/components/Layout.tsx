@@ -74,7 +74,8 @@ export function Layout({ children }: LayoutProps) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-6 border-b border-sidebar-border">
+      {/* Header com espaçamento adequado e espaço para o botão X */}
+      <div className="p-6 border-b border-sidebar-border pr-12">
         <div 
           className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => navigate("/")}
@@ -83,13 +84,14 @@ export function Layout({ children }: LayoutProps) {
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">MedAndre</h1>
+            <h1 className="text-lg font-bold text-sidebar-foreground">MedSystem</h1>
             <p className="text-xs text-muted-foreground">Gestão Cirúrgica</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      {/* Menu de navegação */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           // Esconde "Tarefas" para usuários não-admin
           if (item.path === "/tasks" && !isAdmin) {
@@ -123,6 +125,7 @@ export function Layout({ children }: LayoutProps) {
         )}
       </nav>
 
+      {/* Footer com informações do usuário */}
       <div className="p-4 border-t border-sidebar-border space-y-3">
         <div className="px-2 py-1">
           <p className="text-sm font-medium text-sidebar-foreground truncate">
@@ -156,7 +159,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="h-16 flex items-center px-4">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative z-50">
+              <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>

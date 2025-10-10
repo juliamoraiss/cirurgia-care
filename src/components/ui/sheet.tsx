@@ -53,26 +53,31 @@ const SheetContent = React.forwardRef<
       ref={ref}
       className={cn(
         sheetVariants({ side }),
-        // padding seguro para iPhone (notch + fundo)
-        "flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] text-foreground",
+        // Padding ajustado: menos padding no topo, mais espaçamento controlado
+        "flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] text-foreground",
         className
       )}
       {...props}
     >
-      {children}
-
-      {/* Botão de fechar */}
+      {/* Botão de fechar posicionado corretamente */}
       <SheetPrimitive.Close
         className={cn(
-          "absolute right-4 rounded-md opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-          side === "left"
-            ? "top-[calc(env(safe-area-inset-top)+5.5rem)]"
-            : "top-4"
+          "absolute rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100",
+          "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          "disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground",
+          // Posicionamento fixo no canto superior direito
+          "right-4 top-[calc(env(safe-area-inset-top)+1rem)]",
+          "z-10"
         )}
       >
         <X className="h-5 w-5" />
         <span className="sr-only">Fechar</span>
       </SheetPrimitive.Close>
+
+      {/* Conteúdo com margem superior adequada */}
+      <div className="flex flex-col h-full mt-4">
+        {children}
+      </div>
     </SheetPrimitive.Content>
   </SheetPortal>
 ));
@@ -80,7 +85,7 @@ SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 // Header
 const SheetHeader = () => (
-  <div className="flex items-center gap-3 mb-8">
+  <div className="flex items-center gap-3 mb-8 pr-8">
     <div className="bg-primary rounded-lg h-10 w-10 flex items-center justify-center">
       <span className="text-white text-xl font-bold">M</span>
     </div>
@@ -96,14 +101,17 @@ const MenuItem = ({
   icon: Icon,
   label,
   active = false,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }) => (
   <button
+    onClick={onClick}
     className={cn(
-      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full",
       active
         ? "bg-primary text-primary-foreground"
         : "hover:bg-accent hover:text-accent-foreground"
@@ -175,4 +183,5 @@ export {
   SheetPortal,
   SheetTitle,
   SheetDescription,
+  MenuItem,
 };
