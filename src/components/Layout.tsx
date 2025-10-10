@@ -75,7 +75,7 @@ export function Layout({ children }: LayoutProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Header com espaçamento adequado e espaço para o botão X */}
-      <div className="p-6 border-b border-sidebar-border pr-12">
+      <div className="p-6 pt-12 border-b border-sidebar-border pr-12">
         <div 
           className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => navigate("/")}
