@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay, addHours, isBefore, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -74,12 +74,12 @@ const Calendar = () => {
 
   const getColorForIndex = (index: number) => {
     const colors = [
-      "bg-blue-100 border-blue-500 text-blue-900",
-      "bg-green-100 border-green-500 text-green-900",
-      "bg-purple-100 border-purple-500 text-purple-900",
-      "bg-orange-100 border-orange-500 text-orange-900",
-      "bg-pink-100 border-pink-500 text-pink-900",
-      "bg-cyan-100 border-cyan-500 text-cyan-900",
+      "bg-blue-500/20 border-blue-500 text-blue-900 dark:text-blue-100",
+      "bg-green-500/20 border-green-500 text-green-900 dark:text-green-100",
+      "bg-purple-500/20 border-purple-500 text-purple-900 dark:text-purple-100",
+      "bg-orange-500/20 border-orange-500 text-orange-900 dark:text-orange-100",
+      "bg-pink-500/20 border-pink-500 text-pink-900 dark:text-pink-100",
+      "bg-cyan-500/20 border-cyan-500 text-cyan-900 dark:text-cyan-100",
     ];
     return colors[index % colors.length];
   };
@@ -117,9 +117,23 @@ const Calendar = () => {
     }
   };
 
-  const weekDays = viewMode === "week" 
-    ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-    : ["D", "S", "T", "Q", "Q", "S", "S"];
+  const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const weekDaysFull = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  // Gerar horários de 6h às 22h
+  const timeSlots = Array.from({ length: 17 }, (_, i) => addHours(startOfDay(new Date()), i + 6));
+
+  const getSurgeryPosition = (surgery: Surgery) => {
+    const surgeryDate = new Date(surgery.surgery_date);
+    const hour = surgeryDate.getHours();
+    const minutes = surgeryDate.getMinutes();
+    const startHour = 6;
+    
+    if (hour < startHour || hour >= 23) return null;
+    
+    const topPosition = ((hour - startHour) * 60 + minutes);
+    return topPosition;
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
@@ -157,37 +171,19 @@ const Calendar = () => {
             </div>
           </div>
 
-          {/* Toggle Semana/Mês - Mobile */}
-          <div className="md:hidden">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="week" className="text-sm">
-                  <List className="h-4 w-4 mr-2" />
-                  Semana
-                </TabsTrigger>
-                <TabsTrigger value="month" className="text-sm">
-                  <LayoutGrid className="h-4 w-4 mr-2" />
-                  Mês
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          {/* Toggle Semana/Mês - Desktop */}
-          <div className="hidden md:flex justify-end">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-              <TabsList>
-                <TabsTrigger value="week">
-                  <List className="h-4 w-4 mr-2" />
-                  Visualização Semanal
-                </TabsTrigger>
-                <TabsTrigger value="month">
-                  <LayoutGrid className="h-4 w-4 mr-2" />
-                  Visualização Mensal
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          {/* Toggle Semana/Mês */}
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="week" className="text-sm">
+                <List className="h-4 w-4 mr-2" />
+                Semana
+              </TabsTrigger>
+              <TabsTrigger value="month" className="text-sm">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Mês
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
 
         <CardContent>
@@ -196,14 +192,93 @@ const Calendar = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-4 text-muted-foreground">Carregando...</p>
             </div>
+          ) : viewMode === "week" ? (
+            // Visualização Semanal - Estilo Timeline
+            <div className="overflow-x-auto -mx-4 px-4">
+              <div className="min-w-[700px]">
+                {/* Header com dias da semana */}
+                <div className="grid grid-cols-8 gap-2 mb-4 sticky top-0 bg-background z-10 pb-2">
+                  <div className="text-xs text-muted-foreground"></div>
+                  {calendarDays.map((day, index) => {
+                    const isToday = isSameDay(day, new Date());
+                    return (
+                      <div key={index} className="text-center">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          {weekDaysFull[index]}
+                        </div>
+                        <div className={`text-2xl font-bold rounded-full w-12 h-12 mx-auto flex items-center justify-center ${
+                          isToday ? 'bg-primary text-primary-foreground' : ''
+                        }`}>
+                          {format(day, 'd')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Timeline de horários */}
+                <div className="relative">
+                  {timeSlots.map((time, timeIndex) => (
+                    <div key={timeIndex} className="grid grid-cols-8 gap-2 border-t border-muted">
+                      {/* Coluna de horário */}
+                      <div className="text-xs text-muted-foreground py-2 text-right pr-2">
+                        {format(time, 'HH:mm')}
+                      </div>
+                      
+                      {/* Colunas dos dias */}
+                      {calendarDays.map((day, dayIndex) => {
+                        const daySurgeries = getSurgeriesForDay(day);
+                        const surgeriesInThisHour = daySurgeries.filter(surgery => {
+                          const surgeryDate = new Date(surgery.surgery_date);
+                          return surgeryDate.getHours() === time.getHours();
+                        });
+
+                        return (
+                          <div key={dayIndex} className="relative min-h-[60px] border-l border-muted">
+                            {surgeriesInThisHour.map((surgery, surgeryIndex) => {
+                              const surgeryDate = new Date(surgery.surgery_date);
+                              const minutes = surgeryDate.getMinutes();
+                              const topOffset = minutes;
+
+                              return (
+                                <div
+                                  key={surgery.id}
+                                  onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                                  className={`absolute left-1 right-1 rounded-lg p-2 cursor-pointer border-l-4 ${
+                                    getColorForIndex(surgeryIndex)
+                                  }`}
+                                  style={{
+                                    top: `${topOffset}px`,
+                                    minHeight: '50px'
+                                  }}
+                                >
+                                  <div className="text-xs font-bold">
+                                    {format(surgeryDate, 'HH:mm')}
+                                  </div>
+                                  <div className="text-xs font-semibold truncate mt-1">
+                                    {surgery.name}
+                                  </div>
+                                  <div className="text-[10px] opacity-80 truncate">
+                                    {surgery.hospital || 'Hospital não informado'}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : (
-            <div className={`grid grid-cols-7 ${viewMode === "week" ? "gap-2 md:gap-3" : "gap-1 md:gap-2"}`}>
+            // Visualização Mensal - Grade
+            <div className="grid grid-cols-7 gap-1 md:gap-2">
               {weekDays.map((day) => (
                 <div 
                   key={day} 
-                  className={`text-center font-semibold p-2 text-muted-foreground ${
-                    viewMode === "week" ? "text-sm md:text-base" : "text-xs md:text-sm"
-                  }`}
+                  className="text-center font-semibold p-2 text-muted-foreground text-xs md:text-sm"
                 >
                   {day}
                 </div>
@@ -217,19 +292,13 @@ const Calendar = () => {
                   <div
                     key={index}
                     onClick={() => handleDayClick(day, daySurgeries)}
-                    className={`border rounded-lg p-2 ${
-                      viewMode === "week" 
-                        ? "min-h-[180px] md:min-h-[200px]" 
-                        : "min-h-[80px] md:min-h-[120px]"
-                    } ${
+                    className={`border rounded-lg p-2 min-h-[80px] md:min-h-[120px] ${
                       isCurrentMonth ? "bg-background" : "bg-muted/30"
                     } ${isToday ? "ring-2 ring-primary" : ""} ${
                       daySurgeries.length > 0 ? "cursor-pointer hover:shadow-md transition-shadow" : ""
                     }`}
                   >
-                    <div className={`font-semibold mb-1 ${
-                      viewMode === "week" ? "text-base md:text-lg" : "text-xs md:text-sm"
-                    } ${
+                    <div className={`font-semibold mb-1 text-xs md:text-sm ${
                       isCurrentMonth ? "text-foreground" : "text-muted-foreground"
                     }`}>
                       {format(day, "d")}
@@ -238,9 +307,7 @@ const Calendar = () => {
                       {daySurgeries.map((surgery, surgeryIndex) => (
                         <div
                           key={surgery.id}
-                          className={`p-1.5 rounded border-l-2 space-y-0.5 ${
-                            viewMode === "week" ? "text-xs md:text-sm" : "text-[10px] md:text-xs"
-                          } ${
+                          className={`p-1.5 rounded border-l-2 space-y-0.5 text-[10px] md:text-xs ${
                             daySurgeries.length > 1 
                               ? getColorForIndex(surgeryIndex)
                               : "bg-primary/10 border-primary text-primary"
@@ -249,24 +316,9 @@ const Calendar = () => {
                           <div className="font-semibold">
                             {format(new Date(surgery.surgery_date), "HH:mm")}
                           </div>
-                          {viewMode === "week" && (
-                            <>
-                              <div className="font-medium truncate" title={surgery.name}>
-                                {surgery.name}
-                              </div>
-                              <div className="truncate opacity-80" title={surgery.hospital || 'Hospital não informado'}>
-                                {surgery.hospital || 'Hospital não informado'}
-                              </div>
-                              <div className="italic truncate opacity-80" title={surgery.procedure}>
-                                {surgery.procedure}
-                              </div>
-                            </>
-                          )}
-                          {viewMode === "month" && (
-                            <div className="font-medium truncate" title={surgery.name}>
-                              {surgery.name}
-                            </div>
-                          )}
+                          <div className="font-medium truncate" title={surgery.name}>
+                            {surgery.name}
+                          </div>
                         </div>
                       ))}
                     </div>
