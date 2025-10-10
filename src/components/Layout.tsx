@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -106,7 +106,10 @@ export function Layout({ children }: LayoutProps) {
               key={item.path}
               variant={isActive ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                navigate(item.path);
+                setIsOpen(false);
+              }}
             >
               <Icon className="h-4 w-4 mr-3" />
               {item.label}
@@ -118,7 +121,10 @@ export function Layout({ children }: LayoutProps) {
           <Button
             variant={location.pathname === "/users" ? "default" : "ghost"}
             className="w-full justify-start"
-            onClick={() => navigate("/users")}
+            onClick={() => {
+              navigate("/users");
+              setIsOpen(false);
+            }}
           >
             <UserPlus className="h-4 w-4 mr-3" />
             Gerenciar Usuários
@@ -139,7 +145,10 @@ export function Layout({ children }: LayoutProps) {
         <Button
           variant="outline"
           className="w-full justify-start"
-          onClick={signOut}
+          onClick={() => {
+            signOut();
+            setIsOpen(false);
+          }}
         >
           <LogOut className="h-4 w-4 mr-3" />
           Sair
@@ -158,7 +167,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-sidebar border-b border-sidebar-border z-50 pt-[env(safe-area-inset-top)]">
         <div className="h-16 flex items-center px-4">
-          <Sheet>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
