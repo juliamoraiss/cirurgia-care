@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -17,9 +18,12 @@ interface Surgery {
   hospital: string | null;
 }
 
+type ViewMode = "month" | "week";
+
 const Calendar = () => {
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -46,11 +50,21 @@ const Calendar = () => {
     }
   }
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart, { locale: ptBR });
-  const calendarEnd = endOfWeek(monthEnd, { locale: ptBR });
-  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const getCalendarDays = () => {
+    if (viewMode === "week") {
+      const weekStart = startOfWeek(currentDate, { locale: ptBR });
+      const weekEnd = endOfWeek(currentDate, { locale: ptBR });
+      return eachDayOfInterval({ start: weekStart, end: weekEnd });
+    } else {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      const calendarStart = startOfWeek(monthStart, { locale: ptBR });
+      const calendarEnd = endOfWeek(monthEnd, { locale: ptBR });
+      return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    }
+  };
+
+  const calendarDays = getCalendarDays();
 
   const getSurgeriesForDay = (day: Date) => {
     return surgeries
@@ -77,42 +91,105 @@ const Calendar = () => {
     }
   };
 
-  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const handlePrevious = () => {
+    if (viewMode === "week") {
+      setCurrentDate(subWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(subMonths(currentDate, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === "week") {
+      setCurrentDate(addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(addMonths(currentDate, 1));
+    }
+  };
+
+  const getDateRangeText = () => {
+    if (viewMode === "week") {
+      const weekStart = startOfWeek(currentDate, { locale: ptBR });
+      const weekEnd = endOfWeek(currentDate, { locale: ptBR });
+      return `${format(weekStart, "dd MMM", { locale: ptBR })} - ${format(weekEnd, "dd MMM yyyy", { locale: ptBR })}`;
+    } else {
+      return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
+    }
+  };
+
+  const weekDays = viewMode === "week" 
+    ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+    : ["D", "S", "T", "Q", "Q", "S", "S"];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Visualize e gerencie os procedimentos agendados
         </p>
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <CardTitle className="flex items-center text-lg md:text-xl">
               <CalendarIcon className="h-5 w-5 mr-2" />
-              {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
+              {getDateRangeText()}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                onClick={handlePrevious}
+                className="flex-1 sm:flex-none"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                onClick={handleNext}
+                className="flex-1 sm:flex-none"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
+
+          {/* Toggle Semana/Mês - Mobile */}
+          <div className="md:hidden">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="week" className="text-sm">
+                  <List className="h-4 w-4 mr-2" />
+                  Semana
+                </TabsTrigger>
+                <TabsTrigger value="month" className="text-sm">
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  Mês
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Toggle Semana/Mês - Desktop */}
+          <div className="hidden md:flex justify-end">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+              <TabsList>
+                <TabsTrigger value="week">
+                  <List className="h-4 w-4 mr-2" />
+                  Visualização Semanal
+                </TabsTrigger>
+                <TabsTrigger value="month">
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  Visualização Mensal
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
+
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
@@ -120,28 +197,39 @@ const Calendar = () => {
               <p className="mt-4 text-muted-foreground">Carregando...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-7 gap-2">
+            <div className={`grid grid-cols-7 ${viewMode === "week" ? "gap-2 md:gap-3" : "gap-1 md:gap-2"}`}>
               {weekDays.map((day) => (
-                <div key={day} className="text-center font-semibold text-sm p-2 text-muted-foreground">
+                <div 
+                  key={day} 
+                  className={`text-center font-semibold p-2 text-muted-foreground ${
+                    viewMode === "week" ? "text-sm md:text-base" : "text-xs md:text-sm"
+                  }`}
+                >
                   {day}
                 </div>
               ))}
               {calendarDays.map((day, index) => {
                 const daySurgeries = getSurgeriesForDay(day);
-                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isCurrentMonth = isSameMonth(day, currentDate);
                 const isToday = isSameDay(day, new Date());
 
                 return (
                   <div
                     key={index}
                     onClick={() => handleDayClick(day, daySurgeries)}
-                    className={`min-h-[120px] border rounded-lg p-2 ${
+                    className={`border rounded-lg p-2 ${
+                      viewMode === "week" 
+                        ? "min-h-[180px] md:min-h-[200px]" 
+                        : "min-h-[80px] md:min-h-[120px]"
+                    } ${
                       isCurrentMonth ? "bg-background" : "bg-muted/30"
                     } ${isToday ? "ring-2 ring-primary" : ""} ${
                       daySurgeries.length > 0 ? "cursor-pointer hover:shadow-md transition-shadow" : ""
                     }`}
                   >
-                    <div className={`text-sm font-semibold mb-1 ${
+                    <div className={`font-semibold mb-1 ${
+                      viewMode === "week" ? "text-base md:text-lg" : "text-xs md:text-sm"
+                    } ${
                       isCurrentMonth ? "text-foreground" : "text-muted-foreground"
                     }`}>
                       {format(day, "d")}
@@ -150,7 +238,9 @@ const Calendar = () => {
                       {daySurgeries.map((surgery, surgeryIndex) => (
                         <div
                           key={surgery.id}
-                          className={`text-xs p-1.5 rounded border-l-2 space-y-0.5 ${
+                          className={`p-1.5 rounded border-l-2 space-y-0.5 ${
+                            viewMode === "week" ? "text-xs md:text-sm" : "text-[10px] md:text-xs"
+                          } ${
                             daySurgeries.length > 1 
                               ? getColorForIndex(surgeryIndex)
                               : "bg-primary/10 border-primary text-primary"
@@ -159,15 +249,24 @@ const Calendar = () => {
                           <div className="font-semibold">
                             {format(new Date(surgery.surgery_date), "HH:mm")}
                           </div>
-                          <div className="font-medium truncate" title={surgery.name}>
-                            {surgery.name}
-                          </div>
-                          <div className="truncate opacity-80" title={surgery.hospital || 'Hospital não informado'}>
-                            {surgery.hospital || 'Hospital não informado'}
-                          </div>
-                          <div className="italic truncate opacity-80" title={surgery.procedure}>
-                            {surgery.procedure}
-                          </div>
+                          {viewMode === "week" && (
+                            <>
+                              <div className="font-medium truncate" title={surgery.name}>
+                                {surgery.name}
+                              </div>
+                              <div className="truncate opacity-80" title={surgery.hospital || 'Hospital não informado'}>
+                                {surgery.hospital || 'Hospital não informado'}
+                              </div>
+                              <div className="italic truncate opacity-80" title={surgery.procedure}>
+                                {surgery.procedure}
+                              </div>
+                            </>
+                          )}
+                          {viewMode === "month" && (
+                            <div className="font-medium truncate" title={surgery.name}>
+                              {surgery.name}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -182,7 +281,7 @@ const Calendar = () => {
       <Dialog open={selectedDay !== null} onOpenChange={(open) => !open && setSelectedDay(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">
+            <DialogTitle className="text-xl md:text-2xl">
               Cirurgias de {selectedDay && format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </DialogTitle>
           </DialogHeader>
