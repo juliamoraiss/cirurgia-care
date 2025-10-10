@@ -3,9 +3,9 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Download } from "lucide-react";
+import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 
 interface Patient {
@@ -35,6 +35,8 @@ const PatientExams = () => {
   const [files, setFiles] = useState<PatientFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -42,6 +44,14 @@ const PatientExams = () => {
       loadPatientFiles();
     }
   }, [id]);
+
+  // Reset zoom quando abrir novo arquivo
+  useEffect(() => {
+    if (viewingFile) {
+      setZoom(1);
+      setIsFullscreen(false);
+    }
+  }, [viewingFile]);
 
   async function loadPatientData() {
     try {
@@ -117,6 +127,24 @@ const PatientExams = () => {
   const isImageFile = (fileName: string) => {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+  };
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+  };
+
+  const closeViewer = () => {
+    setViewingFile(null);
+    setZoom(1);
+    setIsFullscreen(false);
   };
 
   if (loading) {
@@ -247,33 +275,97 @@ const PatientExams = () => {
 
       <PatientNotesSection patientId={id!} />
 
-      <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
-        <DialogContent className="max-w-[100vw] max-h-[100vh] h-[100vh] md:max-w-5xl md:max-h-[95vh] md:h-[95vh] flex flex-col p-0 m-0 md:rounded-lg rounded-none">
-          <DialogHeader className="p-3 md:p-6 pb-2 md:pb-4 border-b flex-shrink-0">
-            <DialogTitle className="text-sm md:text-base pr-8 truncate">{viewingFile?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto bg-black/5 md:p-4">
+      <Dialog open={!!viewingFile} onOpenChange={closeViewer}>
+        <DialogContent className="max-w-[100vw] max-h-[100vh] h-[100vh] w-[100vw] md:max-w-5xl md:max-h-[95vh] md:h-[95vh] md:w-auto flex flex-col p-0 m-0 md:rounded-lg rounded-none">
+          {/* Header com controles */}
+          <div className="flex items-center justify-between p-4 md:p-6 border-b bg-background flex-shrink-0 pt-safe">
+            <div className="flex-1 min-w-0 pr-4">
+              <h3 className="text-sm md:text-base font-semibold truncate">
+                {viewingFile?.name}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Zoom: {Math.round(zoom * 100)}%
+              </p>
+            </div>
+            
+            {/* Controles de Zoom */}
+            {viewingFile && isImageFile(viewingFile.name) && (
+              <div className="flex items-center gap-2 mr-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleZoomOut}
+                  disabled={zoom <= 0.5}
+                  className="h-8 w-8"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetZoom}
+                  className="h-8 px-2 text-xs"
+                >
+                  {Math.round(zoom * 100)}%
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleZoomIn}
+                  disabled={zoom >= 3}
+                  className="h-8 w-8"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Botão Fechar */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeViewer}
+              className="h-8 w-8 flex-shrink-0"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Área de visualização */}
+          <div className="flex-1 overflow-auto bg-muted/30">
             {viewingFile && isImageFile(viewingFile.name) ? (
-              <img
-                src={viewingFile.url}
-                alt={viewingFile.name}
-                className="w-full h-full object-contain touch-manipulation"
-                style={{ 
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  imageRendering: 'crisp-edges'
-                }}
-              />
+              <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
+                <img
+                  src={viewingFile.url}
+                  alt={viewingFile.name}
+                  className="max-w-full h-auto"
+                  style={{ 
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'center center',
+                    transition: 'transform 0.2s ease',
+                    cursor: zoom > 1 ? 'grab' : 'default',
+                    touchAction: 'pan-x pan-y pinch-zoom'
+                  }}
+                  draggable={false}
+                />
+              </div>
             ) : (
               viewingFile && (
                 <iframe
-                  src={viewingFile.url}
+                  src={`${viewingFile.url}#zoom=${Math.round(zoom * 100)}`}
                   className="w-full h-full border-0"
                   title={viewingFile.name}
                 />
               )
             )}
           </div>
+
+          {/* Instruções mobile */}
+          {viewingFile && isImageFile(viewingFile.name) && (
+            <div className="md:hidden p-2 bg-muted/50 text-center text-xs text-muted-foreground flex-shrink-0">
+              Use dois dedos para dar zoom na imagem
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
