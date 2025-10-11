@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, CheckCircle, Clock } from "lucide-react";
+import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface DashboardStats {
   totalPatients: number;
@@ -26,6 +28,16 @@ interface Patient {
   procedure: string;
   surgery_date: string;
   insurance: string;
+}
+
+interface SystemActivity {
+  id: string;
+  activity_type: string;
+  description: string;
+  patient_id: string | null;
+  patient_name: string | null;
+  created_at: string;
+  metadata: any;
 }
 
 const Dashboard = () => {
@@ -44,6 +56,7 @@ const Dashboard = () => {
   const [scheduledPatients, setScheduledPatients] = useState<Patient[]>([]);
   const [completedPatients, setCompletedPatients] = useState<Patient[]>([]);
   const [pendingPatients, setPendingPatients] = useState<Patient[]>([]);
+  const [activities, setActivities] = useState<SystemActivity[]>([]);
 
   useEffect(() => {
     async function fetchUserName() {
@@ -117,8 +130,23 @@ const Dashboard = () => {
       }
     }
 
+    async function fetchActivities() {
+      try {
+        const { data } = await supabase
+          .from("system_activities")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(10);
+        
+        setActivities(data || []);
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+      }
+    }
+
     fetchUserName();
     fetchStats();
+    fetchActivities();
   }, [user]);
 
   const statCards = [
@@ -272,38 +300,109 @@ const Dashboard = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Bem-vindo ao MedSystem</CardTitle>
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            <CardTitle>Histórico de Atividades</CardTitle>
+          </div>
           <CardDescription>
-            Sistema profissional de gestão de cirurgias e pacientes
+            Últimas atividades realizadas no sistema
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Gerencie todo o ciclo cirúrgico dos seus pacientes de forma eficiente:
-          </p>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-success" />
-              Acompanhe autorizações do convênio
-            </li>
-            <li className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-success" />
-              Gerencie agendamentos de cirurgias
-            </li>
-            <li className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-success" />
-              Controle checklists de exames
-            </li>
-            <li className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-success" />
-              Calendário de cirurgias
-            </li>
-          </ul>
-          <div className="pt-4">
-            <Button onClick={() => navigate("/patients")}>
-              Ver Todos os Pacientes
-            </Button>
-          </div>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground text-sm">Carregando histórico...</p>
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="text-center py-8">
+              <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground text-sm">Nenhuma atividade registrada ainda</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {activities.map((activity) => {
+                const getActivityIcon = (type: string) => {
+                  switch (type) {
+                    case 'patient_created':
+                      return <Users className="h-4 w-4 text-primary" />;
+                    case 'surgery_scheduled':
+                    case 'surgery_rescheduled':
+                      return <Calendar className="h-4 w-4 text-success" />;
+                    case 'file_uploaded':
+                      return <FileText className="h-4 w-4 text-blue-500" />;
+                    case 'note_created':
+                      return <StickyNote className="h-4 w-4 text-orange-500" />;
+                    case 'task_created':
+                      return <ClipboardList className="h-4 w-4 text-purple-500" />;
+                    default:
+                      return <Activity className="h-4 w-4 text-muted-foreground" />;
+                  }
+                };
+
+                const getActivityDetails = (activity: SystemActivity) => {
+                  const metadata = activity.metadata || {};
+                  switch (activity.activity_type) {
+                    case 'patient_created':
+                      return `Procedimento: ${metadata.procedure || 'Não informado'}`;
+                    case 'surgery_scheduled':
+                      return `${new Date(metadata.surgery_date).toLocaleString('pt-BR')} - ${metadata.hospital || 'Hospital não informado'}`;
+                    case 'surgery_rescheduled':
+                      return `Nova data: ${new Date(metadata.new_surgery_date).toLocaleString('pt-BR')}`;
+                    case 'file_uploaded':
+                      return `Arquivo: ${metadata.file_name}`;
+                    case 'note_created':
+                      return metadata.note_preview;
+                    case 'task_created':
+                      return `${metadata.task_title} (${metadata.task_type})`;
+                    default:
+                      return '';
+                  }
+                };
+
+                return (
+                  <div 
+                    key={activity.id} 
+                    className="flex gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (activity.patient_id) {
+                        navigate(`/patients/${activity.patient_id}/exams`);
+                      }
+                    }}
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      {getActivityIcon(activity.activity_type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">
+                            {activity.description}
+                          </p>
+                          {activity.patient_name && (
+                            <p className="text-sm text-primary font-semibold truncate">
+                              {activity.patient_name}
+                            </p>
+                          )}
+                          {getActivityDetails(activity) && (
+                            <p className="text-xs text-muted-foreground truncate mt-1">
+                              {getActivityDetails(activity)}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(activity.created_at), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
       </div>

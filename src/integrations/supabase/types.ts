@@ -283,6 +283,47 @@ export type Database = {
         }
         Relationships: []
       }
+      system_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          metadata: Json | null
+          patient_id: string | null
+          patient_name: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          patient_id?: string | null
+          patient_name?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          patient_id?: string | null
+          patient_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_activities_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
