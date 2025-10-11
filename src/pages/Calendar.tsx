@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay, addHours, isBefore, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Surgery {
   id: string;
@@ -22,6 +23,7 @@ type ViewMode = "month" | "week";
 
 const Calendar = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
@@ -193,85 +195,151 @@ const Calendar = () => {
               <p className="mt-4 text-muted-foreground">Carregando...</p>
             </div>
           ) : viewMode === "week" ? (
-            // Visualização Semanal - Estilo Timeline
-            <div className="overflow-x-auto -mx-2 px-2">
-              <div className="min-w-[750px] grid grid-cols-8 gap-2 md:gap-3">
-                {/* Header com dias da semana */}
-                <div className="grid grid-cols-8 gap-2 mb-4 sticky top-0 bg-background z-10 pb-2">
-                  <div className="text-xs text-muted-foreground"></div>
-                  {calendarDays.map((day, index) => {
-                    const isToday = isSameDay(day, new Date());
-                    return (
-                      <div key={index} className="text-center">
-                        <div className="text-xs text-muted-foreground mb-1">
-                          {weekDaysFull[index]}
+            // Visualização Semanal
+            isMobile ? (
+              // Mobile: Lista vertical por dia
+              <div className="space-y-4">
+                {calendarDays.map((day, dayIndex) => {
+                  const daySurgeries = getSurgeriesForDay(day);
+                  const isToday = isSameDay(day, new Date());
+                  
+                  if (daySurgeries.length === 0) return null;
+                  
+                  return (
+                    <div key={dayIndex} className="border rounded-lg p-3">
+                      <div className={`flex items-center gap-2 mb-3 pb-2 border-b ${
+                        isToday ? 'text-primary font-semibold' : ''
+                      }`}>
+                        <div className="text-sm font-medium">
+                          {format(day, "EEEE", { locale: ptBR })}
                         </div>
-                        <div className={`text-2xl font-bold rounded-full w-12 h-12 mx-auto flex items-center justify-center ${
-                          isToday ? 'bg-primary text-primary-foreground' : ''
+                        <div className={`text-lg font-bold ${
+                          isToday ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center' : ''
                         }`}>
                           {format(day, 'd')}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Timeline de horários */}
-                <div className="relative">
-                  {timeSlots.map((time, timeIndex) => (
-                    <div key={timeIndex} className="grid grid-cols-8 gap-2 border-t border-muted">
-                      {/* Coluna de horário */}
-                      <div className="text-xs text-muted-foreground py-2 text-right pr-2">
-                        {format(time, 'HH:mm')}
-                      </div>
                       
-                      {/* Colunas dos dias */}
-                      {calendarDays.map((day, dayIndex) => {
-                        const daySurgeries = getSurgeriesForDay(day);
-                        const surgeriesInThisHour = daySurgeries.filter(surgery => {
+                      <div className="space-y-2">
+                        {daySurgeries.map((surgery, surgeryIndex) => {
                           const surgeryDate = new Date(surgery.surgery_date);
-                          return surgeryDate.getHours() === time.getHours();
-                        });
-
-                        return (
-                          <div key={dayIndex} className="relative min-h-[60px] border-l border-muted">
-                            {surgeriesInThisHour.map((surgery, surgeryIndex) => {
-                              const surgeryDate = new Date(surgery.surgery_date);
-                              const minutes = surgeryDate.getMinutes();
-                              const topOffset = minutes;
-
-                              return (
-                                <div
-                                  key={surgery.id}
-                                  onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
-                                  className={`absolute left-1 right-1 rounded-lg p-2 cursor-pointer border-l-4 ${
-                                    getColorForIndex(surgeryIndex)
-                                  }`}
-                                  style={{
-                                    top: `${topOffset}px`,
-                                    minHeight: '50px'
-                                  }}
-                                >
-                                  <div className="text-xs font-bold">
+                          
+                          return (
+                            <div
+                              key={surgery.id}
+                              onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                              className={`rounded-lg p-3 cursor-pointer border-l-4 ${
+                                getColorForIndex(surgeryIndex)
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-bold mb-1">
                                     {format(surgeryDate, 'HH:mm')}
                                   </div>
-                                  <div className="text-xs font-semibold truncate mt-1">
+                                  <div className="text-sm font-semibold truncate">
                                     {surgery.name}
                                   </div>
-                                  <div className="text-[10px] opacity-80 truncate">
+                                  <div className="text-xs opacity-80 truncate mt-1">
                                     {surgery.hospital || 'Hospital não informado'}
                                   </div>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
+                  );
+                })}
+                
+                {calendarDays.every(day => getSurgeriesForDay(day).length === 0) && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhuma cirurgia agendada para esta semana
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Desktop: Timeline
+              <div className="overflow-x-auto -mx-2 px-2">
+                <div className="min-w-[750px] grid grid-cols-8 gap-2 md:gap-3">
+                  {/* Header com dias da semana */}
+                  <div className="grid grid-cols-8 gap-2 mb-4 sticky top-0 bg-background z-10 pb-2">
+                    <div className="text-xs text-muted-foreground"></div>
+                    {calendarDays.map((day, index) => {
+                      const isToday = isSameDay(day, new Date());
+                      return (
+                        <div key={index} className="text-center">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {weekDaysFull[index]}
+                          </div>
+                          <div className={`text-2xl font-bold rounded-full w-12 h-12 mx-auto flex items-center justify-center ${
+                            isToday ? 'bg-primary text-primary-foreground' : ''
+                          }`}>
+                            {format(day, 'd')}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Timeline de horários */}
+                  <div className="relative">
+                    {timeSlots.map((time, timeIndex) => (
+                      <div key={timeIndex} className="grid grid-cols-8 gap-2 border-t border-muted">
+                        {/* Coluna de horário */}
+                        <div className="text-xs text-muted-foreground py-2 text-right pr-2">
+                          {format(time, 'HH:mm')}
+                        </div>
+                        
+                        {/* Colunas dos dias */}
+                        {calendarDays.map((day, dayIndex) => {
+                          const daySurgeries = getSurgeriesForDay(day);
+                          const surgeriesInThisHour = daySurgeries.filter(surgery => {
+                            const surgeryDate = new Date(surgery.surgery_date);
+                            return surgeryDate.getHours() === time.getHours();
+                          });
+
+                          return (
+                            <div key={dayIndex} className="relative min-h-[60px] border-l border-muted">
+                              {surgeriesInThisHour.map((surgery, surgeryIndex) => {
+                                const surgeryDate = new Date(surgery.surgery_date);
+                                const minutes = surgeryDate.getMinutes();
+                                const topOffset = minutes;
+
+                                return (
+                                  <div
+                                    key={surgery.id}
+                                    onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                                    className={`absolute left-1 right-1 rounded-lg p-2 cursor-pointer border-l-4 ${
+                                      getColorForIndex(surgeryIndex)
+                                    }`}
+                                    style={{
+                                      top: `${topOffset}px`,
+                                      minHeight: '50px'
+                                    }}
+                                  >
+                                    <div className="text-xs font-bold">
+                                      {format(surgeryDate, 'HH:mm')}
+                                    </div>
+                                    <div className="text-xs font-semibold truncate mt-1">
+                                      {surgery.name}
+                                    </div>
+                                    <div className="text-[10px] opacity-80 truncate">
+                                      {surgery.hospital || 'Hospital não informado'}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )
           ) : (
             // Visualização Mensal - Grade
             <div className="grid grid-cols-7 gap-1 md:gap-2">
