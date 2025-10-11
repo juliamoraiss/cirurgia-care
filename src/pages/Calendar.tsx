@@ -342,15 +342,18 @@ const Calendar = () => {
             )
           ) : (
             // Visualização Mensal - Grade
-            <div className="grid grid-cols-7 gap-1 md:gap-2">
-              {weekDays.map((day) => (
-                <div 
-                  key={day} 
-                  className="text-center font-semibold p-2 text-muted-foreground text-xs md:text-sm"
-                >
-                  {day}
-                </div>
-              ))}
+            <div className="space-y-2">
+              <div className="grid grid-cols-7 gap-1 md:gap-2">
+                {weekDays.map((day) => (
+                  <div 
+                    key={day} 
+                    className="text-center font-semibold p-2 text-muted-foreground text-xs md:text-sm"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1 md:gap-2">
               {calendarDays.map((day, index) => {
                 const daySurgeries = getSurgeriesForDay(day);
                 const isCurrentMonth = isSameMonth(day, currentDate);
@@ -393,6 +396,7 @@ const Calendar = () => {
                   </div>
                 );
               })}
+            </div>
             </div>
           )}
         </CardContent>
