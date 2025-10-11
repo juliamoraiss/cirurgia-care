@@ -194,8 +194,8 @@ const Calendar = () => {
             </div>
           ) : viewMode === "week" ? (
             // Visualização Semanal - Estilo Timeline
-            <div className="overflow-x-auto -mx-4 px-4">
-              <div className="min-w-[700px]">
+            <div className="w-full overflow-hidden">
+              <div className="grid grid-cols-8 gap-1 md:gap-2 w-full">
                 {/* Header com dias da semana */}
                 <div className="grid grid-cols-8 gap-2 mb-4 sticky top-0 bg-background z-10 pb-2">
                   <div className="text-xs text-muted-foreground"></div>
