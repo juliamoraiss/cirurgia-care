@@ -88,6 +88,11 @@ const PatientForm = () => {
   const [checkedExams, setCheckedExams] = useState<string[]>([]);
   const [deletingPatient, setDeletingPatient] = useState(false);
 
+  // Função auxiliar para encoding correto do WhatsApp
+  const encodeWhatsAppMessage = (message: string) => {
+    return encodeURIComponent(message);
+  };
+
   useEffect(() => {
     if (id) {
       loadPatientData(id);
@@ -372,10 +377,10 @@ const PatientForm = () => {
       
       const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
       
-      // Mensagem para o médico
-      const message = `🏥 Nova Cirurgia Agendada\n\n👤 Paciente: ${patientName}\n🔬 Procedimento: ${procedure}\n📅 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${hospital}\n\n📆 Adicionar ao Google Agenda:\n${googleCalendarLink}`;
+      // Mensagem para o médico com emojis usando Unicode
+      const message = `\u{1F3E5} Nova Cirurgia Agendada\n\n\u{1F464} Paciente: ${patientName}\n\u{1F52C} Procedimento: ${procedure}\n\u{1F4C5} Data: ${formattedDate}\n\u{23F0} Horário: ${formattedTime}\n\u{1F3E5} Local: ${hospital}\n\n\u{1F4C6} Adicionar ao Google Agenda:\n${googleCalendarLink}`;
       
-      const whatsappUrl = `https://wa.me/55${doctorPhone}?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/55${doctorPhone}?text=${encodeWhatsAppMessage(message)}`;
       window.open(whatsappUrl, '_blank');
     } catch (error) {
       console.error("Erro ao enviar WhatsApp ao médico:", error);
