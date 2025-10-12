@@ -562,11 +562,6 @@ const PatientForm = () => {
       // Criar tarefas automaticamente se houver data de cirurgia
       if (utcSurgeryDate && savedPatientId) {
         await createAutomaticTasks(savedPatientId, utcSurgeryDate, validatedData.name, validatedData.procedure);
-        
-        // Enviar WhatsApp ao médico se cirurgia foi agendada e tem hospital
-        if (validatedData.hospital) {
-          sendDoctorWhatsApp(utcSurgeryDate, validatedData.name, validatedData.procedure, validatedData.hospital);
-        }
       }
 
       if (files.length > 0 && savedPatientId) {
@@ -723,26 +718,40 @@ const PatientForm = () => {
               </div>
             </div>
 
-            {formData.surgery_date && formData.phone.trim() !== "" && formData.hospital && (
-              <Button
-                type="button"
-                variant="default"
-                className="w-full mt-2"
-                onClick={() => {
-                  const phoneNumber = formData.phone.replace(/\D/g, '');
-                  const surgeryDate = new Date(formData.surgery_date);
-                  const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
-                  const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                  
-                  const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
-                  const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-                  window.open(whatsappUrl, '_blank');
-                }}
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Enviar confirmação de agendamento
-              </Button>
-            )}
+            <div className="space-y-2">
+              {formData.surgery_date && formData.phone.trim() !== "" && formData.hospital && (
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => {
+                    const phoneNumber = formData.phone.replace(/\D/g, '');
+                    const surgeryDate = new Date(formData.surgery_date);
+                    const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
+                    const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    
+                    const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
+                    const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Enviar confirmação ao paciente
+                </Button>
+              )}
+              
+              {formData.surgery_date && formData.hospital && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => sendDoctorWhatsApp(formData.surgery_date, formData.name, formData.procedure, formData.hospital)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Notificar médico (Google Calendar)
+                </Button>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="procedure">Procedimento *</Label>
