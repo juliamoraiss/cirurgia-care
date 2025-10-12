@@ -352,6 +352,36 @@ const PatientForm = () => {
     }
   };
 
+  const sendDoctorWhatsApp = (surgeryDateISO: string, patientName: string, procedure: string, hospital: string) => {
+    try {
+      const doctorPhone = "61992581199";
+      const surgeryDate = new Date(surgeryDateISO);
+      
+      // Formatar data e hora
+      const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
+      const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      
+      // Criar link do Google Calendar
+      const calendarTitle = `Cirurgia - ${patientName} (${procedure})`;
+      const calendarDetails = `Paciente: ${patientName}\nProcedimento: ${procedure}\nHospital: ${hospital}`;
+      const calendarLocation = hospital;
+      
+      // Formato para Google Calendar: YYYYMMDDTHHmmssZ
+      const startDate = surgeryDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const endDate = new Date(surgeryDate.getTime() + 2 * 60 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      
+      const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
+      
+      // Mensagem para o médico
+      const message = `🏥 Nova Cirurgia Agendada\n\n👤 Paciente: ${patientName}\n🔬 Procedimento: ${procedure}\n📅 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${hospital}\n\n📆 Adicionar ao Google Agenda:\n${googleCalendarLink}`;
+      
+      const whatsappUrl = `https://wa.me/55${doctorPhone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+    } catch (error) {
+      console.error("Erro ao enviar WhatsApp ao médico:", error);
+    }
+  };
+
   const createAutomaticTasks = async (patientId: string, surgeryDateISO: string, patientName: string, procedure: string) => {
     try {
       const surgeryDate = new Date(surgeryDateISO);
@@ -532,6 +562,11 @@ const PatientForm = () => {
       // Criar tarefas automaticamente se houver data de cirurgia
       if (utcSurgeryDate && savedPatientId) {
         await createAutomaticTasks(savedPatientId, utcSurgeryDate, validatedData.name, validatedData.procedure);
+        
+        // Enviar WhatsApp ao médico se cirurgia foi agendada e tem hospital
+        if (validatedData.hospital) {
+          sendDoctorWhatsApp(utcSurgeryDate, validatedData.name, validatedData.procedure, validatedData.hospital);
+        }
       }
 
       if (files.length > 0 && savedPatientId) {
