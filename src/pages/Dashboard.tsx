@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList } from "lucide-react";
+import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface DashboardStats {
   totalPatients: number;
@@ -148,6 +149,23 @@ const Dashboard = () => {
     fetchStats();
     fetchActivities();
   }, [user]);
+
+  const deleteActivity = async (activityId: string) => {
+    try {
+      const { error } = await supabase
+        .from("system_activities")
+        .delete()
+        .eq("id", activityId);
+
+      if (error) throw error;
+
+      setActivities(prev => prev.filter(activity => activity.id !== activityId));
+      toast.success("Registro excluído com sucesso");
+    } catch (error) {
+      toast.error("Erro ao excluir registro");
+      console.error("Error deleting activity:", error);
+    }
+  };
 
   const statCards = [
     {
@@ -363,41 +381,58 @@ const Dashboard = () => {
                 return (
                   <div 
                     key={activity.id} 
-                    className="flex gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      if (activity.patient_id) {
-                        navigate(`/patients/${activity.patient_id}/exams`);
-                      }
-                    }}
+                    className="flex gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
                   >
-                    <div className="flex-shrink-0 mt-1">
-                      {getActivityIcon(activity.activity_type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">
-                            {activity.description}
-                          </p>
-                          {activity.patient_name && (
-                            <p className="text-sm text-primary font-semibold truncate">
-                              {activity.patient_name}
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer flex gap-3"
+                      onClick={() => {
+                        if (activity.patient_id) {
+                          navigate(`/patients/${activity.patient_id}/exams`);
+                        }
+                      }}
+                    >
+                      <div className="flex-shrink-0 mt-1">
+                        {getActivityIcon(activity.activity_type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">
+                              {activity.description}
                             </p>
-                          )}
-                          {getActivityDetails(activity) && (
-                            <p className="text-xs text-muted-foreground truncate mt-1">
-                              {getActivityDetails(activity)}
-                            </p>
-                          )}
+                            {activity.patient_name && (
+                              <p className="text-sm text-primary font-semibold truncate">
+                                {activity.patient_name}
+                              </p>
+                            )}
+                            {getActivityDetails(activity) && (
+                              <p className="text-xs text-muted-foreground truncate mt-1">
+                                {getActivityDetails(activity)}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDistanceToNow(new Date(activity.created_at), {
+                              addSuffix: true,
+                              locale: ptBR,
+                            })}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDistanceToNow(new Date(activity.created_at), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })}
-                        </span>
                       </div>
                     </div>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteActivity(activity.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity self-start"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 );
               })}
