@@ -16,57 +16,72 @@ export type Database = {
     Tables: {
       paid_traffic_reports: {
         Row: {
-          clicks: number | null
-          conversions: number | null
-          cpa: number | null
-          cpc: number | null
+          active_leads: number | null
+          awaiting_response: number | null
+          concierge_name: string | null
           created_at: string
           created_by: string
           id: string
-          impressions: number | null
-          investment: number | null
+          in_progress: number | null
+          leads_outside_brasilia: number | null
+          no_contact_after_attempts: number | null
+          no_continuity: number | null
+          not_scheduled: number | null
           pdf_file_name: string | null
           pdf_file_path: string | null
+          period_end: string | null
+          period_start: string | null
           platform: string
           raw_data: Json | null
           report_date: string
-          roi: number | null
+          scheduled_appointments: number | null
+          total_leads: number | null
           updated_at: string
         }
         Insert: {
-          clicks?: number | null
-          conversions?: number | null
-          cpa?: number | null
-          cpc?: number | null
+          active_leads?: number | null
+          awaiting_response?: number | null
+          concierge_name?: string | null
           created_at?: string
           created_by: string
           id?: string
-          impressions?: number | null
-          investment?: number | null
+          in_progress?: number | null
+          leads_outside_brasilia?: number | null
+          no_contact_after_attempts?: number | null
+          no_continuity?: number | null
+          not_scheduled?: number | null
           pdf_file_name?: string | null
           pdf_file_path?: string | null
+          period_end?: string | null
+          period_start?: string | null
           platform: string
           raw_data?: Json | null
           report_date: string
-          roi?: number | null
+          scheduled_appointments?: number | null
+          total_leads?: number | null
           updated_at?: string
         }
         Update: {
-          clicks?: number | null
-          conversions?: number | null
-          cpa?: number | null
-          cpc?: number | null
+          active_leads?: number | null
+          awaiting_response?: number | null
+          concierge_name?: string | null
           created_at?: string
           created_by?: string
           id?: string
-          impressions?: number | null
-          investment?: number | null
+          in_progress?: number | null
+          leads_outside_brasilia?: number | null
+          no_contact_after_attempts?: number | null
+          no_continuity?: number | null
+          not_scheduled?: number | null
           pdf_file_name?: string | null
           pdf_file_path?: string | null
+          period_end?: string | null
+          period_start?: string | null
           platform?: string
           raw_data?: Json | null
           report_date?: string
-          roi?: number | null
+          scheduled_appointments?: number | null
+          total_leads?: number | null
           updated_at?: string
         }
         Relationships: []

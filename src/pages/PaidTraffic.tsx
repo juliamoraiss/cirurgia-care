@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Upload, TrendingUp, DollarSign, MousePointer, Eye, Target } from "lucide-react";
+import { Upload, Users, Calendar, UserCheck, UserX, Clock, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -58,14 +58,6 @@ export default function PaidTraffic() {
     }
   };
 
-  const formatCurrency = (value: number | null) => {
-    if (!value) return "R$ 0,00";
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
   const formatNumber = (value: number | null) => {
     if (!value) return "0";
     return new Intl.NumberFormat("pt-BR").format(value);
@@ -73,6 +65,11 @@ export default function PaidTraffic() {
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("pt-BR");
+  };
+
+  const formatPeriod = (start: string | null, end: string | null) => {
+    if (!start || !end) return "Período não especificado";
+    return `${formatDate(start)} - ${formatDate(end)}`;
   };
 
   return (
@@ -105,77 +102,102 @@ export default function PaidTraffic() {
             <Card key={report.id} className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold">{report.platform}</h3>
+                  <h3 className="text-xl font-semibold">Relatório de Leads</h3>
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(report.report_date)}
+                    {formatPeriod(report.period_start, report.period_end)}
                   </p>
+                  {report.concierge_name && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Concierge: {report.concierge_name}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Investimento</p>
+                  <p className="text-sm text-muted-foreground">Total de Leads</p>
                   <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(report.investment)}
+                    {formatNumber(report.total_leads)}
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-sm">Impressões</span>
-                  </div>
-                  <p className="text-lg font-semibold">
-                    {formatNumber(report.impressions)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MousePointer className="h-4 w-4" />
-                    <span className="text-sm">Cliques</span>
-                  </div>
-                  <p className="text-lg font-semibold">
-                    {formatNumber(report.clicks)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Target className="h-4 w-4" />
-                    <span className="text-sm">Conversões</span>
-                  </div>
-                  <p className="text-lg font-semibold">
-                    {formatNumber(report.conversions)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign className="h-4 w-4" />
-                    <span className="text-sm">CPC</span>
-                  </div>
-                  <p className="text-lg font-semibold">
-                    {formatCurrency(report.cpc)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign className="h-4 w-4" />
-                    <span className="text-sm">CPA</span>
-                  </div>
-                  <p className="text-lg font-semibold">
-                    {formatCurrency(report.cpa)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-sm">ROI</span>
+                    <UserCheck className="h-4 w-4" />
+                    <span className="text-sm">Agendados</span>
                   </div>
                   <p className="text-lg font-semibold text-green-600">
-                    {report.roi ? `${report.roi.toFixed(2)}%` : "0%"}
+                    {formatNumber(report.scheduled_appointments)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <UserX className="h-4 w-4" />
+                    <span className="text-sm">Não Agendados</span>
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {formatNumber(report.not_scheduled)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm">Aguardando</span>
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {formatNumber(report.awaiting_response)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm">Sem Continuidade</span>
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {formatNumber(report.no_continuity)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm">Sem Contato</span>
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {formatNumber(report.no_contact_after_attempts)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-sm">Fora de Brasília</span>
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {formatNumber(report.leads_outside_brasilia)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span className="text-sm">Leads Ativos</span>
+                  </div>
+                  <p className="text-lg font-semibold text-blue-600">
+                    {formatNumber(report.active_leads)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm">Em Progresso</span>
+                  </div>
+                  <p className="text-lg font-semibold text-orange-600">
+                    {formatNumber(report.in_progress)}
                   </p>
                 </div>
               </div>
@@ -197,7 +219,7 @@ export default function PaidTraffic() {
                 Nenhum relatório encontrado
               </h3>
               <p className="text-muted-foreground">
-                Envie um PDF com seu relatório de tráfego pago para começar
+                Envie um PDF com seu relatório de leads para começar
               </p>
             </Card>
           )}

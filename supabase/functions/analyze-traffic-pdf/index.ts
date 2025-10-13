@@ -54,7 +54,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente especializado em análise de relatórios de tráfego pago. Extraia as seguintes informações do PDF e retorne APENAS um objeto JSON válido sem formatação markdown: report_date (formato YYYY-MM-DD), platform (ex: Google Ads, Facebook Ads, Instagram Ads), investment (valor numérico), impressions (número), clicks (número), conversions (número), cpc (custo por clique), cpa (custo por aquisição), roi (retorno sobre investimento). Se algum dado não estiver disponível, use null.'
+            content: 'Você é um assistente especializado em análise de relatórios de leads. Extraia as seguintes informações do PDF e retorne APENAS um objeto JSON válido sem formatação markdown: period_start (data início do período YYYY-MM-DD), period_end (data fim do período YYYY-MM-DD), total_leads (número total de leads), scheduled_appointments (agendamentos realizados), not_scheduled (não agendados), awaiting_response (aguardando resposta), no_continuity (quantos não deram continuidade), no_contact_after_attempts (quantos não responderam após tentativas), leads_outside_brasilia (leads de fora de Brasília), active_leads (leads ativos), in_progress (em progresso), concierge_name (nome do concierge/responsável). Se algum dado não estiver disponível, use null.'
           },
           {
             role: 'user',
@@ -103,15 +103,20 @@ serve(async (req) => {
     const { data: reportData, error: insertError } = await supabaseClient
       .from('paid_traffic_reports')
       .insert({
-        report_date: extractedData.report_date,
-        platform: extractedData.platform,
-        investment: extractedData.investment,
-        impressions: extractedData.impressions,
-        clicks: extractedData.clicks,
-        conversions: extractedData.conversions,
-        cpc: extractedData.cpc,
-        cpa: extractedData.cpa,
-        roi: extractedData.roi,
+        report_date: extractedData.period_end || extractedData.period_start,
+        platform: 'Leads',
+        period_start: extractedData.period_start,
+        period_end: extractedData.period_end,
+        total_leads: extractedData.total_leads,
+        scheduled_appointments: extractedData.scheduled_appointments,
+        not_scheduled: extractedData.not_scheduled,
+        awaiting_response: extractedData.awaiting_response,
+        no_continuity: extractedData.no_continuity,
+        no_contact_after_attempts: extractedData.no_contact_after_attempts,
+        leads_outside_brasilia: extractedData.leads_outside_brasilia,
+        active_leads: extractedData.active_leads,
+        in_progress: extractedData.in_progress,
+        concierge_name: extractedData.concierge_name,
         pdf_file_path: uploadData.path,
         pdf_file_name: file.name,
         raw_data: extractedData,
