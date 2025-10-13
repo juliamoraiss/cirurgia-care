@@ -12,6 +12,7 @@ import {
   Menu,
   UserPlus,
   CheckSquare,
+  TrendingUp,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,11 @@ export function Layout({ children }: LayoutProps) {
       icon: CheckSquare,
       label: "Tarefas",
       path: "/tasks",
+    },
+    {
+      icon: TrendingUp,
+      label: "Tráfego Pago",
+      path: "/paid-traffic",
     },
   ];
 

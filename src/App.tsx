@@ -14,6 +14,7 @@ import PatientExams from "./pages/PatientExams";
 import Calendar from "./pages/Calendar";
 import UserManagement from "./pages/UserManagement";
 import Tasks from "./pages/Tasks";
+import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/paid-traffic"
+              element={
+                <ProtectedRoute>
+                  <PaidTraffic />
                 </ProtectedRoute>
               }
             />

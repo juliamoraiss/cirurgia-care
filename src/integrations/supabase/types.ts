@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      paid_traffic_reports: {
+        Row: {
+          clicks: number | null
+          conversions: number | null
+          cpa: number | null
+          cpc: number | null
+          created_at: string
+          created_by: string
+          id: string
+          impressions: number | null
+          investment: number | null
+          pdf_file_name: string | null
+          pdf_file_path: string | null
+          platform: string
+          raw_data: Json | null
+          report_date: string
+          roi: number | null
+          updated_at: string
+        }
+        Insert: {
+          clicks?: number | null
+          conversions?: number | null
+          cpa?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by: string
+          id?: string
+          impressions?: number | null
+          investment?: number | null
+          pdf_file_name?: string | null
+          pdf_file_path?: string | null
+          platform: string
+          raw_data?: Json | null
+          report_date: string
+          roi?: number | null
+          updated_at?: string
+        }
+        Update: {
+          clicks?: number | null
+          conversions?: number | null
+          cpa?: number | null
+          cpc?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          impressions?: number | null
+          investment?: number | null
+          pdf_file_name?: string | null
+          pdf_file_path?: string | null
+          platform?: string
+          raw_data?: Json | null
+          report_date?: string
+          roi?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patient_files: {
         Row: {
           created_at: string
