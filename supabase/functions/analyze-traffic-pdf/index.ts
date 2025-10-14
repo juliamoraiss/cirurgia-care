@@ -27,7 +27,12 @@ serve(async (req) => {
     }
 
     console.log('Fazendo upload do PDF para o storage...');
-    const fileName = `${Date.now()}_${file.name}`;
+    // Sanitize filename: remove special characters, spaces, and accents
+    const sanitizedFileName = file.name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-zA-Z0-9.-]/g, '_'); // Replace special chars with underscore
+    const fileName = `${Date.now()}_${sanitizedFileName}`;
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('traffic-reports')
       .upload(fileName, file);
