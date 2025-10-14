@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Layout } from "@/components/Layout";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,8 +50,16 @@ export default function PaidTraffic() {
       toast.success("Relatório analisado e salvo com sucesso!");
       refetch();
     } catch (error: any) {
-      console.error("Erro ao processar PDF:", error);
-      toast.error("Erro ao processar PDF: " + error.message);
+      console.error('Erro ao processar PDF:', error);
+      let message = error?.message || 'Falha ao processar PDF';
+      try {
+        const res = (error as any)?.context?.response as Response | undefined;
+        if (res) {
+          const body = await res.json().catch(() => null);
+          if (body?.error) message = body.error;
+        }
+      } catch {}
+      toast.error('Erro ao processar PDF: ' + message);
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -73,7 +81,7 @@ export default function PaidTraffic() {
   };
 
   return (
-    <Layout>
+    
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Tráfego Pago</h1>
@@ -225,6 +233,6 @@ export default function PaidTraffic() {
           )}
         </div>
       </div>
-    </Layout>
+    
   );
 }

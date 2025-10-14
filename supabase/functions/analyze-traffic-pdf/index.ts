@@ -42,9 +42,15 @@ serve(async (req) => {
       throw uploadError;
     }
 
-    console.log('PDF enviado com sucesso, convertendo para base64...');
-    const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    // Create a short-lived signed URL so the AI can fetch the PDF directly
+    const { data: signedUrlData, error: signedUrlError } = await supabaseClient.storage
+      .from('traffic-reports')
+      .createSignedUrl(uploadData.path, 60);
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      console.error('Erro ao gerar URL assinada:', signedUrlError);
+      throw new Error('Não foi possível gerar URL assinada para o PDF');
+    }
 
     console.log('Analisando PDF com IA...');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -55,7 +61,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
             role: 'system',
@@ -64,14 +70,11 @@ serve(async (req) => {
           {
             role: 'user',
             content: [
-              {
-                type: 'text',
-                text: 'Analise este relatório de tráfego pago e extraia as informações solicitadas.'
-              },
+              { type: 'text', text: 'Analise este relatório (PDF) e extraia as informações solicitadas.' },
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:application/pdf;base64,${base64}`
+                  url: signedUrlData.signedUrl,
                 }
               }
             ]
@@ -79,6 +82,39 @@ serve(async (req) => {
         ]
       }),
     });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Erro na API de IA:', aiResponse.status, errorText);
+
+      // Propague erros conhecidos com o status apropriado para o cliente mostrar mensagens melhores
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: 'Limite de requisições de IA excedido. Tente novamente em instantes.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: 'Créditos de IA esgotados. Adicione créditos para continuar.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (aiResponse.status === 400 && errorText.includes('Failed to extract')) {
+        return new Response(JSON.stringify({
+          error: 'Não foi possível ler o PDF enviado. Gere um PDF padrão (texto selecionável) ou exporte as páginas como imagens e tente novamente.',
+          details: 'Failed to extract images from the provided PDF.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ error: 'Erro ao analisar PDF com IA.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
