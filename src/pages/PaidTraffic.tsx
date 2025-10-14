@@ -55,10 +55,24 @@ export default function PaidTraffic() {
       try {
         const res = (error as any)?.context?.response as Response | undefined;
         if (res) {
-          const body = await res.json().catch(() => null);
-          if (body?.error) message = body.error;
+          const status = res.status;
+          // Clone before reading to avoid body-used errors
+          const body = await res.clone().json().catch(() => null);
+          if (body?.error) {
+            message = body.error;
+          } else if (status === 429) {
+            message = 'Limite de requisições de IA excedido. Tente novamente em instantes.';
+          } else if (status === 402) {
+            message = 'Créditos de IA esgotados. Adicione créditos para continuar.';
+          } else if (status === 400) {
+            message = 'Não foi possível ler o PDF enviado. Gere um PDF padrão (texto selecionável) ou exporte as páginas como imagens e tente novamente.';
+          } else {
+            message = `${status} - ${res.statusText || 'Erro desconhecido'}`;
+          }
         }
-      } catch {}
+      } catch {
+        // ignore JSON parsing errors
+      }
       toast.error('Erro ao processar PDF: ' + message);
     } finally {
       setUploading(false);
