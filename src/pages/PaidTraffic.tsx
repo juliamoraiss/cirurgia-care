@@ -56,7 +56,7 @@ export default function PaidTraffic() {
         const res = (error as any)?.context?.response as Response | undefined;
         if (res) {
           const status = res.status;
-          // Clone before reading to avoid body-used errors
+          // Try JSON first
           const body = await res.clone().json().catch(() => null);
           if (body?.error) {
             message = body.error;
@@ -67,11 +67,22 @@ export default function PaidTraffic() {
           } else if (status === 400) {
             message = 'Não foi possível ler o PDF enviado. Gere um PDF padrão (texto selecionável) ou exporte as páginas como imagens e tente novamente.';
           } else {
-            message = `${status} - ${res.statusText || 'Erro desconhecido'}`;
+            // Fallback: try raw text for provider-specific hints
+            const text = await res.clone().text().catch(() => '');
+            if (text && /Failed to extract/i.test(text)) {
+              message = 'Não foi possível ler o PDF enviado. Gere um PDF padrão (texto selecionável) ou exporte as páginas como imagens e tente novamente.';
+            } else {
+              message = `${status} - ${res.statusText || 'Erro desconhecido'}`;
+            }
+          }
+        } else {
+          // No response object from SDK, improve generic error
+          if (typeof error?.message === 'string' && /non-2xx/i.test(error.message)) {
+            message = 'Falha ao processar PDF. O servidor retornou um erro. Tente com um PDF padrão (texto selecionável).';
           }
         }
       } catch {
-        // ignore JSON parsing errors
+        // ignore parsing errors, keep default message
       }
       toast.error('Erro ao processar PDF: ' + message);
     } finally {
