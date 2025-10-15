@@ -1,0 +1,3 @@
+-- Allow public access to insert patients from landing page
+-- We'll use an edge function with service role key instead for better security
+-- No migration needed for now

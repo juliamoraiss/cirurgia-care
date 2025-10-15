@@ -16,6 +16,7 @@ import UserManagement from "./pages/UserManagement";
 import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -47,16 +48,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
             <Route
               path="/patients"
               element={
