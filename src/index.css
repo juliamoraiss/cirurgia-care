@@ -8,31 +8,31 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Medical professional color palette */
+    /* Elegant black and neutral color palette */
     --background: 0 0% 100%;
-    --foreground: 215 25% 15%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Medical blue - trust and professionalism */
-    --primary: 210 95% 45%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 210 95% 92%;
-    --primary-dark: 210 95% 35%;
+    /* Elegant black primary color */
+    --primary: 0 0% 15%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 0 0% 95%;
+    --primary-dark: 0 0% 8%;
 
-    /* Neutral grays for professional UI */
-    --secondary: 215 15% 96%;
-    --secondary-foreground: 215 25% 20%;
+    /* Neutral grays for elegant UI */
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 15%;
 
-    --muted: 215 15% 96%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 215 15% 94%;
-    --accent-foreground: 215 25% 15%;
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 15%;
 
     /* Status colors for medical workflow */
     --success: 142 70% 45%;
@@ -57,21 +57,21 @@ All colors MUST be HSL.
     --cancelled-foreground: 0 0% 100%;
 
     /* UI Elements */
-    --border: 215 20% 90%;
-    --input: 215 20% 90%;
-    --ring: 210 95% 45%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 0 0% 15%;
 
-    --radius: 0.5rem;
+    --radius: 0rem;
 
-    /* Sidebar medical theme */
-    --sidebar-background: 215 25% 98%;
-    --sidebar-foreground: 215 25% 20%;
-    --sidebar-primary: 210 95% 45%;
+    /* Sidebar elegant theme */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 0 0% 15%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 15% 94%;
-    --sidebar-accent-foreground: 215 25% 20%;
-    --sidebar-border: 215 20% 88%;
-    --sidebar-ring: 210 95% 45%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 0 0% 15%;
 
     /* Shadows and effects */
     --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
@@ -80,27 +80,27 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 215 25% 10%;
+    --background: 0 0% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 215 25% 12%;
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 215 25% 12%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 210 95% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 210 95% 20%;
-    --primary-dark: 210 95% 65%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 10%;
+    --primary-light: 0 0% 20%;
+    --primary-dark: 0 0% 98%;
 
-    --secondary: 215 20% 18%;
+    --secondary: 0 0% 18%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 215 20% 18%;
-    --muted-foreground: 215 15% 65%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 215 20% 20%;
+    --accent: 0 0% 22%;
     --accent-foreground: 0 0% 98%;
 
     --success: 142 70% 50%;
@@ -124,18 +124,18 @@ All colors MUST be HSL.
     --cancelled: 215 15% 60%;
     --cancelled-foreground: 0 0% 100%;
 
-    --border: 215 20% 22%;
-    --input: 215 20% 22%;
-    --ring: 210 95% 55%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 0 0% 95%;
 
-    --sidebar-background: 215 25% 8%;
+    --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 210 95% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 20% 15%;
+    --sidebar-primary: 0 0% 95%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 215 20% 18%;
-    --sidebar-ring: 210 95% 55%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 95%;
 
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4);

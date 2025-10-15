@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, MapPin, Stethoscope, CheckCircle2 } from "lucide-react";
+import { Phone, MapPin, Stethoscope, Award, GraduationCap } from "lucide-react";
+import drAndrePortrait from "@/assets/dr-andre-portrait.jpg";
 
 const LandingPage = () => {
   const { toast } = useToast();
@@ -66,66 +67,86 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-b from-primary/10 to-background">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-            Dr. André Morais Alves
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-            Cirurgião Plástico | CRM XXXXX
-          </p>
-          <div className="flex items-center justify-center gap-2 text-primary">
-            <Stethoscope className="h-6 w-6" />
-            <span className="text-lg">Especialista em Cirurgia Plástica Estética e Reparadora</span>
+      <section className="relative py-20 px-4 bg-gradient-to-b from-muted to-background">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="order-2 md:order-1">
+              <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6 text-foreground leading-tight">
+                Dr. André Morais Alves
+              </h1>
+              <p className="text-xl text-muted-foreground mb-4">
+                Cirurgião Torácico | CRM XXXXX
+              </p>
+              <div className="flex items-start gap-3 text-foreground mb-6">
+                <Stethoscope className="h-6 w-6 mt-1 flex-shrink-0" />
+                <span className="text-lg leading-relaxed">Especialista em Cirurgia Torácica com formação avançada e experiência em procedimentos de alta complexidade</span>
+              </div>
+              <div className="flex flex-col gap-3 text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5" />
+                  <span>Membro da Sociedade Brasileira de Cirurgia Torácica</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  <span>Especialização em Cirurgia Videolaparoscópica</span>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 md:order-2">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/5 rounded-lg transform rotate-3"></div>
+                <img 
+                  src={drAndrePortrait} 
+                  alt="Dr. André Morais Alves - Cirurgião Torácico" 
+                  className="relative rounded-lg shadow-2xl w-full object-cover aspect-[4/5]"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* About Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-center">Especialidades</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="p-6 border rounded-lg bg-card">
-              <CheckCircle2 className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Rinoplastia</h3>
-              <p className="text-muted-foreground">Cirurgia plástica do nariz com técnicas modernas e resultados naturais</p>
+      <section className="py-20 px-4 bg-card">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-12 text-center">Áreas de Atuação</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="p-8 border-l-4 border-primary bg-background">
+              <h3 className="text-xl font-semibold mb-3">Cirurgia de Câncer de Pulmão</h3>
+              <p className="text-muted-foreground leading-relaxed">Ressecções pulmonares para tratamento oncológico com técnicas minimamente invasivas</p>
             </div>
-            <div className="p-6 border rounded-lg bg-card">
-              <CheckCircle2 className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Mamoplastia</h3>
-              <p className="text-muted-foreground">Cirurgias de mama: aumento, redução e lifting</p>
+            <div className="p-8 border-l-4 border-primary bg-background">
+              <h3 className="text-xl font-semibold mb-3">Cirurgia de Mediastino</h3>
+              <p className="text-muted-foreground leading-relaxed">Tratamento cirúrgico de tumores e lesões mediastinais por toracoscopia</p>
             </div>
-            <div className="p-6 border rounded-lg bg-card">
-              <CheckCircle2 className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Lipoaspiração</h3>
-              <p className="text-muted-foreground">Remodelagem corporal com técnicas avançadas</p>
+            <div className="p-8 border-l-4 border-primary bg-background">
+              <h3 className="text-xl font-semibold mb-3">Cirurgia de Parede Torácica</h3>
+              <p className="text-muted-foreground leading-relaxed">Correção de deformidades e tratamento de lesões da parede torácica</p>
             </div>
-            <div className="p-6 border rounded-lg bg-card">
-              <CheckCircle2 className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Abdominoplastia</h3>
-              <p className="text-muted-foreground">Cirurgia plástica do abdômen para contorno definido</p>
+            <div className="p-8 border-l-4 border-primary bg-background">
+              <h3 className="text-xl font-semibold mb-3">Videotoracoscopia</h3>
+              <p className="text-muted-foreground leading-relaxed">Procedimentos minimamente invasivos para diagnóstico e tratamento de doenças torácicas</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Locations Section */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-center">Locais de Atendimento</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex items-start gap-4 p-6 bg-card border rounded-lg">
+      <section className="py-20 px-4 bg-muted">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-12 text-center">Locais de Atendimento</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="flex items-start gap-4 p-8 bg-card border-2 border-border rounded-none shadow-lg">
               <MapPin className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold mb-2">Hospital Santa Lúcia</h3>
+                <h3 className="font-semibold text-lg mb-2">Hospital Santa Lúcia</h3>
                 <p className="text-muted-foreground">SHLS 716, Conjunto C - Asa Sul, Brasília - DF</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 p-6 bg-card border rounded-lg">
+            <div className="flex items-start gap-4 p-8 bg-card border-2 border-border rounded-none shadow-lg">
               <MapPin className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold mb-2">Hospital Brasília</h3>
+                <h3 className="font-semibold text-lg mb-2">Hospital Brasília</h3>
                 <p className="text-muted-foreground">SGAS 613/614, Conjunto C - Asa Sul, Brasília - DF</p>
               </div>
             </div>
@@ -134,29 +155,30 @@ const LandingPage = () => {
       </section>
 
       {/* Contact Form Section */}
-      <section className="py-16 px-4">
+      <section className="py-20 px-4 bg-background">
         <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4">Agende sua Consulta</h2>
-            <p className="text-muted-foreground">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Agende sua Consulta</h2>
+            <p className="text-muted-foreground leading-relaxed">
               Preencha o formulário abaixo e entraremos em contato via WhatsApp
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 bg-card p-8 border rounded-lg">
+          <form onSubmit={handleSubmit} className="space-y-6 bg-card p-8 border-2 border-border shadow-xl">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome completo *</Label>
+              <Label htmlFor="name" className="text-sm font-medium">Nome completo *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Seu nome"
+                placeholder="Seu nome completo"
                 required
+                className="border-2"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone *</Label>
+              <Label htmlFor="phone" className="text-sm font-medium">Telefone *</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -164,26 +186,28 @@ const LandingPage = () => {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="(61) 99999-9999"
                 required
+                className="border-2"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="procedure">Procedimento de interesse *</Label>
+              <Label htmlFor="procedure" className="text-sm font-medium">Procedimento de interesse *</Label>
               <Input
                 id="procedure"
                 value={formData.procedure}
                 onChange={(e) => setFormData({ ...formData, procedure: e.target.value })}
-                placeholder="Ex: Rinoplastia"
+                placeholder="Ex: Cirurgia de pulmão"
                 required
+                className="border-2"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-12 text-base font-medium"
               disabled={isSubmitting}
             >
-              <Phone className="mr-2 h-4 w-4" />
+              <Phone className="mr-2 h-5 w-5" />
               {isSubmitting ? "Enviando..." : "Entrar em contato via WhatsApp"}
             </Button>
 
