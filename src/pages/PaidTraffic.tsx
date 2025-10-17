@@ -8,28 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Upload, Users, Calendar, UserCheck, UserX, Clock, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import * as pdfjsLib from "pdfjs-dist";
+import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
-(pdfjsLib as any).GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+GlobalWorkerOptions.workerSrc = pdfjsWorker as unknown as string;
 
 async function extractPdfText(file: File): Promise<string> {
-  const blobUrl = URL.createObjectURL(file);
-  try {
-    // @ts-ignore
-    const loadingTask = (pdfjsLib as any).getDocument({ url: blobUrl });
-    const pdf = await loadingTask.promise;
-    let fullText = "";
-    const maxPages = Math.min(pdf.numPages, 50);
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = (content.items as any[]).map((it: any) => it.str).join(" ");
-      fullText += pageText + "\n\n";
-    }
-    return fullText.trim();
-  } finally {
-    URL.revokeObjectURL(blobUrl);
+  const ab = await file.arrayBuffer();
+  // @ts-ignore - getDocument types are finicky in ESM
+  const loadingTask = (getDocument as any)({ data: ab });
+  const pdf = await loadingTask.promise;
+  let fullText = "";
+  const maxPages = Math.min(pdf.numPages, 50);
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = (content.items as any[]).map((it: any) => it.str).join(" ");
+    fullText += pageText + "\n\n";
   }
+  return fullText.trim();
 }
 
 export default function PaidTraffic() {
