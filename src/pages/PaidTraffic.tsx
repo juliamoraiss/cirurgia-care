@@ -3,10 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const PDFUploadComponent = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -19,29 +15,34 @@ const PDFUploadComponent = () => {
   const extractTextFromPDF = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-
+      
       reader.onload = async (e) => {
         try {
           const typedArray = new Uint8Array(e.target?.result as ArrayBuffer);
-
-          const loadingTask = pdfjsLib.getDocument({ data: typedArray });
-          const pdf = await loadingTask.promise;
-
+          
+          // Importa a biblioteca PDF.js dinamicamente
+          const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.mjs');
+          
+          // Configura o worker
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.mjs';
+          
+          setProgress('Carregando PDF...');
+          const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+          
           let fullText = '';
           const numPages = pdf.numPages;
-
+          
           for (let i = 1; i <= numPages; i++) {
             setProgress(`Extraindo texto da página ${i} de ${numPages}...`);
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-
             const pageText = textContent.items
               .map((item: any) => item.str)
               .join(' ');
-
             fullText += pageText + '\n\n';
           }
-
+          
           setProgress('Texto extraído com sucesso!');
           resolve(fullText);
         } catch (error) {
@@ -49,7 +50,7 @@ const PDFUploadComponent = () => {
           reject(error);
         }
       };
-
+      
       reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
       reader.readAsArrayBuffer(file);
     });
