@@ -8,6 +8,29 @@ import { Input } from "@/components/ui/input";
 import { Upload, Users, Calendar, UserCheck, UserX, Clock, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import * as pdfjsLib from "pdfjs-dist";
+
+(pdfjsLib as any).GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+
+async function extractPdfText(file: File): Promise<string> {
+  const blobUrl = URL.createObjectURL(file);
+  try {
+    // @ts-ignore
+    const loadingTask = (pdfjsLib as any).getDocument({ url: blobUrl });
+    const pdf = await loadingTask.promise;
+    let fullText = "";
+    const maxPages = Math.min(pdf.numPages, 50);
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = (content.items as any[]).map((it: any) => it.str).join(" ");
+      fullText += pageText + "\n\n";
+    }
+    return fullText.trim();
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
 
 export default function PaidTraffic() {
   const { user } = useAuth();
@@ -51,6 +74,44 @@ export default function PaidTraffic() {
       refetch();
     } catch (error: any) {
       console.error('Erro ao processar PDF:', error);
+
+      // Tentar fallback automático: extrair TEXTO do PDF no cliente e reenviar
+      try {
+        const res = (error as any)?.context?.response as Response | undefined;
+        let shouldFallback = false;
+        let rawText = '';
+        let body: any = null;
+        if (res) {
+          body = await res.clone().json().catch(() => null);
+          rawText = await res.clone().text().catch(() => '');
+          if (
+            res.status === 400 ||
+            /Failed to extract/i.test(rawText) ||
+            /PDF.*processado|escaneada/i.test(body?.error || '')
+          ) {
+            shouldFallback = true;
+          }
+        }
+
+        if (shouldFallback) {
+          const extracted = await extractPdfText(file);
+          if (extracted && extracted.length > 30) {
+            const fd = new FormData();
+            fd.append('text', extracted);
+            fd.append('userId', user?.id || '');
+            fd.append('pdfFileName', file.name);
+            const { data: dataText, error: errText } = await supabase.functions.invoke('analyze-traffic-pdf', { body: fd });
+            if (errText) throw errText;
+            toast.success('Relatório analisado (fallback por texto) com sucesso!');
+            refetch();
+            return;
+          }
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback por texto falhou:', fallbackErr);
+      }
+
+      // Mensagens de erro detalhadas
       let message = 'Falha ao processar PDF';
       let title = 'Erro ao processar PDF';
       
@@ -62,10 +123,9 @@ export default function PaidTraffic() {
           if (body?.error) {
             message = body.error;
             
-            // Personalizar título baseado no tipo de erro
             if (body.error.includes('PDF não pode ser processado') || body.error.includes('escaneada')) {
               title = '📄 PDF Escaneado Detectado';
-              message = 'Este PDF é uma imagem escaneada. Por favor, exporte-o com texto selecionável ou converta as páginas para PNG/JPG.';
+              message = 'Este PDF é uma imagem escaneada. Exporte-o com texto selecionável ou converta as páginas para PNG/JPG.';
             } else if (body.error.includes('Limite de requisições')) {
               title = '⏱️ Muitas Requisições';
               message = 'Aguarde alguns instantes antes de tentar novamente.';
@@ -81,7 +141,7 @@ export default function PaidTraffic() {
       } catch {
         // ignore parsing errors
       }
-      
+
       toast.error(message, { description: title });
     } finally {
       setUploading(false);

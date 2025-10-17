@@ -19,13 +19,130 @@ serve(async (req) => {
     );
 
     const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const userId = formData.get('userId') as string;
+    const file = formData.get('file') as File | null;
+    const userId = (formData.get('userId') as string) || '';
+    const text = formData.get('text') as string | null;
+    const pdfFileName = formData.get('pdfFileName') as string | null;
+
+    // Fallback: quando recebemos texto extraído do PDF (client-side)
+    if (!file && text) {
+      console.log('Analisando TEXTO extraído com IA...');
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+      // Monta payload para IA (texto)
+      const buildBody = (model: string) => ({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um assistente especializado em análise de relatórios de leads. Extraia as seguintes informações do texto e retorne APENAS um objeto JSON válido sem formatação markdown: period_start (YYYY-MM-DD), period_end (YYYY-MM-DD), total_leads, scheduled_appointments, not_scheduled, awaiting_response, no_continuity, no_contact_after_attempts, leads_outside_brasilia, active_leads, in_progress, concierge_name. Use null quando ausente.'
+          },
+          {
+            role: 'user',
+            content: [{ type: 'text', text: text.slice(0, 100000) }]
+          }
+        ]
+      });
+
+      let aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(buildBody('google/gemini-2.5-flash')),
+      });
+
+      if (!aiResponse.ok) {
+        const t1 = await aiResponse.text();
+        console.error('Erro texto tentativa 1:', aiResponse.status, t1);
+        aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(buildBody('google/gemini-2.5-pro')),
+        });
+      }
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('Erro final (texto):', aiResponse.status, errorText);
+        const status = aiResponse.status;
+        if (status === 429) {
+          return new Response(JSON.stringify({ error: 'Limite de requisições de IA excedido. Aguarde e tente novamente.' }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        if (status === 402) {
+          return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.' }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        return new Response(JSON.stringify({ error: 'Erro ao analisar texto do PDF.' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const aiData = await aiResponse.json();
+      let extractedData;
+      try {
+        const content = aiData.choices?.[0]?.message?.content ?? '';
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        extractedData = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
+      } catch (e) {
+        console.error('Erro ao parsear resposta (texto):', e);
+        return new Response(JSON.stringify({ error: 'Não foi possível extrair dados do texto do PDF.' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { data: reportData, error: insertError } = await supabaseClient
+        .from('paid_traffic_reports')
+        .insert({
+          report_date: extractedData.period_end || extractedData.period_start,
+          platform: 'Leads',
+          period_start: extractedData.period_start,
+          period_end: extractedData.period_end,
+          total_leads: extractedData.total_leads,
+          scheduled_appointments: extractedData.scheduled_appointments,
+          not_scheduled: extractedData.not_scheduled,
+          awaiting_response: extractedData.awaiting_response,
+          no_continuity: extractedData.no_continuity,
+          no_contact_after_attempts: extractedData.no_contact_after_attempts,
+          leads_outside_brasilia: extractedData.leads_outside_brasilia,
+          active_leads: extractedData.active_leads,
+          in_progress: extractedData.in_progress,
+          concierge_name: extractedData.concierge_name,
+          pdf_file_path: null,
+          pdf_file_name: pdfFileName,
+          raw_data: extractedData,
+          created_by: userId
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Erro ao inserir (texto):', insertError);
+        return new Response(JSON.stringify({ error: 'Erro ao salvar dados do relatório.' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: reportData }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!file) {
       throw new Error('Arquivo PDF não fornecido');
     }
-
     console.log('Fazendo upload do PDF para o storage...');
     // Sanitize filename: remove special characters, spaces, and accents
     const sanitizedFileName = file.name
@@ -45,7 +162,7 @@ serve(async (req) => {
     // Create a short-lived signed URL so the AI can fetch the PDF directly
     const { data: signedUrlData, error: signedUrlError } = await supabaseClient.storage
       .from('traffic-reports')
-      .createSignedUrl(uploadData.path, 60);
+      .createSignedUrl(uploadData.path, 300);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error('Erro ao gerar URL assinada:', signedUrlError);
