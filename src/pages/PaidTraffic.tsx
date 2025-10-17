@@ -51,40 +51,38 @@ export default function PaidTraffic() {
       refetch();
     } catch (error: any) {
       console.error('Erro ao processar PDF:', error);
-      let message = error?.message || 'Falha ao processar PDF';
+      let message = 'Falha ao processar PDF';
+      let title = 'Erro ao processar PDF';
+      
       try {
         const res = (error as any)?.context?.response as Response | undefined;
         if (res) {
-          const status = res.status;
-          // Try JSON first
           const body = await res.clone().json().catch(() => null);
+          
           if (body?.error) {
             message = body.error;
-          } else if (status === 429) {
-            message = 'Limite de requisições de IA excedido. Tente novamente em instantes.';
-          } else if (status === 402) {
-            message = 'Créditos de IA esgotados. Adicione créditos para continuar.';
-          } else if (status === 400) {
-            message = 'Não foi possível ler o PDF enviado. Gere um PDF padrão (texto selecionável) ou exporte as páginas como imagens e tente novamente.';
-          } else {
-            // Fallback: try raw text for provider-specific hints
-            const text = await res.clone().text().catch(() => '');
-            if (text && /Failed to extract/i.test(text)) {
-              message = 'Não foi possível ler o PDF enviado. Gere um PDF padrão (texto selecionável) ou exporte as páginas como imagens e tente novamente.';
-            } else {
-              message = `${status} - ${res.statusText || 'Erro desconhecido'}`;
+            
+            // Personalizar título baseado no tipo de erro
+            if (body.error.includes('PDF não pode ser processado') || body.error.includes('escaneada')) {
+              title = '📄 PDF Escaneado Detectado';
+              message = 'Este PDF é uma imagem escaneada. Por favor, exporte-o com texto selecionável ou converta as páginas para PNG/JPG.';
+            } else if (body.error.includes('Limite de requisições')) {
+              title = '⏱️ Muitas Requisições';
+              message = 'Aguarde alguns instantes antes de tentar novamente.';
+            } else if (body.error.includes('Créditos')) {
+              title = '💳 Créditos Esgotados';
+              message = 'Entre em contato com o administrador para adicionar créditos.';
             }
-          }
-        } else {
-          // No response object from SDK, improve generic error
-          if (typeof error?.message === 'string' && /non-2xx/i.test(error.message)) {
-            message = 'Falha ao processar PDF. O servidor retornou um erro. Tente com um PDF padrão (texto selecionável).';
+          } else if (res.status === 400) {
+            title = '📄 Problema com o PDF';
+            message = 'PDF não pode ser lido. Use um PDF com texto selecionável ou imagens PNG/JPG.';
           }
         }
       } catch {
-        // ignore parsing errors, keep default message
+        // ignore parsing errors
       }
-      toast.error('Erro ao processar PDF: ' + message);
+      
+      toast.error(message, { description: title });
     } finally {
       setUploading(false);
       e.target.value = "";
