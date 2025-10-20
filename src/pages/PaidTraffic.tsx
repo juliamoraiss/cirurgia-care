@@ -103,19 +103,26 @@ const PDFUploadComponent = () => {
       setExtractedText(text);
       setProgress('Enviando para análise...');
 
+      // Obtém a sessão do usuário
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Você precisa estar autenticado para enviar o PDF.');
+      }
+
       // Cria FormData com o texto extraído
       const formData = new FormData();
       formData.append('text', text);
       formData.append('pdfFileName', selectedFile.name);
-      formData.append('userId', 'user-id-placeholder'); // Você deve substituir com o ID real do usuário
+      // Envie o userId real (fallback: não envia se não houver)
+      if (session.user?.id) {
+        formData.append('userId', session.user.id);
+      }
 
       // Envia para a Edge Function
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-traffic-pdf`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: formData,
       });
