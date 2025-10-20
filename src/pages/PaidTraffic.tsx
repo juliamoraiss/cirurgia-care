@@ -1,15 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Calendar, TrendingUp, Users } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Configura o worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+interface Report {
+  id: string;
+  report_date: string;
+  platform: string;
+  period_start: string | null;
+  period_end: string | null;
+  total_leads: number | null;
+  scheduled_appointments: number | null;
+  not_scheduled: number | null;
+  awaiting_response: number | null;
+  no_continuity: number | null;
+  no_contact_after_attempts: number | null;
+  leads_outside_brasilia: number | null;
+  active_leads: number | null;
+  in_progress: number | null;
+  concierge_name: string | null;
+  pdf_file_name: string | null;
+  created_at: string;
+}
 
 const PDFUploadComponent = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -18,6 +41,30 @@ const PDFUploadComponent = () => {
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+
+  const fetchReports = async () => {
+    setIsLoadingReports(true);
+    try {
+      const { data, error } = await supabase
+        .from('paid_traffic_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setReports(data || []);
+    } catch (err) {
+      console.error('Erro ao buscar relatórios:', err);
+      toast.error('Erro ao carregar relatórios');
+    } finally {
+      setIsLoadingReports(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -135,6 +182,9 @@ const PDFUploadComponent = () => {
 
       setProgress('Concluído!');
       setSuccess('PDF processado com sucesso! Os dados foram extraídos e salvos.');
+      
+      // Atualiza a lista de relatórios
+      fetchReports();
 
       // Limpa o formulário após 2 segundos
       setTimeout(() => {
@@ -156,7 +206,7 @@ const PDFUploadComponent = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-8 max-w-7xl">
       <div className="bg-card border-2 border-border rounded-lg p-6 space-y-6">
         <div className="space-y-2">
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -277,6 +327,124 @@ const PDFUploadComponent = () => {
             <li>• O sistema extrai automaticamente os dados usando IA</li>
           </ul>
         </div>
+      </div>
+
+      {/* Lista de Relatórios Salvos */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Relatórios Salvos</h2>
+          <Button onClick={fetchReports} variant="outline" size="sm" disabled={isLoadingReports}>
+            {isLoadingReports ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Atualizar'}
+          </Button>
+        </div>
+
+        {isLoadingReports ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : reports.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Nenhum relatório encontrado. Envie seu primeiro PDF acima!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {reports.map((report) => (
+              <Card key={report.id} className="overflow-hidden">
+                <CardHeader className="bg-muted/50">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      {report.pdf_file_name || 'Relatório'}
+                    </span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {formatDistanceToNow(new Date(report.created_at), { addSuffix: true, locale: ptBR })}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  {/* Período */}
+                  {(report.period_start || report.period_end) && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Período:</span>
+                      <span className="font-medium">
+                        {report.period_start && new Date(report.period_start).toLocaleDateString('pt-BR')}
+                        {report.period_start && report.period_end && ' - '}
+                        {report.period_end && new Date(report.period_end).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Concierge */}
+                  {report.concierge_name && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Concierge:</span>
+                      <span className="font-medium">{report.concierge_name}</span>
+                    </div>
+                  )}
+
+                  {/* Estatísticas principais */}
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Total de Leads</p>
+                      <p className="text-2xl font-bold">{report.total_leads ?? '-'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Agendamentos</p>
+                      <p className="text-2xl font-bold text-green-600">{report.scheduled_appointments ?? '-'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Não Agendados</p>
+                      <p className="text-2xl font-bold text-red-600">{report.not_scheduled ?? '-'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Aguardando Resposta</p>
+                      <p className="text-2xl font-bold text-yellow-600">{report.awaiting_response ?? '-'}</p>
+                    </div>
+                  </div>
+
+                  {/* Detalhes adicionais */}
+                  <div className="border-t pt-4 space-y-2 text-sm">
+                    {report.no_continuity !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sem continuidade:</span>
+                        <span className="font-medium">{report.no_continuity}</span>
+                      </div>
+                    )}
+                    {report.no_contact_after_attempts !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sem contato após tentativas:</span>
+                        <span className="font-medium">{report.no_contact_after_attempts}</span>
+                      </div>
+                    )}
+                    {report.leads_outside_brasilia !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Leads fora de Brasília:</span>
+                        <span className="font-medium">{report.leads_outside_brasilia}</span>
+                      </div>
+                    )}
+                    {report.active_leads !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Leads ativos:</span>
+                        <span className="font-medium">{report.active_leads}</span>
+                      </div>
+                    )}
+                    {report.in_progress !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Em progresso:</span>
+                        <span className="font-medium">{report.in_progress}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
