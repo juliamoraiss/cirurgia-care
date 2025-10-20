@@ -3,6 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+// Configura o worker do PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 const PDFUploadComponent = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -20,15 +26,9 @@ const PDFUploadComponent = () => {
         try {
           const typedArray = new Uint8Array(e.target?.result as ArrayBuffer);
           
-          // Importa a biblioteca PDF.js dinamicamente
-          const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.mjs');
-          
-          // Configura o worker
-          pdfjsLib.GlobalWorkerOptions.workerSrc = 
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.mjs';
-          
           setProgress('Carregando PDF...');
-          const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+          const loadingTask = pdfjsLib.getDocument({ data: typedArray });
+          const pdf = await loadingTask.promise;
           
           let fullText = '';
           const numPages = pdf.numPages;
@@ -109,14 +109,12 @@ const PDFUploadComponent = () => {
       formData.append('userId', 'user-id-placeholder'); // Você deve substituir com o ID real do usuário
 
       // Envia para a Edge Function
-      // IMPORTANTE: Substitua a URL abaixo pela URL do seu projeto Supabase
-      const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Ex: https://xxxx.supabase.co
-      const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+      const { data: { session } } = await supabase.auth.getSession();
       
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-pdf-report`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-traffic-pdf`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: formData,
       });
