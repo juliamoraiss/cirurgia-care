@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Calendar, TrendingUp, Users } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Calendar, TrendingUp, Users, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { toast } from 'sonner';
@@ -59,6 +60,23 @@ const PDFUploadComponent = () => {
       toast.error('Erro ao carregar relatórios');
     } finally {
       setIsLoadingReports(false);
+    }
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      const { error } = await supabase
+        .from('paid_traffic_reports')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) throw error;
+      
+      toast.success('Relatório excluído com sucesso');
+      fetchReports();
+    } catch (err) {
+      console.error('Erro ao excluir relatório:', err);
+      toast.error('Erro ao excluir relatório');
     }
   };
 
@@ -359,9 +377,32 @@ const PDFUploadComponent = () => {
                       <FileText className="h-5 w-5" />
                       {report.pdf_file_name || 'Relatório'}
                     </span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {formatDistanceToNow(new Date(report.created_at), { addSuffix: true, locale: ptBR })}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {formatDistanceToNow(new Date(report.created_at), { addSuffix: true, locale: ptBR })}
+                      </span>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita. O relatório será permanentemente excluído.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteReport(report.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
