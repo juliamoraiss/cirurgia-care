@@ -59,7 +59,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente especializado em análise de relatórios de leads. Extraia as seguintes informações do texto e retorne APENAS um objeto JSON válido sem formatação markdown: period_start (YYYY-MM-DD), period_end (YYYY-MM-DD), total_leads, scheduled_appointments, not_scheduled, awaiting_response, no_continuity, no_contact_after_attempts, leads_outside_brasilia, active_leads, in_progress, concierge_name. Use null quando ausente.'
+            content: 'Você é um assistente especializado em análise de relatórios de leads. Extraia as seguintes informações do texto e retorne APENAS um objeto JSON válido sem formatação markdown: period_start (YYYY-MM-DD), period_end (YYYY-MM-DD), total_leads, scheduled_appointments, not_scheduled, awaiting_response, no_continuity, no_contact_after_attempts, leads_outside_brasilia, active_leads, in_progress, concierge_name, scheduled_patients (array com os nomes completos dos pacientes que foram agendados). Use null quando ausente.'
           },
           {
             role: 'user',
@@ -169,6 +169,36 @@ serve(async (req) => {
       }
 
       console.log('16. Sucesso! Dados salvos:', reportData.id);
+
+      // Criar pacientes agendados
+      if (extractedData.scheduled_patients && Array.isArray(extractedData.scheduled_patients)) {
+        console.log('16.1 Criando pacientes agendados:', extractedData.scheduled_patients.length);
+        
+        for (const patientName of extractedData.scheduled_patients) {
+          if (patientName && typeof patientName === 'string' && patientName.trim()) {
+            try {
+              const { error: patientError } = await supabaseClient
+                .from('patients')
+                .insert({
+                  name: patientName.trim(),
+                  procedure: 'simpatectomia',
+                  origem: 'trafego pago',
+                  status: 'awaiting_authorization',
+                  created_by: userId
+                });
+
+              if (patientError) {
+                console.error('16.2 Erro ao criar paciente:', patientName, patientError);
+              } else {
+                console.log('16.3 Paciente criado:', patientName);
+              }
+            } catch (err) {
+              console.error('16.4 Erro ao processar paciente:', patientName, err);
+            }
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ success: true, data: reportData }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -273,7 +303,7 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'Você é um assistente especializado em análise de relatórios de leads. Extraia as seguintes informações do PDF e retorne APENAS um objeto JSON válido sem formatação markdown: period_start (data início do período YYYY-MM-DD), period_end (data fim do período YYYY-MM-DD), total_leads (número total de leads), scheduled_appointments (agendamentos realizados), not_scheduled (não agendados), awaiting_response (aguardando resposta), no_continuity (quantos não deram continuidade), no_contact_after_attempts (quantos não responderam após tentativas), leads_outside_brasilia (leads de fora de Brasília), active_leads (leads ativos), in_progress (em progresso), concierge_name (nome do concierge/responsável). Se algum dado não estiver disponível, use null.'
+              content: 'Você é um assistente especializado em análise de relatórios de leads. Extraia as seguintes informações do PDF e retorne APENAS um objeto JSON válido sem formatação markdown: period_start (data início do período YYYY-MM-DD), period_end (data fim do período YYYY-MM-DD), total_leads (número total de leads), scheduled_appointments (agendamentos realizados), not_scheduled (não agendados), awaiting_response (aguardando resposta), no_continuity (quantos não deram continuidade), no_contact_after_attempts (quantos não responderam após tentativas), leads_outside_brasilia (leads de fora de Brasília), active_leads (leads ativos), in_progress (em progresso), concierge_name (nome do concierge/responsável), scheduled_patients (array com os nomes completos dos pacientes que foram agendados). Se algum dado não estiver disponível, use null.'
             },
             {
               role: 'user',
@@ -396,6 +426,36 @@ serve(async (req) => {
     }
 
     console.log('42. SUCESSO! Dados salvos:', reportData.id);
+
+    // Criar pacientes agendados
+    if (extractedData.scheduled_patients && Array.isArray(extractedData.scheduled_patients)) {
+      console.log('42.1 Criando pacientes agendados:', extractedData.scheduled_patients.length);
+      
+      for (const patientName of extractedData.scheduled_patients) {
+        if (patientName && typeof patientName === 'string' && patientName.trim()) {
+          try {
+            const { error: patientError } = await supabaseClient
+              .from('patients')
+              .insert({
+                name: patientName.trim(),
+                procedure: 'simpatectomia',
+                origem: 'trafego pago',
+                status: 'awaiting_authorization',
+                created_by: userId
+              });
+
+            if (patientError) {
+              console.error('42.2 Erro ao criar paciente:', patientName, patientError);
+            } else {
+              console.log('42.3 Paciente criado:', patientName);
+            }
+          } catch (err) {
+            console.error('42.4 Erro ao processar paciente:', patientName, err);
+          }
+        }
+      }
+    }
+
     console.log('=== FIM DO PROCESSAMENTO ===');
 
     return new Response(
