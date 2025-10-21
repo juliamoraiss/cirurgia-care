@@ -281,6 +281,7 @@ const Patients = () => {
                 <PopoverContent className="w-[280px] p-0 bg-background z-50" align="start">
                   <div className="p-4 space-y-2">
                     {[
+                      { value: "awaiting_consultation", label: "Aguardando Consulta" },
                       { value: "awaiting_authorization", label: "Aguardando Autorização" },
                       { value: "authorized", label: "Autorizado" },
                       { value: "completed", label: "Cirurgia Realizada" },

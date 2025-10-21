@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 
 type PatientStatus = 
+  | "awaiting_consultation"
   | "awaiting_authorization"
   | "authorized"
   | "completed"
@@ -11,6 +12,10 @@ interface StatusBadgeProps {
 }
 
 const statusConfig = {
+  awaiting_consultation: {
+    label: "Aguardando Consulta",
+    variant: "secondary" as const,
+  },
   awaiting_authorization: {
     label: "Aguardando Autorização",
     variant: "warning" as const,
