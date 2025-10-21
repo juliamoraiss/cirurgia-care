@@ -271,6 +271,7 @@ export type Database = {
           insurance_number: string | null
           name: string
           notes: string | null
+          origem: string | null
           phone: string | null
           procedure: string
           status: Database["public"]["Enums"]["patient_status"]
@@ -294,6 +295,7 @@ export type Database = {
           insurance_number?: string | null
           name: string
           notes?: string | null
+          origem?: string | null
           phone?: string | null
           procedure: string
           status?: Database["public"]["Enums"]["patient_status"]
@@ -317,6 +319,7 @@ export type Database = {
           insurance_number?: string | null
           name?: string
           notes?: string | null
+          origem?: string | null
           phone?: string | null
           procedure?: string
           status?: Database["public"]["Enums"]["patient_status"]
@@ -452,6 +455,7 @@ export type Database = {
         | "surgery_completed"
         | "cancelled"
         | "completed"
+        | "awaiting_consultation"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -588,6 +592,7 @@ export const Constants = {
         "surgery_completed",
         "cancelled",
         "completed",
+        "awaiting_consultation",
       ],
     },
   },

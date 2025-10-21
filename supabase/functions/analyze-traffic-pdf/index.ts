@@ -177,15 +177,15 @@ serve(async (req) => {
         for (const patientName of extractedData.scheduled_patients) {
           if (patientName && typeof patientName === 'string' && patientName.trim()) {
             try {
-              const { error: patientError } = await supabaseClient
-                .from('patients')
-                .insert({
-                  name: patientName.trim(),
-                  procedure: 'simpatectomia',
-                  origem: 'trafego pago',
-                  status: 'awaiting_authorization',
-                  created_by: userId
-                });
+            const { error: patientError } = await supabaseClient
+              .from('patients')
+              .insert({
+                name: patientName.trim(),
+                procedure: 'simpatectomia',
+                origem: 'trafego pago',
+                status: 'awaiting_consultation',
+                created_by: userId
+              });
 
               if (patientError) {
                 console.error('16.2 Erro ao criar paciente:', patientName, patientError);
@@ -440,7 +440,7 @@ serve(async (req) => {
                 name: patientName.trim(),
                 procedure: 'simpatectomia',
                 origem: 'trafego pago',
-                status: 'awaiting_authorization',
+                status: 'awaiting_consultation',
                 created_by: userId
               });
 

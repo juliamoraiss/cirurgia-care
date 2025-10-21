@@ -52,7 +52,8 @@ const patientSchema = z.object({
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance_number: z.string().max(100, "Número do convênio deve ter no máximo 100 caracteres").optional().or(z.literal("")),
   
-  status: z.enum(["awaiting_authorization", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
+  status: z.enum(["awaiting_authorization", "awaiting_consultation", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
+  origem: z.string().optional(),
 });
 
 const PatientForm = () => {
@@ -79,6 +80,7 @@ const PatientForm = () => {
     status: "awaiting_authorization",
     surgery_date: "",
     guide_validity_date: "",
+    origem: "",
   });
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
@@ -141,6 +143,7 @@ const PatientForm = () => {
           status: data.status || "awaiting_authorization",
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
+          origem: data.origem || "",
         });
         
         // Set checklist for the procedure and restore checked exams
@@ -539,6 +542,7 @@ const PatientForm = () => {
         surgery_date: utcSurgeryDate,
         exams_checklist: checkedExams,
         guide_validity_date: formData.guide_validity_date || null,
+        origem: validatedData.origem || null,
       };
 
       let error;
@@ -854,11 +858,23 @@ const PatientForm = () => {
                     <SelectItem value="awaiting_authorization">
                       Aguardando Autorização
                     </SelectItem>
+                    <SelectItem value="awaiting_consultation">
+                      Aguardando Consulta
+                    </SelectItem>
                     <SelectItem value="authorized">Autorizado</SelectItem>
                     <SelectItem value="completed">Cirurgia Realizada</SelectItem>
                     <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="origem">Origem</Label>
+                <Input
+                  id="origem"
+                  value={formData.origem}
+                  onChange={(e) => handleChange("origem", e.target.value)}
+                  placeholder="Ex: sistema, trafego pago"
+                />
               </div>
             </div>
 
