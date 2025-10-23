@@ -47,18 +47,54 @@ serve(async (req) => {
       );
     }
 
-    // Here you would integrate with APNs (Apple Push Notification service)
-    // For now, we'll log the notification details
-    console.log('Would send notification:', { title, body, data, tokens });
+    // Send notifications via Firebase Cloud Messaging
+    const fcmServerKey = Deno.env.get('FIREBASE_SERVER_KEY');
+    
+    if (!fcmServerKey) {
+      console.error('FIREBASE_SERVER_KEY not configured');
+      throw new Error('Firebase server key not configured');
+    }
 
-    // In production, you would use APNs HTTP/2 API or a service like OneSignal
-    // Example with APNs would require the APNS_KEY_ID, APNS_TEAM_ID, and APNS_KEY secrets
+    const results = await Promise.all(
+      tokens.map(async ({ token, platform }) => {
+        try {
+          const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `key=${fcmServerKey}`,
+            },
+            body: JSON.stringify({
+              to: token,
+              notification: {
+                title,
+                body,
+              },
+              data: data || {},
+              priority: 'high',
+            }),
+          });
+
+          const result = await response.json();
+          console.log(`Notification sent to ${platform}:`, result);
+          return { token, success: response.ok, result };
+        } catch (error) {
+          console.error(`Error sending to ${platform}:`, error);
+          return { token, success: false, error: (error as Error).message };
+        }
+      })
+    );
+
+    const successCount = results.filter(r => r.success).length;
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Notification queued',
-        tokens_count: tokens.length 
+        message: 'Notifications sent',
+        total_tokens: tokens.length,
+        successful: successCount,
+        failed: tokens.length - successCount,
+        results
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

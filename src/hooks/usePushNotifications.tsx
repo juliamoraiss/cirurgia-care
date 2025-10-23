@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const usePushNotifications = () => {
   const { toast } = useToast();
@@ -15,46 +16,58 @@ export const usePushNotifications = () => {
     const initPushNotifications = async () => {
       try {
         // Request permission
-        let permStatus = await PushNotifications.checkPermissions();
-
-        if (permStatus.receive === 'prompt') {
-          permStatus = await PushNotifications.requestPermissions();
-        }
-
-        if (permStatus.receive !== 'granted') {
+        const { receive } = await FirebaseMessaging.requestPermissions();
+        
+        if (receive !== 'granted') {
           console.log('Push notification permission denied');
           return;
         }
 
-        // Register for push notifications
-        await PushNotifications.register();
+        // Get FCM token
+        const { token } = await FirebaseMessaging.getToken();
+        console.log('FCM token:', token);
 
-        // Listen for registration success
-        await PushNotifications.addListener('registration', async (token) => {
-          console.log('Push registration success, token:', token.value);
-          
-          // TODO: Save token to backend when types are updated
-          // For now, just store in localStorage
-          localStorage.setItem('push_token', token.value);
+        // Save token to database
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && token) {
+          const platform = Capacitor.getPlatform();
+          await supabase
+            .from('user_push_tokens')
+            .upsert({ 
+              user_id: user.id, 
+              token: token,
+              platform: platform === 'ios' ? 'ios' : 'android'
+            });
+        }
+
+        // Listen for token refresh
+        await FirebaseMessaging.addListener('tokenReceived', async (event) => {
+          console.log('FCM token refreshed:', event.token);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && event.token) {
+            const platform = Capacitor.getPlatform();
+            await supabase
+              .from('user_push_tokens')
+              .upsert({ 
+                user_id: user.id, 
+                token: event.token,
+                platform: platform === 'ios' ? 'ios' : 'android'
+              });
+          }
         });
 
-        // Listen for registration errors
-        await PushNotifications.addListener('registrationError', (error) => {
-          console.error('Push registration error:', error);
-        });
-
-        // Listen for push notifications received
-        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('Push notification received:', notification);
+        // Listen for notifications received
+        await FirebaseMessaging.addListener('notificationReceived', (event) => {
+          console.log('Push notification received:', event.notification);
           toast({
-            title: notification.title || 'Nova notificação',
-            description: notification.body,
+            title: event.notification.title || 'Nova notificação',
+            description: event.notification.body,
           });
         });
 
-        // Listen for push notification actions
-        await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          console.log('Push notification action performed:', notification);
+        // Listen for notification actions
+        await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+          console.log('Notification action performed:', event);
         });
 
       } catch (error) {
@@ -65,7 +78,7 @@ export const usePushNotifications = () => {
     initPushNotifications();
 
     return () => {
-      PushNotifications.removeAllListeners();
+      FirebaseMessaging.removeAllListeners();
     };
   }, [toast]);
 };
