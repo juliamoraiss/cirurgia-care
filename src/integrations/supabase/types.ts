@@ -399,6 +399,33 @@ export type Database = {
           },
         ]
       }
+      user_push_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -429,10 +456,7 @@ export type Database = {
         Args: { _full_name?: string; _password: string; _username: string }
         Returns: Json
       }
-      get_email_by_username: {
-        Args: { _username: string }
-        Returns: string
-      }
+      get_email_by_username: { Args: { _username: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -440,10 +464,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_authenticated_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_authenticated_user: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

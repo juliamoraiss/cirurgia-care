@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const usePushNotifications = () => {
@@ -34,17 +33,9 @@ export const usePushNotifications = () => {
         await PushNotifications.addListener('registration', async (token) => {
           console.log('Push registration success, token:', token.value);
           
-          // Save token to database
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
-              .from('user_push_tokens')
-              .upsert({ 
-                user_id: user.id, 
-                token: token.value,
-                platform: 'ios'
-              });
-          }
+          // TODO: Save token to backend when types are updated
+          // For now, just store in localStorage
+          localStorage.setItem('push_token', token.value);
         });
 
         // Listen for registration errors
