@@ -24,7 +24,6 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  usePushNotifications();
 
   if (loading) {
     return (
@@ -44,6 +43,100 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
+// Componente para inicializar push notifications
+function AppWithNotifications() {
+  // Chama o hook aqui para registrar assim que o app abre
+  usePushNotifications();
+
+  return (
+    <Routes>
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/landing" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute>
+            <Patients />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients/new"
+        element={
+          <ProtectedRoute>
+            <PatientForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients/:id"
+        element={
+          <ProtectedRoute>
+            <PatientForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients/:id/exams"
+        element={
+          <ProtectedRoute>
+            <PatientExams />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <Calendar />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <Tasks />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/paid-traffic"
+        element={
+          <ProtectedRoute>
+            <PaidTraffic />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/test-notifications"
+        element={
+          <ProtectedRoute>
+            <TestNotifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -51,92 +144,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/landing" element={<LandingPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-            <Route
-              path="/patients"
-              element={
-                <ProtectedRoute>
-                  <Patients />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/new"
-              element={
-                <ProtectedRoute>
-                  <PatientForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/:id"
-              element={
-                <ProtectedRoute>
-                  <PatientForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/:id/exams"
-              element={
-                <ProtectedRoute>
-                  <PatientExams />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/calendar"
-              element={
-                <ProtectedRoute>
-                  <Calendar />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tasks"
-              element={
-                <ProtectedRoute>
-                  <Tasks />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <UserManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/paid-traffic"
-              element={
-                <ProtectedRoute>
-                  <PaidTraffic />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/test-notifications"
-              element={
-                <ProtectedRoute>
-                  <TestNotifications />
-                </ProtectedRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppWithNotifications />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
