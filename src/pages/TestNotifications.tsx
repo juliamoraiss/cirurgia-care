@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +6,43 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 export default function TestNotifications() {
   const { toast } = useToast();
   const [title, setTitle] = useState('Teste de Notificação');
   const [body, setBody] = useState('Esta é uma notificação de teste do sistema.');
   const [loading, setLoading] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+  const [tokenCount, setTokenCount] = useState(0);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    checkTokens();
+  }, []);
+
+  const checkTokens = async () => {
+    try {
+      setChecking(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('push_tokens')
+        .select('token')
+        .eq('user_id', user.id);
+
+      if (!error && data) {
+        setTokenCount(data.length);
+        setHasToken(data.length > 0);
+        console.log(`✅ ${data.length} token(s) encontrado(s)`);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar tokens:', error);
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleSendNotification = async () => {
     try {
@@ -70,6 +100,38 @@ export default function TestNotifications() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Status do Token */}
+          <div className={`flex items-center gap-2 p-3 rounded-lg ${
+            hasToken 
+              ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300' 
+              : 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300'
+          }`}>
+            {hasToken ? (
+              <>
+                <CheckCircle className="h-5 w-5" />
+                <span className="text-sm font-medium">
+                  {tokenCount} token(s) registrado(s) ✅
+                </span>
+              </>
+            ) : (
+              <>
+                <XCircle className="h-5 w-5" />
+                <span className="text-sm font-medium">
+                  Nenhum token registrado ⚠️
+                </span>
+              </>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={checkTokens} 
+              disabled={checking}
+              className="ml-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Título</Label>
             <Input
@@ -93,16 +155,22 @@ export default function TestNotifications() {
 
           <Button 
             onClick={handleSendNotification} 
-            disabled={loading || !title || !body}
+            disabled={loading || !title || !body || !hasToken}
             className="w-full"
           >
             {loading ? 'Enviando...' : 'Enviar Notificação de Teste'}
           </Button>
 
-          <div className="text-sm text-muted-foreground space-y-1">
+          <div className="text-sm text-muted-foreground space-y-1 border-t pt-3">
+            <p className="font-medium">⚙️ Checklist:</p>
             <p>• Certifique-se de que você permitiu notificações no app</p>
             <p>• O token do dispositivo deve estar registrado no sistema</p>
             <p>• Para iOS, você precisa estar em um dispositivo físico</p>
+            {!hasToken && (
+              <p className="text-yellow-600 dark:text-yellow-400 font-medium mt-2">
+                ⚠️ Abra o app no dispositivo para registrar o token!
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

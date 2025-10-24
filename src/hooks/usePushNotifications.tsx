@@ -1,76 +1,117 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export const usePushNotifications = () => {
-  const { toast } = useToast();
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const saveTokenToBackend = async (deviceToken: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('⚠️ Usuário não autenticado, token não salvo');
+        return;
+      }
+
+      console.log('💾 Salvando token no backend...');
+
+      // Salvar token na tabela push_tokens
+      const { error } = await supabase
+        .from('push_tokens')
+        .upsert({
+          user_id: user.id,
+          token: deviceToken,
+          platform: Capacitor.getPlatform(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'token'
+        });
+
+      if (error) {
+        console.error('❌ Erro ao salvar token:', error);
+      } else {
+        console.log('✅ Token salvo no backend com sucesso!');
+      }
+    } catch (err) {
+      console.error('❌ Erro ao salvar token:', err);
+    }
+  };
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Push notifications only work on native platforms');
+    // Não registrar no web
+    if (Capacitor.getPlatform() === 'web') {
+      console.log('ℹ️ Push notifications não disponíveis na web');
       return;
     }
 
-    const initPushNotifications = async () => {
+    const registerNotifications = async () => {
       try {
-        // Request permission
-        const result = await PushNotifications.requestPermissions();
+        console.log('🔔 Iniciando registro de notificações...');
         
-        if (result.receive !== 'granted') {
-          console.log('Push notification permission denied');
+        // Verificar permissões
+        let permStatus = await PushNotifications.checkPermissions();
+        console.log('📋 Status de permissões:', permStatus);
+
+        if (permStatus.receive === 'prompt') {
+          console.log('❓ Solicitando permissão...');
+          permStatus = await PushNotifications.requestPermissions();
+        }
+
+        if (permStatus.receive !== 'granted') {
+          console.log('❌ Permissão negada');
+          setError('Permissão negada');
           return;
         }
 
-        // Register for push notifications
+        console.log('✅ Permissão concedida, registrando...');
+        
+        // Registrar para notificações
         await PushNotifications.register();
+        console.log('✅ Registro de push notifications iniciado');
 
-        // Listen for registration success
-        await PushNotifications.addListener('registration', async (token) => {
-          console.log('Push registration success, token:', token.value);
-          
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user && token.value) {
-            const platform = Capacitor.getPlatform();
-            await supabase
-              .from('user_push_tokens')
-              .upsert({ 
-                user_id: user.id, 
-                token: token.value,
-                platform: platform === 'ios' ? 'ios' : 'android'
-              });
-          }
-        });
-
-        // Listen for registration errors
-        await PushNotifications.addListener('registrationError', (error) => {
-          console.error('Push registration error:', error);
-        });
-
-        // Listen for notifications received
-        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('Push notification received:', notification);
-          toast({
-            title: notification.title || 'Nova notificação',
-            description: notification.body,
-          });
-        });
-
-        // Listen for notification actions
-        await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          console.log('Notification action performed:', notification);
-        });
-
-      } catch (error) {
-        console.error('Error initializing push notifications:', error);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
+        setError(errorMsg);
+        console.error('❌ Erro ao registrar:', err);
       }
     };
 
-    initPushNotifications();
+    // Listener para token registrado com sucesso
+    PushNotifications.addListener('registration', (tokenData) => {
+      console.log('🎉 Token registrado com sucesso!');
+      console.log('🔑 Token:', tokenData.value);
+      setToken(tokenData.value);
+      saveTokenToBackend(tokenData.value);
+    });
 
+    // Listener para erro no registro
+    PushNotifications.addListener('registrationError', (err) => {
+      console.error('❌ Erro no registro de token:', err);
+      setError(JSON.stringify(err));
+    });
+
+    // Listener para notificação recebida (app aberto)
+    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      console.log('📱 Notificação recebida (app aberto):', notification);
+    });
+
+    // Listener para notificação clicada
+    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+      console.log('👆 Notificação clicada:', notification);
+    });
+
+    // Iniciar registro
+    registerNotifications();
+
+    // Cleanup ao desmontar
     return () => {
+      console.log('🧹 Removendo listeners de notificações');
       PushNotifications.removeAllListeners();
     };
-  }, [toast]);
+  }, []);
+
+  return { token, error };
 };
