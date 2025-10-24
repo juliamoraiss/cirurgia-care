@@ -18,6 +18,7 @@ import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
+import TestNotifications from "./pages/TestNotifications";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +123,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PaidTraffic />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/test-notifications"
+              element={
+                <ProtectedRoute>
+                  <TestNotifications />
                 </ProtectedRoute>
               }
             />
