@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { FirebaseMessaging } from '@capacitor-firebase/messaging';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,58 +16,50 @@ export const usePushNotifications = () => {
     const initPushNotifications = async () => {
       try {
         // Request permission
-        const { receive } = await FirebaseMessaging.requestPermissions();
+        const result = await PushNotifications.requestPermissions();
         
-        if (receive !== 'granted') {
+        if (result.receive !== 'granted') {
           console.log('Push notification permission denied');
           return;
         }
 
-        // Get FCM token
-        const { token } = await FirebaseMessaging.getToken();
-        console.log('FCM token:', token);
+        // Register for push notifications
+        await PushNotifications.register();
 
-        // Save token to database
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && token) {
-          const platform = Capacitor.getPlatform();
-          await supabase
-            .from('user_push_tokens')
-            .upsert({ 
-              user_id: user.id, 
-              token: token,
-              platform: platform === 'ios' ? 'ios' : 'android'
-            });
-        }
-
-        // Listen for token refresh
-        await FirebaseMessaging.addListener('tokenReceived', async (event) => {
-          console.log('FCM token refreshed:', event.token);
+        // Listen for registration success
+        await PushNotifications.addListener('registration', async (token) => {
+          console.log('Push registration success, token:', token.value);
+          
           const { data: { user } } = await supabase.auth.getUser();
-          if (user && event.token) {
+          if (user && token.value) {
             const platform = Capacitor.getPlatform();
             await supabase
               .from('user_push_tokens')
               .upsert({ 
                 user_id: user.id, 
-                token: event.token,
+                token: token.value,
                 platform: platform === 'ios' ? 'ios' : 'android'
               });
           }
         });
 
+        // Listen for registration errors
+        await PushNotifications.addListener('registrationError', (error) => {
+          console.error('Push registration error:', error);
+        });
+
         // Listen for notifications received
-        await FirebaseMessaging.addListener('notificationReceived', (event) => {
-          console.log('Push notification received:', event.notification);
+        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('Push notification received:', notification);
           toast({
-            title: event.notification.title || 'Nova notificação',
-            description: event.notification.body,
+            title: notification.title || 'Nova notificação',
+            description: notification.body,
           });
         });
 
         // Listen for notification actions
-        await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
-          console.log('Notification action performed:', event);
+        await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+          console.log('Notification action performed:', notification);
         });
 
       } catch (error) {
@@ -78,7 +70,7 @@ export const usePushNotifications = () => {
     initPushNotifications();
 
     return () => {
-      FirebaseMessaging.removeAllListeners();
+      PushNotifications.removeAllListeners();
     };
   }, [toast]);
 };
