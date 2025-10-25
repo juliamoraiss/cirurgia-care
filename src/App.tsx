@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
-import { usePushNotifications } from "./hooks/usePushNotifications";
 import { Layout } from "./components/Layout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -18,7 +17,6 @@ import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
-import TestNotifications from "./pages/TestNotifications";
 
 const queryClient = new QueryClient();
 
@@ -43,11 +41,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
-// Componente para inicializar push notifications
-function AppWithNotifications() {
-  // Chama o hook aqui para registrar assim que o app abre
-  usePushNotifications();
-
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
@@ -124,14 +118,6 @@ function AppWithNotifications() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/test-notifications"
-        element={
-          <ProtectedRoute>
-            <TestNotifications />
-          </ProtectedRoute>
-        }
-      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -144,7 +130,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppWithNotifications />
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

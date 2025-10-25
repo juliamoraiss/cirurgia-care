@@ -563,14 +563,6 @@ const PatientForm = () => {
         error = result.error;
         if (result.data) {
           savedPatientId = result.data.id;
-          
-          // Send notification to admins about new patient
-          supabase.functions.invoke('notify-new-patient', {
-            body: {
-              patient_name: validatedData.name,
-              procedure: validatedData.procedure,
-            }
-          }).catch(err => console.error('Error sending notification:', err));
         }
       }
 

@@ -77,23 +77,6 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
 
       if (error) throw error;
 
-      // Get patient name for notification
-      const { data: patient } = await supabase
-        .from("patients")
-        .select("name")
-        .eq("id", patientId)
-        .single();
-
-      // Send notification to admins
-      if (patient) {
-        supabase.functions.invoke('notify-new-note', {
-          body: {
-            patient_name: patient.name,
-            note_preview: newNote.trim().substring(0, 100),
-          }
-        }).catch(err => console.error('Error sending notification:', err));
-      }
-
       toast.success("Nota salva com sucesso!");
       setNewNote("");
       setDialogOpen(false);
