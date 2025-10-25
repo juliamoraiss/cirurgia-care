@@ -28,7 +28,7 @@ export default function TestNotifications() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('push_tokens')
+        .from('user_push_tokens')
         .select('token')
         .eq('user_id', user.id);
 

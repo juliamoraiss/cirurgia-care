@@ -13,6 +13,47 @@ interface NotificationPayload {
   data?: Record<string, string>;
 }
 
+async function sendFCMNotification(token: string, title: string, body: string, data?: Record<string, string>) {
+  const FCM_SERVER_KEY = Deno.env.get('FCM_SERVER_KEY');
+  
+  if (!FCM_SERVER_KEY) {
+    console.error('FCM_SERVER_KEY not configured');
+    return { success: false, error: 'FCM not configured' };
+  }
+
+  try {
+    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `key=${FCM_SERVER_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: token,
+        notification: {
+          title,
+          body,
+          sound: 'default',
+        },
+        data: data || {},
+        priority: 'high',
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (response.ok && result.success === 1) {
+      return { success: true };
+    } else {
+      console.error('FCM error:', result);
+      return { success: false, error: result.results?.[0]?.error || 'Unknown error' };
+    }
+  } catch (error) {
+    console.error('Error sending FCM:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -47,23 +88,21 @@ serve(async (req) => {
       );
     }
 
-    // Log notification details (actual push delivery requires APNs/FCM configuration)
-    console.log('Notification prepared for delivery:', {
-      user_id,
-      title,
-      body,
-      tokens: tokens.map(t => ({ platform: t.platform, token: t.token.substring(0, 20) + '...' }))
-    });
+    // Send notifications via FCM
+    console.log('Sending notifications to', tokens.length, 'devices');
+    
+    const results = await Promise.all(
+      tokens.map(async ({ token, platform }) => {
+        const result = await sendFCMNotification(token, title, body, data);
+        return {
+          token: token.substring(0, 20) + '...',
+          platform,
+          ...result
+        };
+      })
+    );
 
-    // Simulate successful delivery for development
-    const results = tokens.map(({ token, platform }) => ({
-      token,
-      platform,
-      success: true,
-      message: 'Token registered, push delivery requires APNs/FCM setup'
-    }));
-
-    const successCount = results.length;
+    const successCount = results.filter(r => r.success).length;
 
     return new Response(
       JSON.stringify({ 

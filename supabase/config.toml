@@ -8,3 +8,15 @@ verify_jwt = true
 
 [functions.submit-landing-form]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.notify-daily-tasks]
+verify_jwt = false
+
+[functions.notify-new-patient]
+verify_jwt = false
+
+[functions.notify-new-note]
+verify_jwt = false

@@ -18,9 +18,9 @@ export const usePushNotifications = () => {
 
       console.log('💾 Salvando token no backend...');
 
-      // Salvar token na tabela push_tokens
+      // Salvar token na tabela user_push_tokens
       const { error } = await supabase
-        .from('push_tokens')
+        .from('user_push_tokens')
         .upsert({
           user_id: user.id,
           token: deviceToken,
