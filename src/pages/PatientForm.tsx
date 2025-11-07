@@ -869,12 +869,18 @@ const PatientForm = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="origem">Origem</Label>
-                <Input
-                  id="origem"
+                <Select
                   value={formData.origem}
-                  onChange={(e) => handleChange("origem", e.target.value)}
-                  placeholder="Ex: sistema, trafego pago"
-                />
+                  onValueChange={(value) => handleChange("origem", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sistema">Sistema</SelectItem>
+                    <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

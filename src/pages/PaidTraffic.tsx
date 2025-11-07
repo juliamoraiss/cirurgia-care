@@ -5,12 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Calendar, TrendingUp, Users, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Configura o worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -44,6 +46,8 @@ const PDFUploadComponent = () => {
   const [success, setSuccess] = useState('');
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [conversionsData, setConversionsData] = useState<any[]>([]);
+  const [isLoadingConversions, setIsLoadingConversions] = useState(true);
 
   const fetchReports = async () => {
     setIsLoadingReports(true);
@@ -80,8 +84,44 @@ const PDFUploadComponent = () => {
     }
   };
 
+  const fetchConversions = async () => {
+    setIsLoadingConversions(true);
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('created_at, status, origem')
+        .eq('origem', 'Tráfego Pago')
+        .eq('status', 'authorized')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Agrupar conversões por data
+      const groupedData: { [key: string]: number } = {};
+      
+      data?.forEach(patient => {
+        const date = format(new Date(patient.created_at), 'dd/MM/yyyy');
+        groupedData[date] = (groupedData[date] || 0) + 1;
+      });
+
+      // Converter para array para o gráfico
+      const chartData = Object.entries(groupedData).map(([date, conversions]) => ({
+        date,
+        conversions,
+      }));
+
+      setConversionsData(chartData);
+    } catch (err) {
+      console.error('Erro ao buscar conversões:', err);
+      toast.error('Erro ao carregar conversões');
+    } finally {
+      setIsLoadingConversions(false);
+    }
+  };
+
   useEffect(() => {
     fetchReports();
+    fetchConversions();
   }, []);
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
@@ -225,6 +265,13 @@ const PDFUploadComponent = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-8 max-w-7xl">
+      <Tabs defaultValue="upload" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="upload">Upload de Relatórios</TabsTrigger>
+          <TabsTrigger value="conversions">Conversões</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upload" className="space-y-8">
       <div className="bg-card border-2 border-border rounded-lg p-6 space-y-6">
         <div className="space-y-2">
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -487,6 +534,96 @@ const PDFUploadComponent = () => {
           </div>
         )}
       </div>
+        </TabsContent>
+
+        <TabsContent value="conversions" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-6 w-6" />
+                Conversões do Tráfego Pago
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingConversions ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : conversionsData.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhuma conversão encontrada ainda.</p>
+                  <p className="text-sm mt-2">Pacientes com origem "Tráfego Pago" e status "Autorizado" aparecerão aqui.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Total de Conversões</p>
+                          <p className="text-3xl font-bold">{conversionsData.reduce((sum, item) => sum + item.conversions, 0)}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Dias com Conversões</p>
+                          <p className="text-3xl font-bold">{conversionsData.length}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Média por Dia</p>
+                          <p className="text-3xl font-bold">
+                            {(conversionsData.reduce((sum, item) => sum + item.conversions, 0) / conversionsData.length).toFixed(1)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="h-[400px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={conversionsData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="date" 
+                          className="text-xs"
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis className="text-xs" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="conversions" 
+                          name="Conversões"
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
