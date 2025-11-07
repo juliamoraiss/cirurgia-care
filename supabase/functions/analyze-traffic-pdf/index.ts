@@ -182,7 +182,7 @@ serve(async (req) => {
               .insert({
                 name: patientName.trim(),
                 procedure: 'simpatectomia',
-                origem: 'trafego pago',
+                origem: 'Tráfego Pago',
                 status: 'awaiting_consultation',
                 created_by: userId
               });
@@ -439,7 +439,7 @@ serve(async (req) => {
               .insert({
                 name: patientName.trim(),
                 procedure: 'simpatectomia',
-                origem: 'trafego pago',
+                origem: 'Tráfego Pago',
                 status: 'awaiting_consultation',
                 created_by: userId
               });
