@@ -62,14 +62,13 @@ Deno.serve(async (req) => {
     // Criar tarefas de pré-operatório para cirurgias que ainda não têm
     if (upcomingSurgeries && upcomingSurgeries.length > 0) {
       for (const surgery of upcomingSurgeries) {
-        // Verificar se já existe tarefa de pré-op para este paciente
+        // Verificar se já existe tarefa de pré-op para este paciente (completa ou não)
         const { data: existingTask } = await supabase
           .from('patient_tasks')
           .select('id')
           .eq('patient_id', surgery.id)
           .eq('task_type', 'pre_op_instructions')
-          .eq('completed', false)
-          .single()
+          .maybeSingle()
 
         if (!existingTask) {
           // Criar tarefa para o dia antes da cirurgia (sem horário específico - meia-noite)
@@ -100,14 +99,13 @@ Deno.serve(async (req) => {
     // 3. Criar tarefas pós-operatórias para cirurgias recém concluídas
     if (completedSurgeries && completedSurgeries.length > 0) {
       for (const surgery of completedSurgeries) {
-        // Verificar se já existe tarefa pós-op para este paciente
+        // Verificar se já existe tarefa pós-op para este paciente (completa ou não)
         const { data: existingTask } = await supabase
           .from('patient_tasks')
           .select('id')
           .eq('patient_id', surgery.id)
           .eq('task_type', 'post_op_instructions')
-          .eq('completed', false)
-          .single()
+          .maybeSingle()
 
         if (!existingTask) {
           // Criar tarefa para o mesmo dia da cirurgia, 5 horas após
