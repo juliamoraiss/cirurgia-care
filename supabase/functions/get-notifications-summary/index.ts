@@ -104,19 +104,28 @@ Deno.serve(async (req) => {
       console.error('Error fetching upcoming surgeries:', surgeriesError);
     }
 
+    // Get the base URL from environment or use default
+    const baseUrl = 'https://medsystem-frontend.lovable.app';
+
     // Format response based on token validation
     const overdueTasksFormatted = (overdueTasks || []).map(task => ({
       patient_name: isValidToken ? (task.patients as any)?.name : '***',
+      patient_id: isValidToken ? (task.patients as any)?.id : null,
+      task_id: task.id,
       task_title: task.title,
       due_date: task.due_date,
       task_type: task.task_type,
+      task_url: isValidToken ? `${baseUrl}/tasks` : null,
     }));
 
     const todayTasksFormatted = (todayTasks || []).map(task => ({
       patient_name: isValidToken ? (task.patients as any)?.name : '***',
+      patient_id: isValidToken ? (task.patients as any)?.id : null,
+      task_id: task.id,
       task_title: task.title,
       due_date: task.due_date,
       task_type: task.task_type,
+      task_url: isValidToken ? `${baseUrl}/tasks` : null,
     }));
 
     const newPatientsFormatted = (newPatients || []).map(patient => ({
@@ -182,9 +191,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in get-notifications-summary:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         summary: '❌ Erro ao buscar notificações',
       }), 
       {
