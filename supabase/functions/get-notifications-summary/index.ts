@@ -24,7 +24,20 @@ Deno.serve(async (req) => {
     
     const isValidToken = providedToken && providedToken === notificationToken;
 
-    // Get overdue tasks
+    // Get current time in São Paulo timezone
+    const now = new Date();
+    const saoPauloOffset = -3; // UTC-3
+    const saoPauloTime = new Date(now.getTime() + (saoPauloOffset * 60 * 60 * 1000));
+    
+    // Get start of today in São Paulo (00:00:00)
+    const todayStart = new Date(saoPauloTime);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    // Get start of tomorrow in São Paulo
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+    // Get overdue tasks (due_date < start of today in São Paulo)
     const { data: overdueTasks, error: overdueError } = await supabase
       .from('patient_tasks')
       .select(`
@@ -40,19 +53,14 @@ Deno.serve(async (req) => {
         )
       `)
       .eq('completed', false)
-      .lt('due_date', new Date().toISOString())
+      .lt('due_date', todayStart.toISOString())
       .order('due_date', { ascending: true });
 
     if (overdueError) {
       console.error('Error fetching overdue tasks:', overdueError);
     }
 
-    // Get today's tasks
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
+    // Get today's tasks (between start of today and start of tomorrow in São Paulo)
     const { data: todayTasks, error: todayError } = await supabase
       .from('patient_tasks')
       .select(`
@@ -68,8 +76,8 @@ Deno.serve(async (req) => {
         )
       `)
       .eq('completed', false)
-      .gte('due_date', today.toISOString())
-      .lt('due_date', tomorrow.toISOString())
+      .gte('due_date', todayStart.toISOString())
+      .lt('due_date', tomorrowStart.toISOString())
       .order('due_date', { ascending: true });
 
     if (todayError) {
@@ -90,16 +98,16 @@ Deno.serve(async (req) => {
       console.error('Error fetching new patients:', patientsError);
     }
 
-    // Get upcoming surgeries (today and next 2 days)
-    const dayAfterTomorrow = new Date(tomorrow);
-    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+    // Get upcoming surgeries (today and next 2 days in São Paulo timezone)
+    const dayAfterTomorrowStart = new Date(tomorrowStart);
+    dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 1);
 
     const { data: upcomingSurgeries, error: surgeriesError } = await supabase
       .from('patients')
       .select('id, name, procedure, surgery_date, hospital')
       .not('surgery_date', 'is', null)
-      .gte('surgery_date', today.toISOString())
-      .lt('surgery_date', dayAfterTomorrow.toISOString())
+      .gte('surgery_date', todayStart.toISOString())
+      .lt('surgery_date', dayAfterTomorrowStart.toISOString())
       .order('surgery_date', { ascending: true });
 
     if (surgeriesError) {
