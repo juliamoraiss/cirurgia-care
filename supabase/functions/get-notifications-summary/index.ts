@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
         title,
         due_date,
         task_type,
-        patients (
+        patient_id,
+        patients!inner (
           id,
           name,
           phone
@@ -59,7 +60,8 @@ Deno.serve(async (req) => {
         title,
         due_date,
         task_type,
-        patients (
+        patient_id,
+        patients!inner (
           id,
           name,
           phone
