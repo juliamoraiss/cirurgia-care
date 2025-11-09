@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       task_title: task.title,
       due_date: task.due_date,
       task_type: task.task_type,
-      task_url: isValidToken ? `${baseUrl}/tasks` : null,
+      task_url: `${baseUrl}/tasks`,
     }));
 
     const todayTasksFormatted = (todayTasks || []).map(task => ({
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
       task_title: task.title,
       due_date: task.due_date,
       task_type: task.task_type,
-      task_url: isValidToken ? `${baseUrl}/tasks` : null,
+      task_url: `${baseUrl}/tasks`,
     }));
 
     const newPatientsFormatted = (newPatients || []).map(patient => ({
