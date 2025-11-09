@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     }
 
     // Get the base URL from environment or use default
-    const baseUrl = 'https://medsystem-frontend.lovable.app';
+    const baseUrl = 'https://medsystem.lovable.app';
 
     // Format response based on token validation
     const overdueTasksFormatted = (overdueTasks || []).map(task => ({
