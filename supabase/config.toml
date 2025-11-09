@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.submit-landing-form]
 verify_jwt = false
+
+[functions.get-notifications-summary]
+verify_jwt = false
