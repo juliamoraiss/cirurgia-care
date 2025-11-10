@@ -87,20 +87,63 @@ const PDFUploadComponent = () => {
   const fetchConversions = async () => {
     setIsLoadingConversions(true);
     try {
-      const { data, error } = await supabase
+      // Buscar pacientes autorizados do tráfego pago
+      const { data: patients, error: patientsError } = await supabase
         .from('patients')
-        .select('created_at, status, origem')
+        .select('id, created_at, status, origem')
         .eq('origem', 'Tráfego Pago')
         .eq('status', 'authorized')
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (patientsError) throw patientsError;
 
-      // Agrupar conversões por data
+      // Buscar histórico de todos esses pacientes
+      const patientIds = patients?.map(p => p.id) || [];
+      
+      if (patientIds.length === 0) {
+        setConversionsData([]);
+        return;
+      }
+
+      const { data: history, error: historyError } = await supabase
+        .from('patient_history')
+        .select('patient_id, old_value, new_value, field_changed, created_at')
+        .eq('field_changed', 'status')
+        .in('patient_id', patientIds)
+        .order('created_at', { ascending: true });
+
+      if (historyError) throw historyError;
+
+      // Filtrar apenas conversões válidas (que passaram por awaiting_consultation)
+      const validConversions = patients?.filter(patient => {
+        const patientHistory = history?.filter(h => h.patient_id === patient.id) || [];
+        
+        // Verificar se o paciente passou por awaiting_consultation
+        const passedThroughConsultation = patientHistory.some(h => 
+          h.old_value === 'awaiting_consultation' || h.new_value === 'awaiting_consultation'
+        );
+
+        // Verificar se chegou a authorized
+        const reachedAuthorized = patientHistory.some(h => 
+          h.new_value === 'authorized'
+        ) || patient.status === 'authorized';
+
+        return passedThroughConsultation && reachedAuthorized;
+      }) || [];
+
+      // Agrupar conversões por data da conversão (data em que ficou authorized)
       const groupedData: { [key: string]: number } = {};
       
-      data?.forEach(patient => {
-        const date = format(new Date(patient.created_at), 'dd/MM/yyyy');
+      validConversions.forEach(patient => {
+        // Buscar a data em que ficou authorized no histórico
+        const patientHistory = history?.filter(h => h.patient_id === patient.id) || [];
+        const authorizedHistory = patientHistory.find(h => h.new_value === 'authorized');
+        
+        const conversionDate = authorizedHistory 
+          ? new Date(authorizedHistory.created_at)
+          : new Date(patient.created_at);
+        
+        const date = format(conversionDate, 'dd/MM/yyyy');
         groupedData[date] = (groupedData[date] || 0) + 1;
       });
 
