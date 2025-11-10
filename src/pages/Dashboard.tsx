@@ -354,6 +354,12 @@ const Dashboard = () => {
                       return <StickyNote className="h-4 w-4 text-orange-500" />;
                     case 'task_created':
                       return <ClipboardList className="h-4 w-4 text-purple-500" />;
+                    case 'hospital_updated':
+                      return <Activity className="h-4 w-4 text-cyan-500" />;
+                    case 'status_updated':
+                      return <CheckCircle className="h-4 w-4 text-amber-500" />;
+                    case 'procedure_updated':
+                      return <Activity className="h-4 w-4 text-indigo-500" />;
                     default:
                       return <Activity className="h-4 w-4 text-muted-foreground" />;
                   }
@@ -374,6 +380,12 @@ const Dashboard = () => {
                       return metadata.note_preview;
                     case 'task_created':
                       return `${metadata.task_title} (${metadata.task_type})`;
+                    case 'hospital_updated':
+                      return `${metadata.old_hospital || 'Nenhum'} → ${metadata.new_hospital}`;
+                    case 'status_updated':
+                      return `${metadata.old_status} → ${metadata.new_status}`;
+                    case 'procedure_updated':
+                      return `${metadata.old_procedure} → ${metadata.new_procedure}`;
                     default:
                       return '';
                   }
