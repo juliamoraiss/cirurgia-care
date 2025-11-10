@@ -17,6 +17,7 @@ import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
+import Menu from "./pages/Menu";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/auth" element={<Auth />} />
       <Route path="/landing" element={<LandingPage />} />
+      <Route path="/menu" element={<Menu />} />
       <Route
         path="/"
         element={
