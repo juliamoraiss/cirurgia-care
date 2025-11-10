@@ -340,8 +340,75 @@ const Calendar = () => {
                 </div>
               </div>
             )
+          ) : isMobile ? (
+            // Visualização Mensal Mobile - Lista por Data (estilo Google Calendar)
+            <div className="space-y-6">
+              {calendarDays
+                .filter((day) => isSameMonth(day, currentDate))
+                .map((day, dayIndex) => {
+                  const daySurgeries = getSurgeriesForDay(day);
+                  const isToday = isSameDay(day, new Date());
+                  
+                  if (daySurgeries.length === 0) return null;
+                  
+                  return (
+                    <div key={dayIndex}>
+                      {/* Cabeçalho da Data */}
+                      <div className={`mb-3 pb-2 ${
+                        isToday ? 'text-destructive' : 'text-muted-foreground'
+                      }`}>
+                        <h3 className="text-sm font-bold uppercase tracking-wide">
+                          {format(day, "EEEE', 'dd' DE 'MMM'.'", { locale: ptBR }).toUpperCase()}
+                        </h3>
+                      </div>
+                      
+                      {/* Lista de Eventos */}
+                      <div className="space-y-2">
+                        {daySurgeries.map((surgery, surgeryIndex) => {
+                          const surgeryDate = new Date(surgery.surgery_date);
+                          
+                          return (
+                            <div
+                              key={surgery.id}
+                              onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                              className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border-l-4 ${
+                                getColorForIndex(surgeryIndex)
+                              } hover:shadow-md transition-shadow`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-base truncate mb-1">
+                                  {surgery.name}
+                                </div>
+                                {surgery.hospital && (
+                                  <div className="text-xs opacity-80 truncate">
+                                    {surgery.hospital}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-bold">
+                                  {format(surgeryDate, 'HH:mm')}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+              {calendarDays
+                .filter((day) => isSameMonth(day, currentDate))
+                .every((day) => getSurgeriesForDay(day).length === 0) && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Nenhuma cirurgia agendada para este mês</p>
+                </div>
+              )}
+            </div>
           ) : (
-            // Visualização Mensal - Grade
+            // Visualização Mensal Desktop - Grade
             <div className="space-y-2">
               <div className="grid grid-cols-7 gap-1 md:gap-2">
                 {weekDays.map((day) => (
