@@ -843,6 +843,8 @@ const PatientForm = () => {
                     <SelectItem value="QUALLITY">QUALLITY</SelectItem>
                     <SelectItem value="SULAMERICA">SULAMERICA</SelectItem>
                     <SelectItem value="PMDF">PMDF</SelectItem>
+                    <SelectItem value="GEAP">GEAP</SelectItem>
+                    <SelectItem value="Particular">Particular</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
