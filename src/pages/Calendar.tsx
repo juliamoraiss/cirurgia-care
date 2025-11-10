@@ -363,35 +363,41 @@ const Calendar = () => {
                   <div
                     key={index}
                     onClick={() => handleDayClick(day, daySurgeries)}
-                    className={`border rounded-lg p-2 min-h-[80px] md:min-h-[120px] ${
+                    className={`border rounded-lg p-2 md:p-3 min-h-[120px] md:min-h-[140px] flex flex-col ${
                       isCurrentMonth ? "bg-background" : "bg-muted/30"
                     } ${isToday ? "ring-2 ring-primary" : ""} ${
                       daySurgeries.length > 0 ? "cursor-pointer hover:shadow-md transition-shadow" : ""
                     }`}
                   >
-                    <div className={`font-semibold mb-1 text-xs md:text-sm ${
+                    <div className={`font-bold mb-2 text-sm md:text-base ${
                       isCurrentMonth ? "text-foreground" : "text-muted-foreground"
                     }`}>
                       {format(day, "d")}
                     </div>
-                    <div className="space-y-1">
-                      {daySurgeries.map((surgery, surgeryIndex) => (
-                        <div
-                          key={surgery.id}
-                          className={`p-1.5 rounded border-l-2 space-y-0.5 text-[10px] md:text-xs ${
-                            daySurgeries.length > 1 
-                              ? getColorForIndex(surgeryIndex)
-                              : "bg-primary/10 border-primary text-primary"
-                          }`}
-                        >
-                          <div className="font-semibold">
-                            {format(new Date(surgery.surgery_date), "HH:mm")}
+                    <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[90px] md:max-h-[100px]">
+                      {daySurgeries.map((surgery, surgeryIndex) => {
+                        // Abrevia nome se muito longo
+                        const shortName = surgery.name.split(' ').slice(0, 2).join(' ');
+                        const displayName = surgery.name.length > 20 ? shortName : surgery.name;
+                        
+                        return (
+                          <div
+                            key={surgery.id}
+                            className={`p-2 rounded border-l-2 text-xs ${
+                              daySurgeries.length > 1 
+                                ? getColorForIndex(surgeryIndex)
+                                : "bg-primary/10 border-primary text-primary"
+                            }`}
+                          >
+                            <div className="font-bold mb-0.5">
+                              {format(new Date(surgery.surgery_date), "HH:mm")}
+                            </div>
+                            <div className="font-semibold leading-tight" title={surgery.name}>
+                              {displayName}
+                            </div>
                           </div>
-                          <div className="font-medium truncate" title={surgery.name}>
-                            {surgery.name}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
