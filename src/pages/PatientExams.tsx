@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2 } from "lu
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
+import PdfViewer from "@/components/PdfViewer";
 
 interface Patient {
   id: string;
@@ -128,6 +129,8 @@ const PatientExams = () => {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
   };
+
+  const isPdfFile = (fileName: string) => fileName.toLowerCase().endsWith('.pdf');
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 0.25, 3));
@@ -289,7 +292,7 @@ const PatientExams = () => {
             </div>
             
             {/* Controles de Zoom */}
-            {viewingFile && isImageFile(viewingFile.name) && (
+            {viewingFile && (
               <div className="flex items-center gap-2 mr-2">
                 <Button
                   variant="outline"
@@ -333,24 +336,26 @@ const PatientExams = () => {
 
           {/* Área de visualização */}
           <div className="flex-1 overflow-auto bg-muted/30">
-            {viewingFile && isImageFile(viewingFile.name) ? (
-              <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
-                <img
-                  src={viewingFile.url}
-                  alt={viewingFile.name}
-                  className="max-w-full h-auto"
-                  style={{ 
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'center center',
-                    transition: 'transform 0.2s ease',
-                    cursor: zoom > 1 ? 'grab' : 'default',
-                    touchAction: 'pan-x pan-y pinch-zoom'
-                  }}
-                  draggable={false}
-                />
-              </div>
-            ) : (
-              viewingFile && (
+            {viewingFile && (
+              isImageFile(viewingFile.name) ? (
+                <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
+                  <img
+                    src={viewingFile.url}
+                    alt={viewingFile.name}
+                    className="max-w-full h-auto"
+                    style={{ 
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'center center',
+                      transition: 'transform 0.2s ease',
+                      cursor: zoom > 1 ? 'grab' : 'default',
+                      touchAction: 'pan-x pan-y pinch-zoom'
+                    }}
+                    draggable={false}
+                  />
+                </div>
+              ) : isPdfFile(viewingFile.name) ? (
+                <PdfViewer url={viewingFile.url} zoom={zoom} />
+              ) : (
                 <iframe
                   src={`${viewingFile.url}#zoom=${Math.round(zoom * 100)}`}
                   className="w-full h-full border-0"
