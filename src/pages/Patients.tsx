@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -55,6 +56,7 @@ const Patients = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin } = useUserRole();
+  const isMobile = useIsMobile();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -321,6 +323,80 @@ const Patients = () => {
           ) : filteredPatients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchTerm ? "Nenhum paciente encontrado" : "Nenhum paciente cadastrado"}
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-4">
+              {filteredPatients.map((patient) => {
+                const requiredExams = getExamsForProcedure(patient.procedure);
+                const checkedExams = patient.exams_checklist || [];
+                const allExamsChecked = requiredExams.length > 0 && 
+                  requiredExams.every(exam => checkedExams.includes(exam));
+
+                return (
+                  <Card 
+                    key={patient.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                  >
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base">{patient.name}</h3>
+                          <p className="text-sm text-muted-foreground capitalize mt-1">
+                            {patient.procedure}
+                          </p>
+                        </div>
+                        <StatusBadge status={patient.status as any} />
+                      </div>
+
+                      {patient.hospital && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Building2 className="h-4 w-4" />
+                          <span>{patient.hospital}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Exames: </span>
+                          {patient.status === 'cancelled' ? (
+                            <span className="text-muted-foreground">-</span>
+                          ) : allExamsChecked ? (
+                            <Badge variant="success" className="text-xs">Entregues</Badge>
+                          ) : (
+                            <Badge variant="warning" className="text-xs">Aguardando</Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {patient.surgery_date && patient.status !== 'cancelled' && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            {format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", {
+                              locale: ptBR,
+                            })}
+                          </span>
+                        </div>
+                      )}
+
+                      {isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/patients/${patient.id}`);
+                          }}
+                        >
+                          Editar
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-md border">
