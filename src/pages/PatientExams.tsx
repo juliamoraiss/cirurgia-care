@@ -276,9 +276,9 @@ const PatientExams = () => {
       <PatientNotesSection patientId={id!} />
 
       <Dialog open={!!viewingFile} onOpenChange={closeViewer}>
-        <DialogContent className="max-w-[100vw] max-h-[100vh] h-[100vh] w-[100vw] md:max-w-5xl md:max-h-[95vh] md:h-[95vh] md:w-auto flex flex-col p-0 m-0 md:rounded-lg rounded-none">
+        <DialogContent className="max-w-[100vw] max-h-[100vh] h-[100vh] w-[100vw] md:max-w-5xl md:max-h-[95vh] md:h-[95vh] md:w-auto flex flex-col p-0 m-0 md:rounded-lg rounded-none overflow-hidden">
           {/* Header com controles */}
-          <div className="flex items-center justify-between p-4 md:p-6 border-b bg-background flex-shrink-0 pt-safe">
+          <div className="flex items-center justify-between px-4 py-3 pt-safe md:p-6 border-b bg-background flex-shrink-0 z-10 safe-top">
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="text-sm md:text-base font-semibold truncate">
                 {viewingFile?.name}
