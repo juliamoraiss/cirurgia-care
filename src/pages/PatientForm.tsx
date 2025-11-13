@@ -406,7 +406,7 @@ const PatientForm = () => {
         .eq("patient_id", patientId)
         .eq("task_type", "pre_op_instructions")
         .eq("completed", false)
-        .single();
+        .maybeSingle();
       
       if (!existingPreOp) {
         await supabase.from("patient_tasks").insert({
@@ -430,7 +430,7 @@ const PatientForm = () => {
         .eq("patient_id", patientId)
         .eq("task_type", "post_op_instructions")
         .eq("completed", false)
-        .single();
+        .maybeSingle();
       
       if (!existingPostOp) {
         await supabase.from("patient_tasks").insert({
