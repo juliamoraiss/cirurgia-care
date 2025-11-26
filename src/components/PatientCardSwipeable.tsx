@@ -61,19 +61,19 @@ export function PatientCardSwipeable({
 
   const getStatusIcon = (): ReactNode => {
     if (patient.status === 'cancelled') {
-      return <XCircle className="h-5 w-5 text-destructive" />;
+      return <XCircle className="h-4 w-4 text-destructive" />;
     }
     if (isSurgeryToday) {
-      return <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />;
+      return <AlertCircle className="h-4 w-4 text-destructive animate-pulse" />;
     }
     if (isSurgeryTomorrow) {
-      return <Clock className="h-5 w-5 text-warning" />;
+      return <Clock className="h-4 w-4 text-warning" />;
     }
     if (hasExamsPending) {
-      return <AlertCircle className="h-5 w-5 text-warning" />;
+      return <AlertCircle className="h-4 w-4 text-warning" />;
     }
     if (allExamsChecked) {
-      return <CheckCircle2 className="h-5 w-5 text-success" />;
+      return <CheckCircle2 className="h-4 w-4 text-success" />;
     }
     return null;
   };
@@ -81,20 +81,20 @@ export function PatientCardSwipeable({
   const statusIcon = getStatusIcon();
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden rounded-lg">
       {/* Action buttons behind the card */}
-      <div className="absolute inset-0 flex items-center justify-end pr-4 gap-2">
+      <div className="absolute inset-0 flex items-center justify-end pr-2 gap-2 bg-primary/20">
         {patient.phone && (
           <Button
             size="sm"
             variant="ghost"
-            className="bg-primary text-primary-foreground"
+            className="bg-primary text-primary-foreground h-14 w-14 rounded-lg"
             onClick={(e) => {
               e.stopPropagation();
               window.location.href = `tel:${patient.phone}`;
             }}
           >
-            <Phone className="h-4 w-4" />
+            <Phone className="h-5 w-5" />
           </Button>
         )}
       </div>
@@ -102,59 +102,62 @@ export function PatientCardSwipeable({
       {/* Swipeable card */}
       <motion.div
         drag="x"
-        dragConstraints={{ left: -100, right: 0 }}
+        dragConstraints={{ left: -80, right: 0 }}
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
-        style={{ x, backgroundColor }}
-        animate={swiped ? { x: -100 } : { x: 0 }}
+        style={{ x }}
+        animate={swiped ? { x: -80 } : { x: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="bg-background rounded-lg"
       >
         <Card 
-          className="cursor-pointer hover:bg-muted/50 transition-colors"
+          className="cursor-pointer hover:bg-muted/50 transition-colors border-0 shadow-sm"
           onClick={onClick}
         >
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-3 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2 flex-1">
+              <div className="flex items-start gap-1.5 flex-1 min-w-0">
                 {statusIcon && (
-                  <div className="mt-0.5">
+                  <div className="mt-0.5 shrink-0">
                     {statusIcon}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base truncate">{patient.name}</h3>
-                  <p className="text-sm text-muted-foreground capitalize mt-1">
+                  <h3 className="font-semibold text-sm leading-tight truncate">{patient.name}</h3>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5 truncate">
                     {patient.procedure}
                   </p>
                 </div>
               </div>
-              <StatusBadge status={patient.status as any} />
+              <div className="shrink-0">
+                <StatusBadge status={patient.status as any} />
+              </div>
             </div>
 
             {patient.hospital && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Building2 className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{patient.hospital}</span>
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <span className="text-muted-foreground">Exames: </span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs flex items-center gap-1.5">
+                <span className="text-muted-foreground">Exames:</span>
                 {patient.status === 'cancelled' ? (
                   <span className="text-muted-foreground">-</span>
                 ) : allExamsChecked ? (
-                  <Badge variant="success" className="text-xs">Entregues</Badge>
+                  <Badge variant="success" className="text-[10px] px-1.5 py-0">Entregues</Badge>
                 ) : (
-                  <Badge variant="warning" className="text-xs">Aguardando</Badge>
+                  <Badge variant="warning" className="text-[10px] px-1.5 py-0">Aguardando</Badge>
                 )}
               </div>
             </div>
 
             {patient.surgery_date && patient.status !== 'cancelled' && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className={`${isSurgeryUrgent ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}>
+              <div className="flex items-center gap-1.5 text-xs">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className={`truncate ${isSurgeryUrgent ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}>
                   {format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", {
                     locale: ptBR,
                   })}
@@ -168,7 +171,7 @@ export function PatientCardSwipeable({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-full text-xs h-8 mt-1"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit();
