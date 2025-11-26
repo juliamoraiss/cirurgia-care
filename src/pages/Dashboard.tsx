@@ -66,7 +66,7 @@ const Dashboard = () => {
           .from("profiles")
           .select("full_name")
           .eq("id", user.id)
-          .maybeSingle();
+          .single();
         
         if (data?.full_name) {
           const names = data.full_name.split(" ");
