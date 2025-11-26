@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { BottomNav } from "@/components/BottomNav";
+import { FAB } from "@/components/FAB";
 
 interface LayoutProps {
   children: ReactNode;
@@ -197,9 +199,13 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+4rem)] md:pt-0">
+      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+4rem)] md:pt-0 pb-20 md:pb-0">
         {children}
       </main>
+
+      {/* Mobile Navigation */}
+      <BottomNav />
+      <FAB />
     </div>
   );
 }
