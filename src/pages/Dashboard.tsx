@@ -15,6 +15,8 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { UpcomingSurgeries } from "@/components/UpcomingSurgeries";
+import { PendingPatients } from "@/components/PendingPatients";
 
 interface DashboardStats {
   totalPatients: number;
@@ -29,6 +31,7 @@ interface Patient {
   procedure: string;
   surgery_date: string;
   insurance: string;
+  hospital: string | null;
 }
 
 interface SystemActivity {
@@ -86,12 +89,12 @@ const Dashboard = () => {
         // Total patients with details
         const { data: allPatientsData, count: totalPatients } = await supabase
           .from("patients")
-          .select("id, name, procedure, surgery_date, insurance", { count: "exact" });
+          .select("id, name, procedure, surgery_date, insurance, hospital", { count: "exact" });
 
         // Patients with surgery dates
         const { data: patientsWithSurgery } = await supabase
           .from("patients")
-          .select("id, name, procedure, surgery_date, insurance")
+          .select("id, name, procedure, surgery_date, insurance, hospital")
           .not("surgery_date", "is", null);
 
         // Filter scheduled (future) and completed (past) surgeries based on date
@@ -110,7 +113,7 @@ const Dashboard = () => {
         // Pending authorization
         const { data: pendingData, count: pendingAuthorization } = await supabase
           .from("patients")
-          .select("id, name, procedure, surgery_date, insurance", { count: "exact" })
+          .select("id, name, procedure, surgery_date, insurance, hospital", { count: "exact" })
           .eq("status", "awaiting_authorization");
 
         setStats({
@@ -216,6 +219,12 @@ const Dashboard = () => {
               Novo Paciente
             </Button>
           )}
+        </div>
+
+        {/* Priority sections for mobile - show urgent info first */}
+        <div className="grid gap-4 md:grid-cols-2 mb-4">
+          <UpcomingSurgeries surgeries={scheduledPatients} loading={loading} />
+          <PendingPatients patients={pendingPatients} loading={loading} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
