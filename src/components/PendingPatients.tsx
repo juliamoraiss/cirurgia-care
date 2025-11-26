@@ -68,23 +68,25 @@ export function PendingPatients({ patients, loading }: PendingPatientsProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {patients.map((patient) => (
             <div
               key={patient.id}
               onClick={() => navigate(`/patients/${patient.id}/exams`)}
-              className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+              className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="h-4 w-4 text-warning flex-shrink-0" />
-                <h4 className="font-semibold text-foreground">{patient.name}</h4>
+              <div className="flex items-start gap-2 mb-1.5">
+                <AlertCircle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-sm text-foreground line-clamp-1">{patient.name}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{patient.procedure}</p>
+                  {patient.insurance && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      Convênio: {patient.insurance}
+                    </p>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">{patient.procedure}</p>
-              {patient.insurance && (
-                <p className="text-xs text-muted-foreground">
-                  Convênio: {patient.insurance}
-                </p>
-              )}
             </div>
           ))}
         </div>

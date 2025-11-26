@@ -172,16 +172,16 @@ const Patients = () => {
     });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Pacientes</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Pacientes</h1>
+          <p className="text-sm text-muted-foreground">
             Gerencie todos os pacientes e procedimentos
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => navigate("/patients/new")}>
+          <Button onClick={() => navigate("/patients/new")} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Novo Paciente
           </Button>

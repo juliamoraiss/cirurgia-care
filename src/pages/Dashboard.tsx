@@ -204,18 +204,18 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Bem-vindo, {userName || "..."}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Visão geral do sistema de gestão cirúrgica
             </p>
           </div>
           {isAdmin && (
-            <Button onClick={() => navigate("/patients/new")}>
+            <Button onClick={() => navigate("/patients/new")} className="w-full sm:w-auto">
               Novo Paciente
             </Button>
           )}
@@ -403,37 +403,37 @@ const Dashboard = () => {
                 return (
                   <div 
                     key={activity.id} 
-                    className="flex gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
+                    className="flex gap-2 p-2.5 md:p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
                   >
                     <div 
-                      className="flex-1 min-w-0 cursor-pointer flex gap-3"
+                      className="flex-1 min-w-0 cursor-pointer flex gap-2"
                       onClick={() => {
                         if (activity.patient_id) {
                           navigate(`/patients/${activity.patient_id}/exams`);
                         }
                       }}
                     >
-                      <div className="flex-shrink-0 mt-1">
+                      <div className="flex-shrink-0 mt-0.5">
                         {getActivityIcon(activity.activity_type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
+                            <p className="text-xs md:text-sm font-medium line-clamp-2">
                               {activity.description}
                             </p>
                             {activity.patient_name && (
-                              <p className="text-sm text-primary font-semibold truncate">
+                              <p className="text-xs md:text-sm text-primary font-semibold truncate mt-0.5">
                                 {activity.patient_name}
                               </p>
                             )}
                             {getActivityDetails(activity) && (
-                              <p className="text-xs text-muted-foreground truncate mt-1">
+                              <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 mt-0.5">
                                 {getActivityDetails(activity)}
                               </p>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap shrink-0">
                             {formatDistanceToNow(new Date(activity.created_at), {
                               addSuffix: true,
                               locale: ptBR,
@@ -446,11 +446,11 @@ const Dashboard = () => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 h-7 w-7 p-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteActivity(activity.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity self-start"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

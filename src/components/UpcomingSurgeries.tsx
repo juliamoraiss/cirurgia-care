@@ -82,27 +82,27 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {urgentSurgeries.map((surgery) => (
             <div
               key={surgery.id}
               onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-              className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+              className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h4 className="font-semibold text-foreground">{surgery.name}</h4>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <h4 className="font-semibold text-sm text-foreground line-clamp-1">{surgery.name}</h4>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
                   {formatDistanceToNow(new Date(surgery.surgery_date), {
                     addSuffix: true,
                     locale: ptBR,
                   })}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{surgery.procedure}</p>
-              <div className="flex flex-col gap-2 text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  <span>{new Date(surgery.surgery_date).toLocaleString('pt-BR', {
+              <p className="text-xs text-muted-foreground mb-2 line-clamp-1">{surgery.procedure}</p>
+              <div className="flex flex-col gap-1.5 text-[10px]">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Clock className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{new Date(surgery.surgery_date).toLocaleString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -111,9 +111,9 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
                   })}</span>
                 </div>
                 {surgery.hospital && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    <span>{surgery.hospital}</span>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{surgery.hospital}</span>
                   </div>
                 )}
               </div>
