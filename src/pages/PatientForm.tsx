@@ -833,6 +833,7 @@ const PatientForm = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ASSEFAZ">ASSEFAZ</SelectItem>
+                        <SelectItem value="Bradesco">Bradesco</SelectItem>
                         <SelectItem value="FUSEX">FUSEX</SelectItem>
                         <SelectItem value="INAS (GDF Saúde)">INAS (GDF Saúde)</SelectItem>
                         <SelectItem value="PLENUM SAÚDE">PLENUM SAÚDE</SelectItem>
