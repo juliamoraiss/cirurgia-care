@@ -24,8 +24,8 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 pb-[env(safe-area-inset-bottom)] shadow-lg">
-      <div className="flex items-center justify-around h-16">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[100] shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="flex items-center justify-around h-16 safe-bottom">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
