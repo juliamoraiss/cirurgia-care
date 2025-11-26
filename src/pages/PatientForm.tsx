@@ -816,6 +816,7 @@ const PatientForm = () => {
                         <SelectItem value="Hospital Mantevida">Hospital Mantevida</SelectItem>
                         <SelectItem value="Hospital Ceuta">Hospital Ceuta</SelectItem>
                         <SelectItem value="Hospital Alvorada">Hospital Alvorada</SelectItem>
+                        <SelectItem value="Hospital DF Star">Hospital DF Star</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.hospital && <p className="text-sm text-destructive">{errors.hospital}</p>}

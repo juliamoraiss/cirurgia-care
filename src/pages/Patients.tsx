@@ -246,7 +246,7 @@ const Patients = () => {
                       <div>
                         <h3 className="font-semibold mb-3">Hospital</h3>
                         <div className="space-y-2">
-                          {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada"].map((hospital) => (
+                          {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada", "Hospital DF Star"].map((hospital) => (
                             <div key={hospital} className="flex items-center space-x-2">
                               <Checkbox
                                 id={`hospital-mobile-${hospital}`}
