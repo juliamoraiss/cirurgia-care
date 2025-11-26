@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Calendar, Phone, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
+import { Building2, Calendar, MessageCircle, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
 import { format, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, ReactNode } from "react";
@@ -80,21 +80,42 @@ export function PatientCardSwipeable({
 
   const statusIcon = getStatusIcon();
 
+  const getWhatsAppMessage = () => {
+    const patientName = patient.name.split(' ')[0];
+    const gender = patient.procedure?.toLowerCase().includes('mama') || 
+                   patient.procedure?.toLowerCase().includes('abdominoplastia') ? 'F' : 'M';
+    const pronoun = gender === 'F' ? 'a' : 'o';
+    const article = gender === 'F' ? 'da' : 'do';
+    
+    return `Olá ${patientName}! 
+
+Gostaria de confirmar ${article} sua ${patient.procedure} no ${patient.hospital || 'hospital'}.
+
+Data e horário: ${patient.surgery_date ? format(new Date(patient.surgery_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'a confirmar'}
+
+Por favor, confirme sua presença respondendo esta mensagem.
+
+Atenciosamente,
+Dr. André`;
+  };
+
   return (
     <div className="relative overflow-hidden rounded-lg">
       {/* Action buttons behind the card */}
-      <div className="absolute inset-0 flex items-center justify-end pr-2 gap-2 bg-primary/20">
+      <div className="absolute inset-0 flex items-center justify-end pr-2 gap-2 bg-[#25D366]/20">
         {patient.phone && (
           <Button
             size="sm"
             variant="ghost"
-            className="bg-primary text-primary-foreground h-14 w-14 rounded-lg"
+            className="bg-[#25D366] text-white hover:bg-[#20BA5A] h-14 w-14 rounded-lg shadow-lg"
             onClick={(e) => {
               e.stopPropagation();
-              window.location.href = `tel:${patient.phone}`;
+              const message = encodeURIComponent(getWhatsAppMessage());
+              const phoneNumber = patient.phone.replace(/\D/g, '');
+              window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
             }}
           >
-            <Phone className="h-5 w-5" />
+            <MessageCircle className="h-5 w-5" />
           </Button>
         )}
       </div>
@@ -108,10 +129,10 @@ export function PatientCardSwipeable({
         style={{ x }}
         animate={swiped ? { x: -80 } : { x: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-background rounded-lg"
+        className="relative bg-background rounded-lg"
       >
         <Card 
-          className="cursor-pointer hover:bg-muted/50 transition-colors border-0 shadow-sm"
+          className="cursor-pointer hover:bg-muted/50 transition-colors border shadow-none bg-card"
           onClick={onClick}
         >
           <CardContent className="p-3 space-y-2.5">
@@ -171,7 +192,12 @@ export function PatientCardSwipeable({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-xs h-8 mt-1"
+                className="w-full text-xs h-8 mt-1 relative z-10"
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit();
