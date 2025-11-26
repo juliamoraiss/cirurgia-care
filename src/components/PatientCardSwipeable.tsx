@@ -82,18 +82,91 @@ export function PatientCardSwipeable({
 
   const getWhatsAppMessage = () => {
     const patientName = patient.name.split(' ')[0];
-    const gender = patient.procedure?.toLowerCase().includes('mama') || 
-                   patient.procedure?.toLowerCase().includes('abdominoplastia') ? 'F' : 'M';
-    const pronoun = gender === 'F' ? 'a' : 'o';
-    const article = gender === 'F' ? 'da' : 'do';
     
+    // Se autorizado E com data de cirurgia → instruções pré-operatórias
+    if (patient.status === 'authorized' && patient.surgery_date) {
+      const surgeryDateFormatted = format(new Date(patient.surgery_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+      return `Olá ${patientName}! 
+
+Sua cirurgia de ${patient.procedure} está confirmada para ${surgeryDateFormatted} no ${patient.hospital || 'hospital'}.
+
+*INSTRUÇÕES PRÉ-OPERATÓRIAS IMPORTANTES:*
+
+📋 *No dia anterior:*
+- Jejum absoluto a partir da meia-noite (nem água)
+- Banho completo na noite anterior
+- Remover esmalte das unhas
+- Não usar cremes, maquiagem ou produtos cosméticos
+
+🏥 *No dia da cirurgia:*
+- Chegar com 2 horas de antecedência
+- Trazer documentos e exames
+- Usar roupas confortáveis e fáceis de vestir
+- Vir acompanhado(a)
+
+Por favor, confirme o recebimento dessas instruções.
+
+Atenciosamente,
+Dr. André`;
+    }
+    
+    // Se autorizado MAS sem data de cirurgia → mensagem de autorização
+    if (patient.status === 'authorized' && !patient.surgery_date) {
+      return `Olá ${patientName}! 
+
+Tenho uma ótima notícia! ✅
+
+Sua cirurgia de ${patient.procedure} foi *AUTORIZADA* pelo convênio.
+
+Agora vamos agendar a data da sua cirurgia. Entrarei em contato em breve para combinarmos a melhor data para você.
+
+Enquanto isso, mantenha seus exames em dia e qualquer dúvida, estou à disposição.
+
+Atenciosamente,
+Dr. André`;
+    }
+    
+    // Se cirurgia concluída → recomendações pós-operatórias
+    if (patient.status === 'surgery_completed' || patient.status === 'completed') {
+      return `Olá ${patientName}! 
+
+Espero que esteja se recuperando bem da sua ${patient.procedure}! 
+
+*RECOMENDAÇÕES PÓS-OPERATÓRIAS:*
+
+💊 *Medicação:*
+- Seguir rigorosamente os horários prescritos
+- Não interromper os antibióticos
+
+🛏️ *Repouso:*
+- Repouso relativo nos primeiros 7 dias
+- Evitar esforços físicos por 30 dias
+- Dormir com cabeceira elevada
+
+🚫 *Evitar:*
+- Exposição solar na região operada
+- Bebidas alcoólicas por 15 dias
+- Dirigir nos primeiros 7 dias
+
+⚠️ *Sinais de alerta (procure atendimento):*
+- Febre acima de 38°C
+- Sangramento excessivo
+- Dor intensa não controlada
+- Secreção com mau cheiro
+
+📅 Não esqueça do retorno agendado!
+
+Como está se sentindo?
+
+Dr. André`;
+    }
+    
+    // Mensagem padrão para outros status
     return `Olá ${patientName}! 
 
-Gostaria de confirmar ${article} sua ${patient.procedure} no ${patient.hospital || 'hospital'}.
+Gostaria de atualizar sobre sua ${patient.procedure}.
 
-Data e horário: ${patient.surgery_date ? format(new Date(patient.surgery_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'a confirmar'}
-
-Por favor, confirme sua presença respondendo esta mensagem.
+Qualquer dúvida, estou à disposição.
 
 Atenciosamente,
 Dr. André`;
@@ -150,7 +223,23 @@ Dr. André`;
                   </p>
                 </div>
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-1.5">
+                {patient.phone && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="bg-[#25D366] text-white hover:bg-[#20BA5A] h-7 w-7 p-0 rounded-md"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const message = encodeURIComponent(getWhatsAppMessage());
+                      const phoneNumber = patient.phone.replace(/\D/g, '');
+                      window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
+                    }}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                )}
                 <StatusBadge status={patient.status as any} />
               </div>
             </div>
