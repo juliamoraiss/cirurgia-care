@@ -6,7 +6,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -32,12 +31,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PatientTasksSection } from "@/components/PatientTasksSection";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
+import { PatientFormSteps } from "@/components/PatientFormSteps";
+import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
+import InputMask from "react-input-mask";
 
 // Validation schema with enhanced security
 const patientSchema = z.object({
@@ -89,6 +97,7 @@ const PatientForm = () => {
   const [examsChecklist, setExamsChecklist] = useState<string[]>([]);
   const [checkedExams, setCheckedExams] = useState<string[]>([]);
   const [deletingPatient, setDeletingPatient] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
@@ -174,25 +183,33 @@ const PatientForm = () => {
     }
   }
 
-  const formatCPF = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 11) {
-      return numbers
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  const steps = [
+    {
+      title: "Dados Pessoais",
+      description: "Informações básicas do paciente",
+    },
+    {
+      title: "Dados da Cirurgia",
+      description: "Procedimento e informações hospitalares",
+    },
+    {
+      title: "Exames e Finalizações",
+      description: "Checklist de exames e arquivos",
+    },
+  ];
+
+  const handleNextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    return value;
   };
 
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 11) {
-      return numbers
-        .replace(/(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{5})(\d)/, '$1-$2');
+  const handlePreviousStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    return value;
   };
 
   const getExamsForProcedure = (procedure: string): string[] => {
@@ -223,11 +240,7 @@ const PatientForm = () => {
   const handleChange = (field: string, value: string) => {
     let formattedValue = value;
     
-    if (field === 'cpf') {
-      formattedValue = formatCPF(value);
-    } else if (field === 'phone') {
-      formattedValue = formatPhone(value);
-    } else if (field === 'name') {
+    if (field === 'name') {
       formattedValue = formatNameToTitleCase(value);
     }
     
@@ -236,7 +249,6 @@ const PatientForm = () => {
     if (field === 'procedure') {
       const newExams = getExamsForProcedure(value);
       setExamsChecklist(newExams);
-      // Only clear checked exams if not in edit mode or if procedure actually changed
       if (!isEditMode || formData.procedure !== value) {
         setCheckedExams([]);
       }
@@ -631,7 +643,7 @@ const PatientForm = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-4xl mx-auto space-y-6 pb-24 md:pb-6">
       <div>
         <Button
           variant="ghost"
@@ -649,404 +661,483 @@ const PatientForm = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        if (currentStep === steps.length - 1) {
+          handleSubmit(e);
+        }
+      }}>
         <Card>
           <CardHeader>
-            <CardTitle>Dados do Paciente</CardTitle>
+            <CardTitle>
+              {steps[currentStep].title}
+            </CardTitle>
             <CardDescription>
-              Preencha as informações do paciente e do procedimento
+              {steps[currentStep].description}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo *</Label>
-                <Input
-                  id="name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  className={errors.name ? "border-destructive" : ""}
-                />
-                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="(XX) XXXXX-XXXX"
-                  className={errors.phone ? "border-destructive" : ""}
-                />
-                {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="birth_date">Data de Nascimento</Label>
-                <Input
-                  id="birth_date"
-                  type="date"
-                  value={formData.birth_date}
-                  onChange={(e) => handleChange("birth_date", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gênero</Label>
-                <Select
-                  value={formData.gender}
-                  onValueChange={(value) => handleChange("gender", value)}
-                >
-                  <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Selecione o gênero" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="guide_validity_date">Validade da Guia</Label>
-                <Input
-                  id="guide_validity_date"
-                  type="date"
-                  value={formData.guide_validity_date}
-                  onChange={(e) => handleChange("guide_validity_date", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="surgery_date">Data da Cirurgia</Label>
-                <Input
-                  id="surgery_date"
-                  type="datetime-local"
-                  value={formData.surgery_date}
-                  onChange={(e) => handleChange("surgery_date", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {formData.surgery_date && formData.phone.trim() !== "" && formData.hospital && (
-                <Button
-                  type="button"
-                  variant="default"
-                  className="w-full"
-                  onClick={() => {
-                    const phoneNumber = formData.phone.replace(/\D/g, '');
-                    const surgeryDate = new Date(formData.surgery_date);
-                    const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
-                    const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    
-                    const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
-                    const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-                    window.open(whatsappUrl, '_blank');
-                  }}
-                >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Enviar confirmação ao paciente
-                </Button>
-              )}
-              
-              {formData.surgery_date && formData.hospital && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => sendDoctorWhatsApp(formData.surgery_date, formData.name, formData.procedure, formData.hospital)}
-                >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Notificar médico (Google Calendar)
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="procedure">Procedimento *</Label>
-              <Select
-                value={formData.procedure}
-                onValueChange={(value) => handleChange("procedure", value)}
-              >
-                <SelectTrigger className={errors.procedure ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Selecione o procedimento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="simpatectomia">Simpatectomia</SelectItem>
-                  <SelectItem value="lobectomia">Lobectomia</SelectItem>
-                  <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
-                  <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.procedure && <p className="text-sm text-destructive">{errors.procedure}</p>}
-            </div>
-
-            {examsChecklist.length > 0 && (
-              <div className="space-y-3">
-                <Label>Checklist de Exames</Label>
-                <div className="space-y-2 border rounded-lg p-4">
-                  {examsChecklist.map((exam) => (
-                    <div key={exam} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={exam}
-                        checked={checkedExams.includes(exam)}
-                        onCheckedChange={() => toggleExam(exam)}
-                      />
-                      <label
-                        htmlFor={exam}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {exam}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="hospital">Hospital</Label>
-                <Select
-                  value={formData.hospital}
-                  onValueChange={(value) => handleChange("hospital", value)}
-                >
-                  <SelectTrigger className={errors.hospital ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Selecione o hospital" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
-                    <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
-                    <SelectItem value="Hospital Prontonorte">Hospital Prontonorte</SelectItem>
-                    <SelectItem value="Hospital Santa Lúcia Norte">Hospital Santa Lúcia Norte</SelectItem>
-                    <SelectItem value="Hospital Mantevida">Hospital Mantevida</SelectItem>
-                    <SelectItem value="Hospital Ceuta">Hospital Ceuta</SelectItem>
-                    <SelectItem value="Hospital Alvorada">Hospital Alvorada</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.hospital && <p className="text-sm text-destructive">{errors.hospital}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="insurance">Convênio</Label>
-                <Select
-                  value={formData.insurance}
-                  onValueChange={(value) => handleChange("insurance", value)}
-                >
-                  <SelectTrigger className={errors.insurance ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Selecione o convênio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ASSEFAZ">ASSEFAZ</SelectItem>
-                    <SelectItem value="FUSEX">FUSEX</SelectItem>
-                    <SelectItem value="INAS (GDF Saúde)">INAS (GDF Saúde)</SelectItem>
-                    <SelectItem value="PLENUM SAÚDE">PLENUM SAÚDE</SelectItem>
-                    <SelectItem value="PORTO SEGURO - SEGURO SAUDE S/A">PORTO SEGURO - SEGURO SAUDE S/A</SelectItem>
-                    <SelectItem value="POSTAL SAUDE">POSTAL SAUDE</SelectItem>
-                    <SelectItem value="QUALLITY">QUALLITY</SelectItem>
-                    <SelectItem value="SULAMERICA">SULAMERICA</SelectItem>
-                    <SelectItem value="PMDF">PMDF</SelectItem>
-                    <SelectItem value="GEAP">GEAP</SelectItem>
-                    <SelectItem value="Particular">Particular</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => handleChange("status", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="awaiting_authorization">
-                      Aguardando Autorização
-                    </SelectItem>
-                    <SelectItem value="awaiting_consultation">
-                      Aguardando Consulta
-                    </SelectItem>
-                    <SelectItem value="authorized">Autorizado</SelectItem>
-                    <SelectItem value="completed">Cirurgia Realizada</SelectItem>
-                    <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="origem">Origem</Label>
-                <Select
-                  value={formData.origem}
-                  onValueChange={(value) => handleChange("origem", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a origem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sistema">Sistema</SelectItem>
-                    <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {formData.status === "authorized" && formData.phone.trim() !== "" && (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  const phoneNumber = formData.phone.replace(/\D/g, '');
-                  
-                  // Determinar tratamento baseado no gênero
-                  const treatment = formData.gender === "masculino" ? "o senhor" : formData.gender === "feminino" ? "a senhora" : "o(a) senhor(a)";
-                  
-                  // Determinar se é singular ou plural para exames
-                  const examCount = examsChecklist.length;
-                  const examWord = examCount === 1 ? "o exame" : "os exames";
-                  
-                  // Montar lista de exames com checkmarks
-                  const examsWithCheckmarks = examsChecklist.map(exam => `✅ ${exam}`).join('\n');
-                  const examsSection = examsWithCheckmarks || 'exames necessários';
-                  
-                  const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'Hospital Brasília'}, gostaria de confirmar se ${treatment} já realizou ${examWord}:\n${examsSection}\n\nQualquer dúvida estou à disposição.\nObrigada.`;
-                  const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-                  window.open(whatsappUrl, '_blank');
-                }}
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Enviar mensagem
-              </Button>
-            )}
-
-            {isEditMode && id && (
-              <div className="pt-4">
-                <PatientNotesSection patientId={id} />
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <Label>Exames</Label>
-              
-              {existingFiles.length > 0 && (
+          <CardContent className="space-y-6">
+            {/* Etapa 1: Dados Pessoais */}
+            {currentStep === 0 && (
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Arquivos já enviados:</p>
-                  {existingFiles.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-                      <button
-                        type="button"
-                        onClick={() => viewFile(file.file_path, file.file_name)}
-                        className="flex items-center gap-2 flex-1 text-left hover:opacity-70 transition-opacity"
-                      >
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{file.file_name}</span>
-                      </button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteExistingFile(file.id, file.file_path)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
+                  <Label htmlFor="name">Nome Completo *</Label>
                   <Input
-                    id="file-upload"
-                    type="file"
-                    accept="application/pdf,image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
+                    id="name"
+                    required
+                    value={formData.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
+                    className={errors.name ? "border-destructive" : ""}
                   />
+                  {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <InputMask
+                    mask="(99) 99999-9999"
+                    value={formData.phone}
+                    onChange={(e) => handleChange("phone", e.target.value)}
+                  >
+                    {(inputProps: any) => (
+                      <Input
+                        {...inputProps}
+                        id="phone"
+                        type="tel"
+                        placeholder="(XX) XXXXX-XXXX"
+                        className={errors.phone ? "border-destructive" : ""}
+                      />
+                    )}
+                  </InputMask>
+                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+                </div>
+
+                <YearMonthDatePicker
+                  date={formData.birth_date ? new Date(formData.birth_date) : undefined}
+                  onDateChange={(date) => handleChange("birth_date", date ? date.toISOString().split('T')[0] : "")}
+                  label="Data de Nascimento"
+                  placeholder="Selecione a data de nascimento"
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gênero</Label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) => handleChange("gender", value)}
+                  >
+                    <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Selecione o gênero" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
+                </div>
+
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="optional">
+                    <AccordionTrigger>Campos Opcionais</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cpf">CPF</Label>
+                        <InputMask
+                          mask="999.999.999-99"
+                          value={formData.cpf}
+                          onChange={(e) => handleChange("cpf", e.target.value)}
+                        >
+                          {(inputProps: any) => (
+                            <Input
+                              {...inputProps}
+                              id="cpf"
+                              placeholder="XXX.XXX.XXX-XX"
+                              className={errors.cpf ? "border-destructive" : ""}
+                            />
+                          )}
+                        </InputMask>
+                        {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => handleChange("email", e.target.value)}
+                          className={errors.email ? "border-destructive" : ""}
+                        />
+                        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            )}
+
+            {/* Etapa 2: Dados da Cirurgia */}
+            {currentStep === 1 && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="procedure">Procedimento *</Label>
+                  <Select
+                    value={formData.procedure}
+                    onValueChange={(value) => handleChange("procedure", value)}
+                  >
+                    <SelectTrigger className={errors.procedure ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Selecione o procedimento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="simpatectomia">Simpatectomia</SelectItem>
+                      <SelectItem value="lobectomia">Lobectomia</SelectItem>
+                      <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
+                      <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.procedure && <p className="text-sm text-destructive">{errors.procedure}</p>}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hospital">Hospital</Label>
+                    <Select
+                      value={formData.hospital}
+                      onValueChange={(value) => handleChange("hospital", value)}
+                    >
+                      <SelectTrigger className={errors.hospital ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Selecione o hospital" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
+                        <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
+                        <SelectItem value="Hospital Prontonorte">Hospital Prontonorte</SelectItem>
+                        <SelectItem value="Hospital Santa Lúcia Norte">Hospital Santa Lúcia Norte</SelectItem>
+                        <SelectItem value="Hospital Mantevida">Hospital Mantevida</SelectItem>
+                        <SelectItem value="Hospital Ceuta">Hospital Ceuta</SelectItem>
+                        <SelectItem value="Hospital Alvorada">Hospital Alvorada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.hospital && <p className="text-sm text-destructive">{errors.hospital}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="insurance">Convênio</Label>
+                    <Select
+                      value={formData.insurance}
+                      onValueChange={(value) => handleChange("insurance", value)}
+                    >
+                      <SelectTrigger className={errors.insurance ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Selecione o convênio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ASSEFAZ">ASSEFAZ</SelectItem>
+                        <SelectItem value="FUSEX">FUSEX</SelectItem>
+                        <SelectItem value="INAS (GDF Saúde)">INAS (GDF Saúde)</SelectItem>
+                        <SelectItem value="PLENUM SAÚDE">PLENUM SAÚDE</SelectItem>
+                        <SelectItem value="PORTO SEGURO - SEGURO SAUDE S/A">PORTO SEGURO - SEGURO SAUDE S/A</SelectItem>
+                        <SelectItem value="POSTAL SAUDE">POSTAL SAUDE</SelectItem>
+                        <SelectItem value="QUALLITY">QUALLITY</SelectItem>
+                        <SelectItem value="SULAMERICA">SULAMERICA</SelectItem>
+                        <SelectItem value="PMDF">PMDF</SelectItem>
+                        <SelectItem value="GEAP">GEAP</SelectItem>
+                        <SelectItem value="Particular">Particular</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="insurance_number">Número do Convênio</Label>
+                    <Input
+                      id="insurance_number"
+                      value={formData.insurance_number}
+                      onChange={(e) => handleChange("insurance_number", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => handleChange("status", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="awaiting_authorization">
+                          Aguardando Autorização
+                        </SelectItem>
+                        <SelectItem value="awaiting_consultation">
+                          Aguardando Consulta
+                        </SelectItem>
+                        <SelectItem value="authorized">Autorizado</SelectItem>
+                        <SelectItem value="completed">Cirurgia Realizada</SelectItem>
+                        <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="surgery_date">Data da Cirurgia</Label>
+                  <Input
+                    id="surgery_date"
+                    type="datetime-local"
+                    value={formData.surgery_date}
+                    onChange={(e) => handleChange("surgery_date", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="guide_validity_date">Validade da Guia</Label>
+                  <Input
+                    id="guide_validity_date"
+                    type="date"
+                    value={formData.guide_validity_date}
+                    onChange={(e) => handleChange("guide_validity_date", e.target.value)}
+                  />
+                </div>
+
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="optional">
+                    <AccordionTrigger>Campos Opcionais</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="origem">Origem</Label>
+                        <Select
+                          value={formData.origem}
+                          onValueChange={(value) => handleChange("origem", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a origem" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Sistema">Sistema</SelectItem>
+                            <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+
+                <div className="space-y-2">
+                  {formData.surgery_date && formData.phone.trim() !== "" && formData.hospital && (
+                    <Button
+                      type="button"
+                      variant="default"
+                      className="w-full"
+                      onClick={() => {
+                        const phoneNumber = formData.phone.replace(/\D/g, '');
+                        const surgeryDate = new Date(formData.surgery_date);
+                        const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
+                        const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        
+                        const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
+                        const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappUrl, '_blank');
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Enviar confirmação ao paciente
+                    </Button>
+                  )}
+                  
+                  {formData.surgery_date && formData.hospital && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => sendDoctorWhatsApp(formData.surgery_date, formData.name, formData.procedure, formData.hospital)}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Notificar médico (Google Calendar)
+                    </Button>
+                  )}
+                </div>
+
+                {formData.status === "authorized" && formData.phone.trim() !== "" && (
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById("file-upload")?.click()}
+                    className="w-full"
+                    onClick={() => {
+                      const phoneNumber = formData.phone.replace(/\D/g, '');
+                      const treatment = formData.gender === "masculino" ? "o senhor" : formData.gender === "feminino" ? "a senhora" : "o(a) senhor(a)";
+                      const examCount = examsChecklist.length;
+                      const examWord = examCount === 1 ? "o exame" : "os exames";
+                      const examsWithCheckmarks = examsChecklist.map(exam => `✅ ${exam}`).join('\n');
+                      const examsSection = examsWithCheckmarks || 'exames necessários';
+                      const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'Hospital Brasília'}, gostaria de confirmar se ${treatment} já realizou ${examWord}:\n${examsSection}\n\nQualquer dúvida estou à disposição.\nObrigada.`;
+                      const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+                      window.open(whatsappUrl, '_blank');
+                    }}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Adicionar Exames
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Enviar mensagem
                   </Button>
+                )}
+              </div>
+            )}
+
+            {/* Etapa 3: Exames e Finalizações */}
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                {examsChecklist.length > 0 && (
+                  <div className="space-y-3">
+                    <Label>Checklist de Exames</Label>
+                    <div className="space-y-2 border rounded-lg p-4">
+                      {examsChecklist.map((exam) => (
+                        <div key={exam} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={exam}
+                            checked={checkedExams.includes(exam)}
+                            onCheckedChange={() => toggleExam(exam)}
+                          />
+                          <label
+                            htmlFor={exam}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {exam}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isEditMode && id && (
+                  <div className="pt-4">
+                    <PatientNotesSection patientId={id} />
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <Label>Exames (Arquivos)</Label>
+                  
+                  {existingFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Arquivos já enviados:</p>
+                      {existingFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                          <button
+                            type="button"
+                            onClick={() => viewFile(file.file_path, file.file_name)}
+                            className="flex items-center gap-2 flex-1 text-left hover:opacity-70 transition-opacity"
+                          >
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{file.file_name}</span>
+                          </button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteExistingFile(file.id, file.file_path)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="file-upload"
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById("file-upload")?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Adicionar Exames
+                      </Button>
+                    </div>
+
+                    {files.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Novos arquivos a serem enviados:</p>
+                        {files.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{file.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({(file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {files.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Novos arquivos a serem enviados:</p>
-                    {files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{file.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({(file.size / 1024).toFixed(1)} KB)
-                          </span>
-                        </div>
+                {isEditMode && (
+                  <div className="pt-4 border-t">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFile(index)}
+                          variant="destructive"
+                          disabled={deletingPatient}
+                          className="w-full"
                         >
-                          <X className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir Paciente
                         </Button>
-                      </div>
-                    ))}
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso irá excluir permanentemente o paciente
+                            <strong> {formData.name}</strong>, todos os seus arquivos e histórico.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeletePatient}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            {deletingPatient ? "Excluindo..." : "Excluir"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 )}
               </div>
-            </div>
+            )}
 
-            <div className="flex justify-between items-center pt-4">
-              {isEditMode && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={deletingPatient}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir Paciente
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação não pode ser desfeita. Isso irá excluir permanentemente o paciente
-                        <strong> {formData.name}</strong>, todos os seus arquivos e histórico.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeletePatient}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        {deletingPatient ? "Excluindo..." : "Excluir"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-              <div className="flex space-x-2 ml-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/patients")}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={loading || uploadingFiles}>
-                  {loading || uploadingFiles ? "Salvando..." : isEditMode ? "Atualizar Paciente" : "Cadastrar Paciente"}
-                </Button>
-              </div>
-            </div>
+            <PatientFormSteps
+              currentStep={currentStep}
+              totalSteps={steps.length}
+              steps={steps}
+              onNext={handleNextStep}
+              onPrevious={handlePreviousStep}
+              onSubmit={(e) => handleSubmit(e)}
+              isSubmitting={loading || uploadingFiles}
+              isEditMode={isEditMode}
+            />
           </CardContent>
         </Card>
       </form>
