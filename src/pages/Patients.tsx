@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2 } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { PatientCardSwipeable } from "@/components/PatientCardSwipeable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ interface Patient {
   surgery_date: string | null;
   created_at: string;
   exams_checklist: string[] | null;
+  phone?: string | null;
 }
 
 const getExamsForProcedure = (procedure: string): string[] => {
@@ -101,7 +104,7 @@ const Patients = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, status, surgery_date, created_at, exams_checklist")
+        .select("id, name, procedure, hospital, status, surgery_date, created_at, exams_checklist, phone")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -188,131 +191,252 @@ const Patients = () => {
       <Card>
         <CardHeader>
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Search className="h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, procedimento ou hospital..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-between">
-                    {filterProcedures.length > 0 
-                      ? `${filterProcedures.length} selecionado(s)` 
-                      : "Filtrar por procedimento"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
-                  <div className="p-4 space-y-2">
-                    {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
-                      <div key={procedure} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`procedure-${procedure}`}
-                          checked={filterProcedures.includes(procedure)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setFilterProcedures([...filterProcedures, procedure]);
-                            } else {
-                              setFilterProcedures(filterProcedures.filter(p => p !== procedure));
-                            }
-                          }}
-                        />
-                        <label
-                          htmlFor={`procedure-${procedure}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
-                        >
-                          {procedure}
-                        </label>
+            {/* Mobile: Search + Filter Button */}
+            {isMobile ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center flex-1 space-x-2">
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar paciente..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                <Drawer>
+                  <DrawerTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Filter className="h-5 w-5" />
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="max-h-[85vh]">
+                    <DrawerHeader>
+                      <DrawerTitle>Filtros</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="px-4 pb-8 overflow-y-auto space-y-6">
+                      {/* Procedimentos */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Procedimento</h3>
+                        <div className="space-y-2">
+                          {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
+                            <div key={procedure} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`procedure-mobile-${procedure}`}
+                                checked={filterProcedures.includes(procedure)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setFilterProcedures([...filterProcedures, procedure]);
+                                  } else {
+                                    setFilterProcedures(filterProcedures.filter(p => p !== procedure));
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`procedure-mobile-${procedure}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
+                              >
+                                {procedure}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-between">
-                    {filterHospitals.length > 0 
-                      ? `${filterHospitals.length} selecionado(s)` 
-                      : "Filtrar por hospital"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
-                  <div className="p-4 space-y-2">
-                    {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada"].map((hospital) => (
-                      <div key={hospital} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`hospital-${hospital}`}
-                          checked={filterHospitals.includes(hospital)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setFilterHospitals([...filterHospitals, hospital]);
-                            } else {
-                              setFilterHospitals(filterHospitals.filter(h => h !== hospital));
-                            }
-                          }}
-                        />
-                        <label
-                          htmlFor={`hospital-${hospital}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {hospital}
-                        </label>
+
+                      {/* Hospitais */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Hospital</h3>
+                        <div className="space-y-2">
+                          {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada"].map((hospital) => (
+                            <div key={hospital} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`hospital-mobile-${hospital}`}
+                                checked={filterHospitals.includes(hospital)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setFilterHospitals([...filterHospitals, hospital]);
+                                  } else {
+                                    setFilterHospitals(filterHospitals.filter(h => h !== hospital));
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`hospital-mobile-${hospital}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {hospital}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-between">
-                    {filterStatuses.length > 0 
-                      ? `${filterStatuses.length} selecionado(s)` 
-                      : "Filtrar por status"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[280px] p-0 bg-background z-50" align="start">
-                  <div className="p-4 space-y-2">
-                    {[
-                      { value: "awaiting_consultation", label: "Aguardando Consulta" },
-                      { value: "awaiting_authorization", label: "Aguardando Autorização" },
-                      { value: "authorized", label: "Autorizado" },
-                      { value: "completed", label: "Cirurgia Realizada" },
-                      { value: "cancelled", label: "Cirurgia Cancelada" }
-                    ].map((status) => (
-                      <div key={status.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`status-${status.value}`}
-                          checked={filterStatuses.includes(status.value)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setFilterStatuses([...filterStatuses, status.value]);
-                            } else {
-                              setFilterStatuses(filterStatuses.filter(s => s !== status.value));
-                            }
-                          }}
-                        />
-                        <label
-                          htmlFor={`status-${status.value}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {status.label}
-                        </label>
+
+                      {/* Status */}
+                      <div>
+                        <h3 className="font-semibold mb-3">Status</h3>
+                        <div className="space-y-2">
+                          {[
+                            { value: "awaiting_consultation", label: "Aguardando Consulta" },
+                            { value: "awaiting_authorization", label: "Aguardando Autorização" },
+                            { value: "authorized", label: "Autorizado" },
+                            { value: "completed", label: "Cirurgia Realizada" },
+                            { value: "cancelled", label: "Cirurgia Cancelada" }
+                          ].map((status) => (
+                            <div key={status.value} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`status-mobile-${status.value}`}
+                                checked={filterStatuses.includes(status.value)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setFilterStatuses([...filterStatuses, status.value]);
+                                  } else {
+                                    setFilterStatuses(filterStatuses.filter(s => s !== status.value));
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`status-mobile-${status.value}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {status.label}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              </div>
+            ) : (
+              /* Desktop: Search + Filter Popovers */
+              <>
+                <div className="flex items-center space-x-2">
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome, procedimento ou hospital..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-between">
+                        {filterProcedures.length > 0 
+                          ? `${filterProcedures.length} selecionado(s)` 
+                          : "Filtrar por procedimento"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
+                      <div className="p-4 space-y-2">
+                        {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
+                          <div key={procedure} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`procedure-${procedure}`}
+                              checked={filterProcedures.includes(procedure)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setFilterProcedures([...filterProcedures, procedure]);
+                                } else {
+                                  setFilterProcedures(filterProcedures.filter(p => p !== procedure));
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`procedure-${procedure}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
+                            >
+                              {procedure}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-between">
+                        {filterHospitals.length > 0 
+                          ? `${filterHospitals.length} selecionado(s)` 
+                          : "Filtrar por hospital"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
+                      <div className="p-4 space-y-2">
+                        {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada"].map((hospital) => (
+                          <div key={hospital} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`hospital-${hospital}`}
+                              checked={filterHospitals.includes(hospital)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setFilterHospitals([...filterHospitals, hospital]);
+                                } else {
+                                  setFilterHospitals(filterHospitals.filter(h => h !== hospital));
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`hospital-${hospital}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {hospital}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-between">
+                        {filterStatuses.length > 0 
+                          ? `${filterStatuses.length} selecionado(s)` 
+                          : "Filtrar por status"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[280px] p-0 bg-background z-50" align="start">
+                      <div className="p-4 space-y-2">
+                        {[
+                          { value: "awaiting_consultation", label: "Aguardando Consulta" },
+                          { value: "awaiting_authorization", label: "Aguardando Autorização" },
+                          { value: "authorized", label: "Autorizado" },
+                          { value: "completed", label: "Cirurgia Realizada" },
+                          { value: "cancelled", label: "Cirurgia Cancelada" }
+                        ].map((status) => (
+                          <div key={status.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`status-${status.value}`}
+                              checked={filterStatuses.includes(status.value)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setFilterStatuses([...filterStatuses, status.value]);
+                                } else {
+                                  setFilterStatuses(filterStatuses.filter(s => s !== status.value));
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`status-${status.value}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {status.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -328,73 +452,16 @@ const Patients = () => {
             <div className="space-y-4">
               {filteredPatients.map((patient) => {
                 const requiredExams = getExamsForProcedure(patient.procedure);
-                const checkedExams = patient.exams_checklist || [];
-                const allExamsChecked = requiredExams.length > 0 && 
-                  requiredExams.every(exam => checkedExams.includes(exam));
 
                 return (
-                  <Card 
+                  <PatientCardSwipeable
                     key={patient.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    patient={patient}
+                    requiredExams={requiredExams}
+                    isAdmin={isAdmin}
+                    onEdit={() => navigate(`/patients/${patient.id}`)}
                     onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
-                  >
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-base">{patient.name}</h3>
-                          <p className="text-sm text-muted-foreground capitalize mt-1">
-                            {patient.procedure}
-                          </p>
-                        </div>
-                        <StatusBadge status={patient.status as any} />
-                      </div>
-
-                      {patient.hospital && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Building2 className="h-4 w-4" />
-                          <span>{patient.hospital}</span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">Exames: </span>
-                          {patient.status === 'cancelled' ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : allExamsChecked ? (
-                            <Badge variant="success" className="text-xs">Entregues</Badge>
-                          ) : (
-                            <Badge variant="warning" className="text-xs">Aguardando</Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {patient.surgery_date && patient.status !== 'cancelled' && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            {format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", {
-                              locale: ptBR,
-                            })}
-                          </span>
-                        </div>
-                      )}
-
-                      {isAdmin && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/patients/${patient.id}`);
-                          }}
-                        >
-                          Editar
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
+                  />
                 );
               })}
             </div>
