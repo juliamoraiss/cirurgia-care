@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Calendar, Clock, MapPin, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { StandardCard, CardInfo } from "@/components/StandardCard";
 
 interface Surgery {
   id: string;
@@ -85,48 +86,43 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
         <div className="space-y-3">
           {urgentSurgeries.map((surgery) => {
             const surgeryDate = new Date(surgery.surgery_date);
-            const isToday = surgeryDate.toDateString() === now.toDateString();
+            const isTodaySurgery = isToday(surgeryDate);
+            
+            const infos: CardInfo[] = [
+              {
+                icon: Clock,
+                label: "Data",
+                value: surgeryDate.toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }),
+                highlighted: isTodaySurgery,
+              },
+            ];
+
+            if (surgery.hospital) {
+              infos.push({
+                icon: MapPin,
+                label: "Hospital",
+                value: surgery.hospital,
+              });
+            }
             
             return (
-              <div
+              <StandardCard
                 key={surgery.id}
+                title={surgery.name}
+                subtitle={surgery.procedure}
+                infos={infos}
+                highlighted={isTodaySurgery}
+                actionLabel="Ver detalhes"
+                onAction={() => navigate(`/patients/${surgery.id}/exams`)}
                 onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-                className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                  isToday 
-                    ? 'bg-success/5 border-success/30 hover:bg-success/10' 
-                    : 'bg-card hover:bg-accent/50'
-                }`}
-              >
-              <div className="flex items-start justify-between gap-2 mb-1.5">
-                <h4 className="font-semibold text-sm text-foreground line-clamp-1">{surgery.name}</h4>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
-                  {formatDistanceToNow(new Date(surgery.surgery_date), {
-                    addSuffix: true,
-                    locale: ptBR,
-                  })}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-2 line-clamp-1">{surgery.procedure}</p>
-              <div className="flex flex-col gap-1.5 text-[10px]">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{new Date(surgery.surgery_date).toLocaleString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}</span>
-                </div>
-                {surgery.hospital && (
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{surgery.hospital}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
+              />
+            );
           })}
         </div>
       </CardContent>
