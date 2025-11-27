@@ -68,7 +68,7 @@ export function PendingPatients({ patients, loading }: PendingPatientsProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {patients.map((patient) => (
             <div
               key={patient.id}

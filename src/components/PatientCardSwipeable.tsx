@@ -164,13 +164,13 @@ Dr. André`;
 
             <div className="flex items-center justify-between gap-2">
               <div className="text-xs flex items-center gap-1.5">
-                <span className="text-muted-foreground">Exames:</span>
+                <span className="text-muted-foreground/80">Exames:</span>
                 {patient.status === 'cancelled' ? (
-                  <span className="text-muted-foreground">-</span>
+                  <span className="text-muted-foreground/60">-</span>
                 ) : allExamsChecked ? (
-                  <Badge variant="success" className="text-[10px] px-1.5 py-0">Entregues</Badge>
+                  <span className="text-[10px] text-success/70 font-medium">Entregues</span>
                 ) : (
-                  <Badge variant="warning" className="text-[10px] px-1.5 py-0">Aguardando</Badge>
+                  <span className="text-[10px] text-warning/70 font-medium">Aguardando</span>
                 )}
               </div>
             </div>

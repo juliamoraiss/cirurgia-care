@@ -82,13 +82,21 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2.5">
-          {urgentSurgeries.map((surgery) => (
-            <div
-              key={surgery.id}
-              onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-              className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-            >
+        <div className="space-y-3">
+          {urgentSurgeries.map((surgery) => {
+            const surgeryDate = new Date(surgery.surgery_date);
+            const isToday = surgeryDate.toDateString() === now.toDateString();
+            
+            return (
+              <div
+                key={surgery.id}
+                onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+                className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                  isToday 
+                    ? 'bg-success/5 border-success/30 hover:bg-success/10' 
+                    : 'bg-card hover:bg-accent/50'
+                }`}
+              >
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <h4 className="font-semibold text-sm text-foreground line-clamp-1">{surgery.name}</h4>
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
@@ -118,7 +126,8 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
                 )}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </CardContent>
     </Card>
