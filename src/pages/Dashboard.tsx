@@ -204,13 +204,13 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Bem-vindo, {userName || "..."}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground/70">
               Visão geral do sistema de gestão cirúrgica
             </p>
           </div>
