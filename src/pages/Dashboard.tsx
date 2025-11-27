@@ -17,6 +17,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { UpcomingSurgeries } from "@/components/UpcomingSurgeries";
 import { PendingPatients } from "@/components/PendingPatients";
+import { NextSurgeryHighlight } from "@/components/NextSurgeryHighlight";
 
 interface DashboardStats {
   totalPatients: number;
@@ -32,6 +33,7 @@ interface Patient {
   surgery_date: string;
   insurance: string;
   hospital: string | null;
+  status?: string;
 }
 
 interface SystemActivity {
@@ -89,13 +91,14 @@ const Dashboard = () => {
         // Total patients with details
         const { data: allPatientsData, count: totalPatients } = await supabase
           .from("patients")
-          .select("id, name, procedure, surgery_date, insurance, hospital", { count: "exact" });
+          .select("id, name, procedure, surgery_date, insurance, hospital, status", { count: "exact" });
 
         // Patients with surgery dates
         const { data: patientsWithSurgery } = await supabase
           .from("patients")
-          .select("id, name, procedure, surgery_date, insurance, hospital")
-          .not("surgery_date", "is", null);
+          .select("id, name, procedure, surgery_date, insurance, hospital, status")
+          .not("surgery_date", "is", null)
+          .order("surgery_date", { ascending: true });
 
         // Filter scheduled (future) and completed (past) surgeries based on date
         const scheduledData: Patient[] = [];
@@ -221,9 +224,15 @@ const Dashboard = () => {
           )}
         </div>
 
+        {/* Next Surgery Highlight - Most Important */}
+        <NextSurgeryHighlight 
+          surgery={scheduledPatients.length > 0 ? scheduledPatients[0] : null} 
+          loading={loading} 
+        />
+
         {/* Priority sections for mobile - show urgent info first */}
-        <div className="grid gap-4 md:grid-cols-2 mb-4">
-          <UpcomingSurgeries surgeries={scheduledPatients} loading={loading} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <UpcomingSurgeries surgeries={scheduledPatients.slice(1)} loading={loading} />
           <PendingPatients patients={pendingPatients} loading={loading} />
         </div>
 
