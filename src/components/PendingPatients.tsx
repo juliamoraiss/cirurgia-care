@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, AlertCircle } from "lucide-react";
+import { Clock, AlertCircle, User, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { StandardCard, CardInfo } from "@/components/StandardCard";
+import { Badge } from "@/components/ui/badge";
 
 interface Patient {
   id: string;
@@ -69,26 +71,31 @@ export function PendingPatients({ patients, loading }: PendingPatientsProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {patients.map((patient) => (
-            <div
-              key={patient.id}
-              onClick={() => navigate(`/patients/${patient.id}/exams`)}
-              className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-            >
-              <div className="flex items-start gap-2 mb-1.5">
-                <AlertCircle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-sm text-foreground line-clamp-1">{patient.name}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{patient.procedure}</p>
-                  {patient.insurance && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                      Convênio: {patient.insurance}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+          {patients.map((patient) => {
+            const infos: CardInfo[] = [];
+            
+            if (patient.insurance) {
+              infos.push({
+                icon: Building2,
+                label: "Convênio",
+                value: patient.insurance,
+              });
+            }
+            
+            return (
+              <StandardCard
+                key={patient.id}
+                title={patient.name}
+                subtitle={patient.procedure}
+                infos={infos}
+                statusIcon={<AlertCircle className="h-4 w-4 text-warning" />}
+                badge={<Badge variant="warning" className="text-[10px] px-1.5 py-0">Aguardando</Badge>}
+                actionLabel="Ver detalhes"
+                onAction={() => navigate(`/patients/${patient.id}/exams`)}
+                onClick={() => navigate(`/patients/${patient.id}/exams`)}
+              />
+            );
+          })}
         </div>
       </CardContent>
     </Card>
