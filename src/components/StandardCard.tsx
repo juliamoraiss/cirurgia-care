@@ -42,19 +42,19 @@ export function StandardCard({
       } ${className}`}
       onClick={onClick}
     >
-      <CardContent className="p-card space-y-compact">
+      <CardContent className="p-3 space-y-3">
         {/* Header com título e badge */}
-        <div className="flex items-start justify-between gap-element">
-          <div className="flex items-start gap-element flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-1.5 flex-1 min-w-0">
             {statusIcon && (
               <div className="mt-0.5 shrink-0">
                 {statusIcon}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="text-subtitle leading-tight truncate">{title}</h3>
+              <h3 className="font-semibold text-sm leading-tight truncate">{title}</h3>
               {subtitle && (
-                <p className="text-small text-muted-foreground/80 capitalize mt-0.5 truncate">
+                <p className="text-xs text-muted-foreground/80 capitalize mt-0.5 truncate">
                   {subtitle}
                 </p>
               )}
@@ -69,13 +69,13 @@ export function StandardCard({
 
         {/* Informações em linhas fixas com ícones */}
         {infos.length > 0 && (
-          <div className="space-y-element">
+          <div className="space-y-2">
             {infos.map((info, index) => {
               const Icon = info.icon;
               return (
                 <div 
                   key={index} 
-                  className={`flex items-center gap-element text-small ${
+                  className={`flex items-center gap-1.5 text-xs ${
                     info.highlighted ? 'font-semibold text-destructive' : 'text-muted-foreground/80'
                   }`}
                 >

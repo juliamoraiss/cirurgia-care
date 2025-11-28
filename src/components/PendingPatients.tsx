@@ -23,11 +23,11 @@ export function PendingPatients({ patients, loading }: PendingPatientsProps) {
     return (
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-element">
+          <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-warning" />
-            <CardTitle className="text-subtitle">Pacientes com Pendências</CardTitle>
+            <CardTitle>Pacientes com Pendências</CardTitle>
           </div>
-          <CardDescription className="text-small">Aguardando autorização do convênio</CardDescription>
+          <CardDescription>Aguardando autorização do convênio</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
@@ -42,16 +42,16 @@ export function PendingPatients({ patients, loading }: PendingPatientsProps) {
     return (
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-element">
+          <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-warning" />
-            <CardTitle className="text-subtitle">Pacientes com Pendências</CardTitle>
+            <CardTitle>Pacientes com Pendências</CardTitle>
           </div>
-          <CardDescription className="text-small">Aguardando autorização do convênio</CardDescription>
+          <CardDescription>Aguardando autorização do convênio</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground text-small">Nenhum paciente com pendência</p>
+            <p className="text-muted-foreground text-sm">Nenhum paciente com pendência</p>
           </div>
         </CardContent>
       </Card>
@@ -61,16 +61,16 @@ export function PendingPatients({ patients, loading }: PendingPatientsProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-element">
+        <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-warning" />
-          <CardTitle className="text-subtitle">Pacientes com Pendências</CardTitle>
+          <CardTitle>Pacientes com Pendências</CardTitle>
         </div>
-        <CardDescription className="text-small">
+        <CardDescription>
           {patients.length} {patients.length === 1 ? 'paciente aguardando' : 'pacientes aguardando'} autorização
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-compact">
+        <div className="space-y-3">
           {patients.map((patient) => {
             const infos: CardInfo[] = [];
             

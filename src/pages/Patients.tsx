@@ -223,11 +223,11 @@ const Patients = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-section pb-24">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-title md:text-[1.875rem] text-foreground">Pacientes</h1>
-          <p className="text-small text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Pacientes</h1>
+          <p className="text-sm text-muted-foreground">
             Gerencie todos os pacientes e procedimentos
           </p>
         </div>
@@ -503,12 +503,12 @@ const Patients = () => {
             <div className="space-y-6">
               {upcomingSurgeries.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-element mb-compact">
+                  <div className="flex items-center gap-2 mb-3">
                     <Calendar className="h-4 w-4 text-success" />
-                    <h3 className="text-subtitle text-success">Cirurgias Futuras</h3>
+                    <h3 className="font-semibold text-success">Cirurgias Futuras</h3>
                     <Badge variant="outline" className="ml-auto">{upcomingSurgeries.length}</Badge>
                   </div>
-                  <div className="space-y-compact">
+                  <div className="space-y-4">
                     {upcomingSurgeries.map((patient) => {
                       const requiredExams = getExamsForProcedure(patient.procedure);
                       const nextAction = getNextAction(patient);
@@ -530,12 +530,12 @@ const Patients = () => {
 
               {consultations.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-element mb-compact">
+                  <div className="flex items-center gap-2 mb-3">
                     <Clock className="h-4 w-4 text-primary" />
-                    <h3 className="text-subtitle text-primary">Consultas</h3>
+                    <h3 className="font-semibold text-primary">Consultas</h3>
                     <Badge variant="outline" className="ml-auto">{consultations.length}</Badge>
                   </div>
-                  <div className="space-y-compact">
+                  <div className="space-y-4">
                     {consultations.map((patient) => {
                       const requiredExams = getExamsForProcedure(patient.procedure);
                       const nextAction = getNextAction(patient);
@@ -557,12 +557,12 @@ const Patients = () => {
 
               {others.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-element mb-compact">
+                  <div className="flex items-center gap-2 mb-3">
                     <AlertCircle className="h-4 w-4 text-warning" />
-                    <h3 className="text-subtitle text-warning">Outros</h3>
+                    <h3 className="font-semibold text-warning">Outros</h3>
                     <Badge variant="outline" className="ml-auto">{others.length}</Badge>
                   </div>
-                  <div className="space-y-compact">
+                  <div className="space-y-4">
                     {others.map((patient) => {
                       const requiredExams = getExamsForProcedure(patient.procedure);
                       const nextAction = getNextAction(patient);
@@ -584,12 +584,12 @@ const Patients = () => {
 
               {completedSurgeries.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-element mb-compact">
+                  <div className="flex items-center gap-2 mb-3">
                     <Check className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-subtitle text-muted-foreground">Cirurgias Realizadas</h3>
+                    <h3 className="font-semibold text-muted-foreground">Cirurgias Realizadas</h3>
                     <Badge variant="outline" className="ml-auto">{completedSurgeries.length}</Badge>
                   </div>
-                  <div className="space-y-compact">
+                  <div className="space-y-4">
                     {completedSurgeries.map((patient) => {
                       const requiredExams = getExamsForProcedure(patient.procedure);
                       const nextAction = getNextAction(patient);

@@ -83,18 +83,6 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      fontSize: {
-        'title': 'var(--text-title)',
-        'subtitle': 'var(--text-subtitle)',
-        'body': 'var(--text-body)',
-        'small': 'var(--text-small)',
-      },
-      spacing: {
-        'section': 'var(--spacing-section)',
-        'card': 'var(--spacing-card)',
-        'compact': 'var(--spacing-compact)',
-        'element': 'var(--spacing-element)',
-      },
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'md': 'var(--shadow-md)',

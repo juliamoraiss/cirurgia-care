@@ -25,10 +25,10 @@ export function NextSurgeryHighlight({ surgery, loading }: NextSurgeryHighlightP
   if (loading) {
     return (
       <Card className="bg-gradient-to-br from-success/10 via-success/5 to-transparent border-success/30">
-        <CardContent className="p-card">
+        <CardContent className="p-5">
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-success mx-auto"></div>
-            <p className="mt-4 text-muted-foreground text-small">Carregando...</p>
+            <p className="mt-4 text-muted-foreground text-sm">Carregando...</p>
           </div>
         </CardContent>
       </Card>
@@ -38,10 +38,10 @@ export function NextSurgeryHighlight({ surgery, loading }: NextSurgeryHighlightP
   if (!surgery) {
     return (
       <Card className="bg-gradient-to-br from-muted/30 to-transparent border-muted">
-        <CardContent className="p-card">
+        <CardContent className="p-5">
           <div className="text-center py-8">
             <Calendar className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground text-small font-medium">Nenhuma cirurgia urgente agendada</p>
+            <p className="text-muted-foreground text-sm font-medium">Nenhuma cirurgia urgente agendada</p>
             <p className="text-xs text-muted-foreground/60 mt-1">Você está em dia!</p>
           </div>
         </CardContent>
@@ -73,11 +73,11 @@ export function NextSurgeryHighlight({ surgery, loading }: NextSurgeryHighlightP
       }`}
       onClick={() => navigate(`/patients/${surgery.id}/exams`)}
     >
-      <CardContent className="p-card md:p-[1.25rem]">
-        <div className="space-y-compact">
+      <CardContent className="p-5 md:p-6">
+        <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-start justify-between gap-compact">
-            <div className="flex items-start gap-element flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2 flex-1">
               {isUrgent && (
                 <AlertCircle 
                   className={`h-5 w-5 shrink-0 mt-0.5 ${
@@ -86,7 +86,7 @@ export function NextSurgeryHighlight({ surgery, loading }: NextSurgeryHighlightP
                 />
               )}
               <div className="flex-1">
-                <div className="flex items-center gap-element mb-1">
+                <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground/70">
                     🟦 Próxima Cirurgia
                   </h3>
@@ -108,31 +108,31 @@ export function NextSurgeryHighlight({ surgery, loading }: NextSurgeryHighlightP
           </div>
 
           {/* Patient Info */}
-          <div className="space-y-compact">
-            <div className="flex items-center gap-element">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-small text-muted-foreground/70">Paciente</p>
-                <p className="text-subtitle font-bold text-foreground truncate">{surgery.name}</p>
+                <p className="text-sm text-muted-foreground/70">Paciente</p>
+                <p className="text-lg font-bold text-foreground truncate">{surgery.name}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
-              <div className="flex items-center gap-element">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground/70">Procedimento</p>
-                  <p className="text-small font-semibold text-foreground capitalize truncate">
+                  <p className="text-sm font-semibold text-foreground capitalize truncate">
                     {surgery.procedure}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-element">
+              <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground/70">Horário</p>
-                  <p className={`text-small font-semibold truncate ${
+                  <p className={`text-sm font-semibold truncate ${
                     isUrgent ? 'text-destructive' : 'text-foreground'
                   }`}>
                     {format(surgeryDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
@@ -142,11 +142,11 @@ export function NextSurgeryHighlight({ surgery, loading }: NextSurgeryHighlightP
             </div>
 
             {surgery.hospital && (
-              <div className="flex items-center gap-element">
+              <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground/70">Hospital</p>
-                  <p className="text-small font-semibold text-foreground truncate">
+                  <p className="text-sm font-semibold text-foreground truncate">
                     {surgery.hospital}
                   </p>
                 </div>

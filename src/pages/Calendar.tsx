@@ -138,10 +138,10 @@ const Calendar = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-section">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-title md:text-[1.875rem] text-foreground">Agenda de Cirurgias</h1>
-        <p className="text-small text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Visualize e gerencie os procedimentos agendados
         </p>
       </div>
