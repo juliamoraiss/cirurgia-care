@@ -36,11 +36,11 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
     return (
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-element">
             <Calendar className="h-5 w-5 text-success" />
-            <CardTitle>Próximas Cirurgias</CardTitle>
+            <CardTitle className="text-subtitle">Próximas Cirurgias</CardTitle>
           </div>
-          <CardDescription>Cirurgias agendadas para hoje e amanhã</CardDescription>
+          <CardDescription className="text-small">Cirurgias agendadas para hoje e amanhã</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
@@ -55,16 +55,16 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
     return (
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-element">
             <Calendar className="h-5 w-5 text-success" />
-            <CardTitle>Próximas Cirurgias</CardTitle>
+            <CardTitle className="text-subtitle">Próximas Cirurgias</CardTitle>
           </div>
-          <CardDescription>Cirurgias agendadas para hoje e amanhã</CardDescription>
+          <CardDescription className="text-small">Cirurgias agendadas para hoje e amanhã</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground text-sm">Nenhuma cirurgia urgente agendada</p>
+            <p className="text-muted-foreground text-small">Nenhuma cirurgia urgente agendada</p>
           </div>
         </CardContent>
       </Card>
@@ -74,16 +74,16 @@ export function UpcomingSurgeries({ surgeries, loading }: UpcomingSurgeriesProps
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-element">
           <Calendar className="h-5 w-5 text-success" />
-          <CardTitle>Próximas Cirurgias</CardTitle>
+          <CardTitle className="text-subtitle">Próximas Cirurgias</CardTitle>
         </div>
-        <CardDescription>
+        <CardDescription className="text-small">
           {urgentSurgeries.length} {urgentSurgeries.length === 1 ? 'cirurgia agendada' : 'cirurgias agendadas'} para hoje/amanhã
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-compact">
           {urgentSurgeries.map((surgery) => {
             const surgeryDate = new Date(surgery.surgery_date);
             const isTodaySurgery = isToday(surgeryDate);
