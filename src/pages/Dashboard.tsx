@@ -207,15 +207,15 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            Bem-vindo, {userName || "..."}
-          </h1>
-          <p className="text-xs md:text-sm text-muted-foreground/70">
-            Visão geral do sistema de gestão cirúrgica
-          </p>
-        </div>
+    <div className="p-4 md:p-6 space-y-section pb-24">
+      <div>
+        <h1 className="text-title md:text-[1.875rem] text-foreground">
+          Bem-vindo, {userName || "..."}
+        </h1>
+        <p className="text-small text-muted-foreground/70">
+          Visão geral do sistema de gestão cirúrgica
+        </p>
+      </div>
 
         {/* Next Surgery Highlight - Most Important */}
         <NextSurgeryHighlight 
@@ -223,13 +223,13 @@ const Dashboard = () => {
           loading={loading} 
         />
 
-        {/* Priority sections for mobile - show urgent info first */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <UpcomingSurgeries surgeries={scheduledPatients.slice(1)} loading={loading} />
-          <PendingPatients patients={pendingPatients} loading={loading} />
-        </div>
+      {/* Priority sections for mobile - show urgent info first */}
+      <div className="grid gap-section md:grid-cols-2">
+        <UpcomingSurgeries surgeries={scheduledPatients.slice(1)} loading={loading} />
+        <PendingPatients patients={pendingPatients} loading={loading} />
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-section md:grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => {
             const Icon = stat.icon;
             let tooltipContent = null;
