@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter, Clock, AlertCircle } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { PatientCardSwipeable } from "@/components/PatientCardSwipeable";
 import { format } from "date-fns";
@@ -53,6 +53,42 @@ const getExamsForProcedure = (procedure: string): string[] => {
     broncoscopia: ["Risco cardiológico (opcional)"]
   };
   return examsMap[procedure] || [];
+};
+
+const getNextAction = (patient: Patient): { text: string; variant: "default" | "warning" | "success" | "destructive" } => {
+  const requiredExams = getExamsForProcedure(patient.procedure);
+  const checkedExams = patient.exams_checklist || [];
+  const allExamsChecked = requiredExams.length > 0 && requiredExams.every(exam => checkedExams.includes(exam));
+
+  if (patient.status === "awaiting_consultation") {
+    return { text: "Aguardando consulta", variant: "default" };
+  }
+  
+  if (patient.status === "awaiting_authorization") {
+    return { text: "Aguardando autorização do convênio", variant: "warning" };
+  }
+  
+  if (!allExamsChecked && requiredExams.length > 0) {
+    return { text: "Aguardando envio de exames", variant: "warning" };
+  }
+  
+  if (patient.status === "authorized" && !patient.surgery_date) {
+    return { text: "Aguardando agendamento", variant: "warning" };
+  }
+  
+  if (patient.surgery_date) {
+    const surgeryDate = new Date(patient.surgery_date);
+    const now = new Date();
+    if (surgeryDate > now) {
+      return { text: `Cirurgia agendada para ${format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}`, variant: "success" };
+    }
+  }
+  
+  if (patient.status === "completed") {
+    return { text: "Cirurgia realizada", variant: "default" };
+  }
+  
+  return { text: "Status atualizado", variant: "default" };
 };
 
 const Patients = () => {
@@ -171,6 +207,21 @@ const Patients = () => {
       return sortDirection === "asc" ? compareValue : -compareValue;
     });
 
+  // Group patients by category
+  const now = new Date();
+  const upcomingSurgeries = filteredPatients.filter(p => 
+    p.surgery_date && new Date(p.surgery_date) > now && p.status !== "completed" && p.status !== "cancelled"
+  );
+  const completedSurgeries = filteredPatients.filter(p => 
+    p.status === "completed" || (p.surgery_date && new Date(p.surgery_date) <= now && p.status !== "awaiting_consultation")
+  );
+  const consultations = filteredPatients.filter(p => 
+    p.status === "awaiting_consultation"
+  );
+  const others = filteredPatients.filter(p => 
+    !upcomingSurgeries.includes(p) && !completedSurgeries.includes(p) && !consultations.includes(p)
+  );
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -189,7 +240,7 @@ const Patients = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <div className="space-y-4">
             {/* Mobile: Search + Filter Button */}
             {isMobile ? (
@@ -449,21 +500,114 @@ const Patients = () => {
               {searchTerm ? "Nenhum paciente encontrado" : "Nenhum paciente cadastrado"}
             </div>
           ) : isMobile ? (
-            <div className="space-y-4">
-              {filteredPatients.map((patient) => {
-                const requiredExams = getExamsForProcedure(patient.procedure);
+            <div className="space-y-6">
+              {upcomingSurgeries.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="h-4 w-4 text-success" />
+                    <h3 className="font-semibold text-success">Cirurgias Futuras</h3>
+                    <Badge variant="outline" className="ml-auto">{upcomingSurgeries.length}</Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {upcomingSurgeries.map((patient) => {
+                      const requiredExams = getExamsForProcedure(patient.procedure);
+                      const nextAction = getNextAction(patient);
+                      return (
+                        <PatientCardSwipeable
+                          key={patient.id}
+                          patient={patient}
+                          requiredExams={requiredExams}
+                          isAdmin={isAdmin}
+                          onEdit={() => navigate(`/patients/${patient.id}`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          nextAction={nextAction}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-                return (
-                  <PatientCardSwipeable
-                    key={patient.id}
-                    patient={patient}
-                    requiredExams={requiredExams}
-                    isAdmin={isAdmin}
-                    onEdit={() => navigate(`/patients/${patient.id}`)}
-                    onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
-                  />
-                );
-              })}
+              {consultations.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-primary">Consultas</h3>
+                    <Badge variant="outline" className="ml-auto">{consultations.length}</Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {consultations.map((patient) => {
+                      const requiredExams = getExamsForProcedure(patient.procedure);
+                      const nextAction = getNextAction(patient);
+                      return (
+                        <PatientCardSwipeable
+                          key={patient.id}
+                          patient={patient}
+                          requiredExams={requiredExams}
+                          isAdmin={isAdmin}
+                          onEdit={() => navigate(`/patients/${patient.id}`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          nextAction={nextAction}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {others.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="h-4 w-4 text-warning" />
+                    <h3 className="font-semibold text-warning">Outros</h3>
+                    <Badge variant="outline" className="ml-auto">{others.length}</Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {others.map((patient) => {
+                      const requiredExams = getExamsForProcedure(patient.procedure);
+                      const nextAction = getNextAction(patient);
+                      return (
+                        <PatientCardSwipeable
+                          key={patient.id}
+                          patient={patient}
+                          requiredExams={requiredExams}
+                          isAdmin={isAdmin}
+                          onEdit={() => navigate(`/patients/${patient.id}`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          nextAction={nextAction}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {completedSurgeries.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Check className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-semibold text-muted-foreground">Cirurgias Realizadas</h3>
+                    <Badge variant="outline" className="ml-auto">{completedSurgeries.length}</Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {completedSurgeries.map((patient) => {
+                      const requiredExams = getExamsForProcedure(patient.procedure);
+                      const nextAction = getNextAction(patient);
+                      return (
+                        <PatientCardSwipeable
+                          key={patient.id}
+                          patient={patient}
+                          requiredExams={requiredExams}
+                          isAdmin={isAdmin}
+                          onEdit={() => navigate(`/patients/${patient.id}`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          nextAction={nextAction}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="rounded-md border">

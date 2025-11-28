@@ -22,6 +22,7 @@ interface PatientCardSwipeableProps {
   isAdmin: boolean;
   onEdit: () => void;
   onClick: () => void;
+  nextAction?: { text: string; variant: "default" | "warning" | "success" | "destructive" };
 }
 
 export function PatientCardSwipeable({
@@ -30,6 +31,7 @@ export function PatientCardSwipeable({
   isAdmin,
   onEdit,
   onClick,
+  nextAction,
 }: PatientCardSwipeableProps) {
   const [swiped, setSwiped] = useState(false);
   const x = useMotionValue(0);
@@ -111,6 +113,16 @@ export function PatientCardSwipeable({
       label: "Cirurgia",
       value: `${format(new Date(patient.surgery_date), "dd/MM/yyyy HH:mm", { locale: ptBR })} ${dateLabel}`,
       highlighted: isSurgeryUrgent,
+    });
+  }
+
+  // Add next action as info if provided
+  if (nextAction) {
+    infos.push({
+      icon: Clock,
+      label: "Próxima ação",
+      value: nextAction.text,
+      highlighted: nextAction.variant === "warning" || nextAction.variant === "destructive",
     });
   }
 
