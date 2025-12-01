@@ -12,12 +12,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { UpcomingSurgeries } from "@/components/UpcomingSurgeries";
 import { PendingPatients } from "@/components/PendingPatients";
 import { NextSurgeryHighlight } from "@/components/NextSurgeryHighlight";
+import { QuickIndicators } from "@/components/QuickIndicators";
 
 interface DashboardStats {
   totalPatients: number;
@@ -63,6 +64,9 @@ const Dashboard = () => {
   const [completedPatients, setCompletedPatients] = useState<Patient[]>([]);
   const [pendingPatients, setPendingPatients] = useState<Patient[]>([]);
   const [activities, setActivities] = useState<SystemActivity[]>([]);
+  const [monthlySurgeries, setMonthlySurgeries] = useState(0);
+  const [activePatients, setActivePatients] = useState(0);
+  const [pendingTasks, setPendingTasks] = useState(0);
 
   useEffect(() => {
     async function fetchUserName() {
@@ -87,6 +91,8 @@ const Dashboard = () => {
     async function fetchStats() {
       try {
         const now = new Date();
+        const monthStart = startOfMonth(now);
+        const monthEnd = endOfMonth(now);
 
         // Total patients with details
         const { data: allPatientsData, count: totalPatients } = await supabase
@@ -119,12 +125,36 @@ const Dashboard = () => {
           .select("id, name, procedure, surgery_date, insurance, hospital", { count: "exact" })
           .eq("status", "awaiting_authorization");
 
+        // Monthly surgeries count
+        const { count: monthlyCount } = await supabase
+          .from("patients")
+          .select("id", { count: "exact" })
+          .not("surgery_date", "is", null)
+          .gte("surgery_date", monthStart.toISOString())
+          .lte("surgery_date", monthEnd.toISOString());
+
+        // Active patients (not completed or cancelled)
+        const { count: activeCount } = await supabase
+          .from("patients")
+          .select("id", { count: "exact" })
+          .not("status", "in", '("completed","cancelled","surgery_completed")');
+
+        // Pending tasks
+        const { count: tasksCount } = await supabase
+          .from("patient_tasks")
+          .select("id", { count: "exact" })
+          .eq("completed", false);
+
         setStats({
           totalPatients: totalPatients || 0,
           scheduledSurgeries: scheduledData.length,
           completedSurgeries: completedData.length,
           pendingAuthorization: pendingAuthorization || 0,
         });
+
+        setMonthlySurgeries(monthlyCount || 0);
+        setActivePatients(activeCount || 0);
+        setPendingTasks(tasksCount || 0);
 
         setAllPatients(allPatientsData || []);
         setScheduledPatients(scheduledData);
@@ -212,13 +242,23 @@ const Dashboard = () => {
   return (
     <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-            Bem-vindo, {userName || "..."}
-          </h1>
-          <p className="text-sm md:text-base text-muted-foreground/50 mt-1">
-            Visão geral do sistema de gestão cirúrgica
-          </p>
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+              Bem-vindo, {userName || "..."}
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground/50 mt-1">
+              Visão geral do sistema de gestão cirúrgica
+            </p>
+          </div>
+          
+          {/* Quick Indicators */}
+          <QuickIndicators 
+            monthlySurgeries={monthlySurgeries}
+            activePatients={activePatients}
+            pendingTasks={pendingTasks}
+            loading={loading}
+          />
         </div>
 
         {/* Next Surgery Highlight - Most Important */}
