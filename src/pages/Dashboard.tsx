@@ -180,28 +180,32 @@ const Dashboard = () => {
       value: stats.totalPatients,
       description: "Pacientes cadastrados",
       icon: Users,
-      color: "text-primary",
+      iconColor: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       title: "Cirurgias Agendadas",
       value: stats.scheduledSurgeries,
       description: "Procedimentos confirmados",
       icon: Calendar,
-      color: "text-success",
+      iconColor: "text-success",
+      bgColor: "bg-success-light",
     },
     {
       title: "Cirurgias Realizadas",
       value: stats.completedSurgeries,
       description: "Procedimentos concluídos",
       icon: CheckCircle,
-      color: "text-authorized",
+      iconColor: "text-authorized",
+      bgColor: "bg-success-light",
     },
     {
       title: "Aguardando Autorização",
       value: stats.pendingAuthorization,
       description: "Pendente do convênio",
       icon: Clock,
-      color: "text-warning",
+      iconColor: "text-warning",
+      bgColor: "bg-warning-light",
     },
   ];
 
@@ -289,7 +293,7 @@ const Dashboard = () => {
               <Tooltip key={stat.title}>
                 <TooltipTrigger asChild>
                   <Card 
-                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    className="cursor-pointer"
                     onClick={() => {
                       if (stat.title === "Total de Pacientes") {
                         navigate("/patients");
@@ -306,7 +310,9 @@ const Dashboard = () => {
                       <CardTitle className="text-sm font-medium">
                         {stat.title}
                       </CardTitle>
-                      <Icon className={`h-4 w-4 ${stat.color}`} />
+                      <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                        <Icon className={`h-4 w-4 ${stat.iconColor}`} />
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">

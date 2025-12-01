@@ -64,7 +64,7 @@ All colors MUST be HSL.
     --input: 0 0% 88%;
     --ring: 0 0% 15%;
 
-    --radius: 0rem;
+    --radius: 1rem;
 
     /* Sidebar elegant theme */
     --sidebar-background: 0 0% 98%;
