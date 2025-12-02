@@ -175,31 +175,48 @@ export function Layout({ children }: LayoutProps) {
         <SidebarContent />
       </aside>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-sidebar border-b border-sidebar-border z-50 pt-[env(safe-area-inset-top)]">
-        <div className="h-16 flex items-center px-4">
+      {/* Mobile Header - Native Style */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md z-50 pt-[env(safe-area-inset-top)]">
+        <div className="h-14 flex items-center justify-between px-3">
+          {/* Left: Menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-64 bg-sidebar">
               <SidebarContent />
             </SheetContent>
           </Sheet>
+          
+          {/* Center: Logo */}
           <div 
-            className="flex items-center space-x-2 ml-3 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <Activity className="h-5 w-5 text-primary" />
-            <span className="font-bold text-sidebar-foreground">MedSystem</span>
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <Activity className="h-4 w-4 text-primary" />
+            </div>
+            <span className="font-semibold text-sm text-foreground">MedSystem</span>
           </div>
+          
+          {/* Right: Profile */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-10 w-10 rounded-full bg-muted/50"
+            onClick={() => setIsOpen(true)}
+          >
+            <span className="text-xs font-bold text-muted-foreground uppercase">
+              {user?.email?.charAt(0) || "U"}
+            </span>
+          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+4rem)] md:pt-0 pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 pb-20 md:pb-0">
         {children}
       </main>
 
