@@ -8,143 +8,148 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Elegant black and neutral color palette */
-    --background: 40 20% 98%;
-    --foreground: 0 0% 10%;
+    /* Medical-grade color palette with personality */
     
-    /* Page background - slightly warmer for depth */
-    --page-background: 40 15% 96%;
+    /* Off-white/beige background for warmth */
+    --background: 40 25% 97%;
+    --foreground: 215 50% 15%;
+    
+    /* Page background - warm cream */
+    --page-background: 40 20% 95%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 215 50% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 215 50% 15%;
 
-    /* Elegant black primary color */
-    --primary: 0 0% 15%;
-    --primary-foreground: 0 0% 98%;
-    --primary-light: 0 0% 95%;
-    --primary-dark: 0 0% 8%;
+    /* Navy blue primary for brand and titles */
+    --primary: 215 65% 25%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 215 50% 95%;
+    --primary-dark: 215 70% 18%;
 
-    /* Neutral grays for elegant UI */
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 15%;
+    /* Subtle secondary */
+    --secondary: 40 15% 93%;
+    --secondary-foreground: 215 50% 20%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    /* Muted grays for secondary text */
+    --muted: 40 10% 94%;
+    --muted-foreground: 215 15% 45%;
 
-    --accent: 0 0% 92%;
-    --accent-foreground: 0 0% 15%;
+    --accent: 215 30% 94%;
+    --accent-foreground: 215 50% 20%;
 
     /* Status colors for medical workflow */
-    --success: 142 70% 45%;
+    --success: 152 60% 40%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 70% 95%;
+    --success-light: 152 50% 94%;
 
-    --warning: 38 92% 50%;
+    --warning: 32 95% 52%;
     --warning-foreground: 0 0% 100%;
-    --warning-light: 38 92% 95%;
+    --warning-light: 32 90% 94%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 84% 96%;
+    --destructive-light: 0 70% 96%;
 
-    --pending: 38 92% 50%;
+    /* Orange for pending items */
+    --pending: 32 95% 52%;
     --pending-foreground: 0 0% 100%;
     
-    --authorized: 142 70% 45%;
+    /* Green for authorized/ok */
+    --authorized: 152 60% 40%;
     --authorized-foreground: 0 0% 100%;
 
     --cancelled: 215 15% 55%;
     --cancelled-foreground: 0 0% 100%;
 
     /* UI Elements */
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 0 0% 15%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 215 65% 25%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Sidebar elegant theme */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: 0 0% 15%;
+    /* Sidebar theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 50% 20%;
+    --sidebar-primary: 215 65% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 94%;
-    --sidebar-accent-foreground: 0 0% 15%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 0 0% 15%;
+    --sidebar-accent: 215 30% 95%;
+    --sidebar-accent-foreground: 215 50% 20%;
+    --sidebar-border: 40 15% 90%;
+    --sidebar-ring: 215 65% 25%;
 
-    /* Shadows and effects */
-    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1);
+    /* Shadows with navy tint */
+    --shadow-sm: 0 1px 2px 0 hsl(215 50% 15% / 0.04);
+    --shadow-md: 0 4px 8px -2px hsl(215 50% 15% / 0.08);
+    --shadow-lg: 0 12px 24px -4px hsl(215 50% 15% / 0.12);
   }
 
   .dark {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 98%;
+    --background: 215 30% 8%;
+    --foreground: 40 20% 95%;
     
-    --page-background: 0 0% 6%;
+    --page-background: 215 35% 6%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 215 25% 12%;
+    --card-foreground: 40 20% 95%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 215 25% 10%;
+    --popover-foreground: 40 20% 95%;
 
-    --primary: 0 0% 95%;
-    --primary-foreground: 0 0% 10%;
-    --primary-light: 0 0% 20%;
-    --primary-dark: 0 0% 98%;
+    --primary: 215 60% 60%;
+    --primary-foreground: 215 50% 10%;
+    --primary-light: 215 40% 20%;
+    --primary-dark: 215 60% 70%;
 
-    --secondary: 0 0% 18%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 40 20% 95%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 215 20% 18%;
+    --muted-foreground: 215 15% 60%;
 
-    --accent: 0 0% 22%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 215 25% 22%;
+    --accent-foreground: 40 20% 95%;
 
-    --success: 142 70% 50%;
+    --success: 152 55% 45%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 70% 15%;
+    --success-light: 152 50% 15%;
 
-    --warning: 38 92% 55%;
+    --warning: 32 90% 55%;
     --warning-foreground: 0 0% 100%;
-    --warning-light: 38 92% 15%;
+    --warning-light: 32 80% 15%;
 
-    --destructive: 0 84% 65%;
+    --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 84% 15%;
+    --destructive-light: 0 65% 15%;
 
-    --pending: 38 92% 55%;
+    --pending: 32 90% 55%;
     --pending-foreground: 0 0% 100%;
     
-    --authorized: 142 70% 50%;
+    --authorized: 152 55% 45%;
     --authorized-foreground: 0 0% 100%;
 
-    --cancelled: 215 15% 60%;
+    --cancelled: 215 15% 55%;
     --cancelled-foreground: 0 0% 100%;
 
-    --border: 0 0% 22%;
-    --input: 0 0% 22%;
-    --ring: 0 0% 95%;
+    --border: 215 20% 22%;
+    --input: 215 20% 22%;
+    --ring: 215 60% 60%;
 
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 0% 95%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 0 0% 95%;
+    --sidebar-background: 215 25% 10%;
+    --sidebar-foreground: 40 20% 92%;
+    --sidebar-primary: 215 60% 60%;
+    --sidebar-primary-foreground: 215 50% 10%;
+    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent-foreground: 40 20% 92%;
+    --sidebar-border: 215 20% 18%;
+    --sidebar-ring: 215 60% 60%;
 
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5);
+    --shadow-md: 0 4px 8px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 12px 24px -4px hsl(0 0% 0% / 0.5);
   }
 }
 
@@ -154,7 +159,27 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Typography refinements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+    line-height: 1.2;
+  }
+
+  h1 { @apply text-2xl md:text-3xl; }
+  h2 { @apply text-xl md:text-2xl; }
+  h3 { @apply text-lg md:text-xl; }
+
+  p, span, li {
+    line-height: 1.4;
+  }
+
+  .text-subtitle {
+    @apply text-muted-foreground;
+    opacity: 0.85;
   }
 
   /* iOS safe area support */
