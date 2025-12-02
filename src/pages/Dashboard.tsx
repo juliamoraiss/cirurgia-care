@@ -204,41 +204,6 @@ const Dashboard = () => {
     }
   };
 
-  const statCards = [
-    {
-      title: "Total de Pacientes",
-      value: stats.totalPatients,
-      description: "Pacientes cadastrados",
-      icon: Users,
-      iconColor: "text-primary",
-      bgColor: "bg-primary/10",
-    },
-    {
-      title: "Cirurgias Agendadas",
-      value: stats.scheduledSurgeries,
-      description: "Procedimentos confirmados",
-      icon: Calendar,
-      iconColor: "text-success",
-      bgColor: "bg-success-light",
-    },
-    {
-      title: "Cirurgias Realizadas",
-      value: stats.completedSurgeries,
-      description: "Procedimentos concluídos",
-      icon: CheckCircle,
-      iconColor: "text-authorized",
-      bgColor: "bg-success-light",
-    },
-    {
-      title: "Aguardando Autorização",
-      value: stats.pendingAuthorization,
-      description: "Pendente do convênio",
-      icon: Clock,
-      iconColor: "text-warning",
-      bgColor: "bg-warning-light",
-    },
-  ];
-
   return (
     <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
@@ -257,6 +222,10 @@ const Dashboard = () => {
             monthlySurgeries={monthlySurgeries}
             activePatients={activePatients}
             pendingTasks={pendingTasks}
+            totalPatients={stats.totalPatients}
+            scheduledSurgeries={stats.scheduledSurgeries}
+            completedSurgeries={stats.completedSurgeries}
+            pendingAuthorization={stats.pendingAuthorization}
             loading={loading}
           />
         </div>
@@ -271,107 +240,6 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-2">
           <UpcomingSurgeries surgeries={scheduledPatients.slice(1)} loading={loading} />
           <PendingPatients patients={pendingPatients} loading={loading} />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {statCards.map((stat) => {
-            const Icon = stat.icon;
-            let tooltipContent = null;
-
-            if (stat.title === "Total de Pacientes" && allPatients.length > 0) {
-              tooltipContent = (
-                <div className="space-y-1">
-                  {allPatients.map((patient) => (
-                    <div key={patient.id} className="text-sm">
-                      {patient.name}
-                    </div>
-                  ))}
-                </div>
-              );
-            } else if (stat.title === "Cirurgias Agendadas" && scheduledPatients.length > 0) {
-              tooltipContent = (
-                <div className="space-y-1">
-                  {scheduledPatients.map((patient) => (
-                    <div key={patient.id} className="text-sm">
-                      <div className="font-medium">{patient.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {patient.procedure} - {patient.surgery_date ? new Date(patient.surgery_date).toLocaleDateString('pt-BR') : 'Data não definida'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            } else if (stat.title === "Cirurgias Realizadas" && completedPatients.length > 0) {
-              tooltipContent = (
-                <div className="space-y-1">
-                  {completedPatients.map((patient) => (
-                    <div key={patient.id} className="text-sm">
-                      <div className="font-medium">{patient.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {patient.procedure} - {patient.surgery_date ? new Date(patient.surgery_date).toLocaleDateString('pt-BR') : 'Data não definida'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            } else if (stat.title === "Aguardando Autorização" && pendingPatients.length > 0) {
-              tooltipContent = (
-                <div className="space-y-1">
-                  {pendingPatients.map((patient) => (
-                    <div key={patient.id} className="text-sm">
-                      <div className="font-medium">{patient.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {patient.insurance || 'Sem convênio'} - {patient.procedure}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            }
-
-            return (
-              <Tooltip key={stat.title}>
-                <TooltipTrigger asChild>
-                  <Card 
-                    className="cursor-pointer"
-                    onClick={() => {
-                      if (stat.title === "Total de Pacientes") {
-                        navigate("/patients");
-                      } else if (stat.title === "Cirurgias Agendadas") {
-                        navigate("/calendar");
-                      } else if (stat.title === "Cirurgias Realizadas") {
-                        navigate("/patients", { state: { filterStatus: "completed" } });
-                      } else if (stat.title === "Aguardando Autorização") {
-                        navigate("/patients", { state: { filterStatus: "awaiting_authorization" } });
-                      }
-                    }}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        {stat.title}
-                      </CardTitle>
-                      <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                        <Icon className={`h-4 w-4 ${stat.iconColor}`} />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {loading ? "..." : stat.value}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {stat.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </TooltipTrigger>
-                {tooltipContent && (
-                  <TooltipContent side="bottom" className="max-w-xs max-h-96 overflow-y-auto">
-                    {tooltipContent}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            );
-          })}
         </div>
 
       <Card>
