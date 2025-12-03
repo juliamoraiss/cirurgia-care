@@ -250,6 +250,33 @@ const Dashboard = () => {
                     return <Activity className="h-4 w-4 text-muted-foreground" />;
                 }
               };
+              const translateStatus = (status: string) => {
+                const statusMap: Record<string, string> = {
+                  'awaiting_consultation': 'Aguardando Consulta',
+                  'awaiting_authorization': 'Aguardando Autorização',
+                  'authorized': 'Autorizado',
+                  'pending_scheduling': 'Agendamento Pendente',
+                  'surgery_scheduled': 'Cirurgia Agendada',
+                  'surgery_completed': 'Cirurgia Realizada',
+                  'completed': 'Cirurgia Realizada',
+                  'cancelled': 'Cancelado',
+                };
+                return statusMap[status] || status;
+              };
+
+              const translateTaskType = (type: string) => {
+                const taskTypeMap: Record<string, string> = {
+                  'exam_collection': 'Cobrança de Exame',
+                  'follow_up': 'Acompanhamento',
+                  'document_request': 'Solicitação de Documento',
+                  'authorization_follow_up': 'Acompanhamento de Autorização',
+                  'surgery_confirmation': 'Confirmação de Cirurgia',
+                  'post_surgery_follow_up': 'Acompanhamento Pós-Cirurgia',
+                  'other': 'Outro',
+                };
+                return taskTypeMap[type] || type;
+              };
+
               const getActivityDetails = (activity: SystemActivity) => {
                 const metadata = activity.metadata || {};
                 switch (activity.activity_type) {
@@ -264,11 +291,11 @@ const Dashboard = () => {
                   case 'note_created':
                     return metadata.note_preview;
                   case 'task_created':
-                    return `${metadata.task_title} (${metadata.task_type})`;
+                    return metadata.task_title;
                   case 'hospital_updated':
                     return `${metadata.old_hospital || 'Nenhum'} → ${metadata.new_hospital}`;
                   case 'status_updated':
-                    return `${metadata.old_status} → ${metadata.new_status}`;
+                    return `${translateStatus(metadata.old_status)} → ${translateStatus(metadata.new_status)}`;
                   case 'procedure_updated':
                     return `${metadata.old_procedure} → ${metadata.new_procedure}`;
                   default:
