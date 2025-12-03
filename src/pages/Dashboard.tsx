@@ -6,26 +6,19 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { PendingPatients } from "@/components/PendingPatients";
 import { SurgeriesCard } from "@/components/SurgeriesCard";
 import { QuickIndicators } from "@/components/QuickIndicators";
-
 interface DashboardStats {
   totalPatients: number;
   scheduledSurgeries: number;
   completedSurgeries: number;
   pendingAuthorization: number;
 }
-
 interface Patient {
   id: string;
   name: string;
@@ -35,7 +28,6 @@ interface Patient {
   hospital: string | null;
   status?: string;
 }
-
 interface SystemActivity {
   id: string;
   activity_type: string;
@@ -45,16 +37,19 @@ interface SystemActivity {
   created_at: string;
   metadata: any;
 }
-
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const {
+    user
+  } = useAuth();
+  const {
+    isAdmin
+  } = useUserRole();
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     scheduledSurgeries: 0,
     completedSurgeries: 0,
-    pendingAuthorization: 0,
+    pendingAuthorization: 0
   });
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("");
@@ -66,16 +61,12 @@ const Dashboard = () => {
   const [monthlySurgeries, setMonthlySurgeries] = useState(0);
   const [activePatients, setActivePatients] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
-
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-        
+        const {
+          data
+        } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
         if (data?.full_name) {
           const names = data.full_name.split(" ");
           if (names.length > 1) {
@@ -86,7 +77,6 @@ const Dashboard = () => {
         }
       }
     }
-
     async function fetchStats() {
       try {
         const now = new Date();
@@ -94,22 +84,24 @@ const Dashboard = () => {
         const monthEnd = endOfMonth(now);
 
         // Total patients with details
-        const { data: allPatientsData, count: totalPatients } = await supabase
-          .from("patients")
-          .select("id, name, procedure, surgery_date, insurance, hospital, status", { count: "exact" });
+        const {
+          data: allPatientsData,
+          count: totalPatients
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status", {
+          count: "exact"
+        });
 
         // Patients with surgery dates
-        const { data: patientsWithSurgery } = await supabase
-          .from("patients")
-          .select("id, name, procedure, surgery_date, insurance, hospital, status")
-          .not("surgery_date", "is", null)
-          .order("surgery_date", { ascending: true });
+        const {
+          data: patientsWithSurgery
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status").not("surgery_date", "is", null).order("surgery_date", {
+          ascending: true
+        });
 
         // Filter scheduled (future) and completed (past) surgeries based on date
         const scheduledData: Patient[] = [];
         const completedData: Patient[] = [];
-
-        (patientsWithSurgery || []).forEach((patient) => {
+        (patientsWithSurgery || []).forEach(patient => {
           const surgeryDate = new Date(patient.surgery_date);
           if (surgeryDate > now) {
             scheduledData.push(patient);
@@ -119,42 +111,42 @@ const Dashboard = () => {
         });
 
         // Pending authorization
-        const { data: pendingData, count: pendingAuthorization } = await supabase
-          .from("patients")
-          .select("id, name, procedure, surgery_date, insurance, hospital", { count: "exact" })
-          .eq("status", "awaiting_authorization");
+        const {
+          data: pendingData,
+          count: pendingAuthorization
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital", {
+          count: "exact"
+        }).eq("status", "awaiting_authorization");
 
         // Monthly surgeries count
-        const { count: monthlyCount } = await supabase
-          .from("patients")
-          .select("id", { count: "exact" })
-          .not("surgery_date", "is", null)
-          .gte("surgery_date", monthStart.toISOString())
-          .lte("surgery_date", monthEnd.toISOString());
+        const {
+          count: monthlyCount
+        } = await supabase.from("patients").select("id", {
+          count: "exact"
+        }).not("surgery_date", "is", null).gte("surgery_date", monthStart.toISOString()).lte("surgery_date", monthEnd.toISOString());
 
         // Active patients (not completed or cancelled)
-        const { count: activeCount } = await supabase
-          .from("patients")
-          .select("id", { count: "exact" })
-          .not("status", "in", '("completed","cancelled","surgery_completed")');
+        const {
+          count: activeCount
+        } = await supabase.from("patients").select("id", {
+          count: "exact"
+        }).not("status", "in", '("completed","cancelled","surgery_completed")');
 
         // Pending tasks
-        const { count: tasksCount } = await supabase
-          .from("patient_tasks")
-          .select("id", { count: "exact" })
-          .eq("completed", false);
-
+        const {
+          count: tasksCount
+        } = await supabase.from("patient_tasks").select("id", {
+          count: "exact"
+        }).eq("completed", false);
         setStats({
           totalPatients: totalPatients || 0,
           scheduledSurgeries: scheduledData.length,
           completedSurgeries: completedData.length,
-          pendingAuthorization: pendingAuthorization || 0,
+          pendingAuthorization: pendingAuthorization || 0
         });
-
         setMonthlySurgeries(monthlyCount || 0);
         setActivePatients(activeCount || 0);
         setPendingTasks(tasksCount || 0);
-
         setAllPatients(allPatientsData || []);
         setScheduledPatients(scheduledData);
         setCompletedPatients(completedData);
@@ -165,36 +157,28 @@ const Dashboard = () => {
         setLoading(false);
       }
     }
-
     async function fetchActivities() {
       try {
-        const { data } = await supabase
-          .from("system_activities")
-          .select("*")
-          .neq("activity_type", "patient_created")
-          .order("created_at", { ascending: false })
-          .limit(10);
-        
+        const {
+          data
+        } = await supabase.from("system_activities").select("*").neq("activity_type", "patient_created").order("created_at", {
+          ascending: false
+        }).limit(10);
         setActivities(data || []);
       } catch (error) {
         console.error("Error fetching activities:", error);
       }
     }
-
     fetchUserName();
     fetchStats();
     fetchActivities();
   }, [user]);
-
   const deleteActivity = async (activityId: string) => {
     try {
-      const { error } = await supabase
-        .from("system_activities")
-        .delete()
-        .eq("id", activityId);
-
+      const {
+        error
+      } = await supabase.from("system_activities").delete().eq("id", activityId);
       if (error) throw error;
-
       setActivities(prev => prev.filter(activity => activity.id !== activityId));
       toast.success("Registro excluído com sucesso");
     } catch (error) {
@@ -202,13 +186,11 @@ const Dashboard = () => {
       console.error("Error deleting activity:", error);
     }
   };
-
-  return (
-    <TooltipProvider>
+  return <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
         <div className="space-y-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+            <h1 className="md:text-4xl font-bold text-foreground tracking-tight text-2xl">
               Bem-vindo, {userName || "..."}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground/50 mt-1">
@@ -217,12 +199,7 @@ const Dashboard = () => {
           </div>
           
           {/* Quick Indicators */}
-          <QuickIndicators 
-            scheduledSurgeries={stats.scheduledSurgeries}
-            completedSurgeries={stats.completedSurgeries}
-            pendingAuthorization={stats.pendingAuthorization}
-            loading={loading}
-          />
+          <QuickIndicators scheduledSurgeries={stats.scheduledSurgeries} completedSurgeries={stats.completedSurgeries} pendingAuthorization={stats.pendingAuthorization} loading={loading} />
         </div>
 
         {/* Priority sections for mobile - show urgent info first */}
@@ -242,82 +219,68 @@ const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
+          {loading ? <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-4 text-muted-foreground text-sm">Carregando histórico...</p>
-            </div>
-          ) : activities.length === 0 ? (
-            <div className="text-center py-8">
+            </div> : activities.length === 0 ? <div className="text-center py-8">
               <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground text-sm">Nenhuma atividade registrada ainda</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {activities.map((activity) => {
-                const getActivityIcon = (type: string) => {
-                  switch (type) {
-                    case 'patient_created':
-                      return <Users className="h-4 w-4 text-primary" />;
-                    case 'surgery_scheduled':
-                    case 'surgery_rescheduled':
-                      return <Calendar className="h-4 w-4 text-success" />;
-                    case 'file_uploaded':
-                      return <FileText className="h-4 w-4 text-blue-500" />;
-                    case 'note_created':
-                      return <StickyNote className="h-4 w-4 text-orange-500" />;
-                    case 'task_created':
-                      return <ClipboardList className="h-4 w-4 text-purple-500" />;
-                    case 'hospital_updated':
-                      return <Activity className="h-4 w-4 text-cyan-500" />;
-                    case 'status_updated':
-                      return <CheckCircle className="h-4 w-4 text-amber-500" />;
-                    case 'procedure_updated':
-                      return <Activity className="h-4 w-4 text-indigo-500" />;
-                    default:
-                      return <Activity className="h-4 w-4 text-muted-foreground" />;
+            </div> : <div className="space-y-4">
+              {activities.map(activity => {
+              const getActivityIcon = (type: string) => {
+                switch (type) {
+                  case 'patient_created':
+                    return <Users className="h-4 w-4 text-primary" />;
+                  case 'surgery_scheduled':
+                  case 'surgery_rescheduled':
+                    return <Calendar className="h-4 w-4 text-success" />;
+                  case 'file_uploaded':
+                    return <FileText className="h-4 w-4 text-blue-500" />;
+                  case 'note_created':
+                    return <StickyNote className="h-4 w-4 text-orange-500" />;
+                  case 'task_created':
+                    return <ClipboardList className="h-4 w-4 text-purple-500" />;
+                  case 'hospital_updated':
+                    return <Activity className="h-4 w-4 text-cyan-500" />;
+                  case 'status_updated':
+                    return <CheckCircle className="h-4 w-4 text-amber-500" />;
+                  case 'procedure_updated':
+                    return <Activity className="h-4 w-4 text-indigo-500" />;
+                  default:
+                    return <Activity className="h-4 w-4 text-muted-foreground" />;
+                }
+              };
+              const getActivityDetails = (activity: SystemActivity) => {
+                const metadata = activity.metadata || {};
+                switch (activity.activity_type) {
+                  case 'patient_created':
+                    return `Procedimento: ${metadata.procedure || 'Não informado'}`;
+                  case 'surgery_scheduled':
+                    return `${new Date(metadata.surgery_date).toLocaleString('pt-BR')} - ${metadata.hospital || 'Hospital não informado'}`;
+                  case 'surgery_rescheduled':
+                    return `Nova data: ${new Date(metadata.new_surgery_date).toLocaleString('pt-BR')}`;
+                  case 'file_uploaded':
+                    return `Arquivo: ${metadata.file_name}`;
+                  case 'note_created':
+                    return metadata.note_preview;
+                  case 'task_created':
+                    return `${metadata.task_title} (${metadata.task_type})`;
+                  case 'hospital_updated':
+                    return `${metadata.old_hospital || 'Nenhum'} → ${metadata.new_hospital}`;
+                  case 'status_updated':
+                    return `${metadata.old_status} → ${metadata.new_status}`;
+                  case 'procedure_updated':
+                    return `${metadata.old_procedure} → ${metadata.new_procedure}`;
+                  default:
+                    return '';
+                }
+              };
+              return <div key={activity.id} className="flex gap-2 p-2.5 md:p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group">
+                    <div className="flex-1 min-w-0 cursor-pointer flex gap-2" onClick={() => {
+                  if (activity.patient_id) {
+                    navigate(`/patients/${activity.patient_id}/exams`);
                   }
-                };
-
-                const getActivityDetails = (activity: SystemActivity) => {
-                  const metadata = activity.metadata || {};
-                  switch (activity.activity_type) {
-                    case 'patient_created':
-                      return `Procedimento: ${metadata.procedure || 'Não informado'}`;
-                    case 'surgery_scheduled':
-                      return `${new Date(metadata.surgery_date).toLocaleString('pt-BR')} - ${metadata.hospital || 'Hospital não informado'}`;
-                    case 'surgery_rescheduled':
-                      return `Nova data: ${new Date(metadata.new_surgery_date).toLocaleString('pt-BR')}`;
-                    case 'file_uploaded':
-                      return `Arquivo: ${metadata.file_name}`;
-                    case 'note_created':
-                      return metadata.note_preview;
-                    case 'task_created':
-                      return `${metadata.task_title} (${metadata.task_type})`;
-                    case 'hospital_updated':
-                      return `${metadata.old_hospital || 'Nenhum'} → ${metadata.new_hospital}`;
-                    case 'status_updated':
-                      return `${metadata.old_status} → ${metadata.new_status}`;
-                    case 'procedure_updated':
-                      return `${metadata.old_procedure} → ${metadata.new_procedure}`;
-                    default:
-                      return '';
-                  }
-                };
-
-                return (
-                  <div 
-                    key={activity.id} 
-                    className="flex gap-2 p-2.5 md:p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
-                  >
-                    <div 
-                      className="flex-1 min-w-0 cursor-pointer flex gap-2"
-                      onClick={() => {
-                        if (activity.patient_id) {
-                          navigate(`/patients/${activity.patient_id}/exams`);
-                        }
-                      }}
-                    >
+                }}>
                       <div className="flex-shrink-0 mt-0.5">
                         {getActivityIcon(activity.activity_type)}
                       </div>
@@ -327,49 +290,34 @@ const Dashboard = () => {
                             <p className="text-xs md:text-sm font-medium line-clamp-2">
                               {activity.description}
                             </p>
-                            {activity.patient_name && (
-                              <p className="text-xs md:text-sm text-primary font-semibold truncate mt-0.5">
+                            {activity.patient_name && <p className="text-xs md:text-sm text-primary font-semibold truncate mt-0.5">
                                 {activity.patient_name}
-                              </p>
-                            )}
-                            {getActivityDetails(activity) && (
-                              <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                              </p>}
+                            {getActivityDetails(activity) && <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 mt-0.5">
                                 {getActivityDetails(activity)}
-                              </p>
-                            )}
+                              </p>}
                           </div>
                           <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap shrink-0">
                             {formatDistanceToNow(new Date(activity.created_at), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
+                          addSuffix: true,
+                          locale: ptBR
+                        })}
                           </span>
                         </div>
                       </div>
                     </div>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 h-7 w-7 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteActivity(activity.id);
-                        }}
-                      >
+                    {isAdmin && <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 h-7 w-7 p-0" onClick={e => {
+                  e.stopPropagation();
+                  deleteActivity(activity.id);
+                }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      </Button>}
+                  </div>;
+            })}
+            </div>}
         </CardContent>
       </Card>
       </div>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 };
-
 export default Dashboard;
