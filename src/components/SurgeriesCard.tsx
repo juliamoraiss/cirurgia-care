@@ -55,7 +55,7 @@ export function SurgeriesCard({
         <CardContent>
           <div className="text-center py-6">
             <Calendar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-muted-foreground text-xs">Nenhuma cirurgia agendada para os pr</p>
+            <p className="text-muted-foreground text-xs">Nenhuma cirurgia agendada para os próximos dias</p>
             <p className="text-xs text-muted-foreground/60">Você está em dia!</p>
           </div>
         </CardContent>
