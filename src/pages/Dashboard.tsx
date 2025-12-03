@@ -15,9 +15,8 @@ import {
 import { formatDistanceToNow, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { UpcomingSurgeries } from "@/components/UpcomingSurgeries";
 import { PendingPatients } from "@/components/PendingPatients";
-import { NextSurgeryHighlight } from "@/components/NextSurgeryHighlight";
+import { SurgeriesCard } from "@/components/SurgeriesCard";
 import { QuickIndicators } from "@/components/QuickIndicators";
 
 interface DashboardStats {
@@ -226,15 +225,9 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Next Surgery Highlight - Most Important */}
-        <NextSurgeryHighlight 
-          surgery={scheduledPatients.length > 0 ? scheduledPatients[0] : null} 
-          loading={loading} 
-        />
-
         {/* Priority sections for mobile - show urgent info first */}
         <div className="grid gap-4 md:grid-cols-2">
-          <UpcomingSurgeries surgeries={scheduledPatients.slice(1)} loading={loading} />
+          <SurgeriesCard surgeries={scheduledPatients} loading={loading} />
           <PendingPatients patients={pendingPatients} loading={loading} />
         </div>
 
