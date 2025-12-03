@@ -20,14 +20,14 @@ export function SurgeriesCard({
 }: SurgeriesCardProps) {
   const navigate = useNavigate();
 
-  // Filter urgent surgeries (today and tomorrow)
+  // Filter surgeries for the next 7 days
   const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(23, 59, 59, 999);
-  const urgentSurgeries = surgeries.filter(surgery => {
+  const sevenDaysFromNow = new Date(now);
+  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+  sevenDaysFromNow.setHours(23, 59, 59, 999);
+  const upcomingSurgeries = surgeries.filter(surgery => {
     const surgeryDate = new Date(surgery.surgery_date);
-    return surgeryDate <= tomorrow;
+    return surgeryDate <= sevenDaysFromNow;
   });
   if (loading) {
     return <Card>
@@ -44,7 +44,7 @@ export function SurgeriesCard({
         </CardContent>
       </Card>;
   }
-  if (urgentSurgeries.length === 0) {
+  if (upcomingSurgeries.length === 0) {
     return <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
@@ -69,13 +69,13 @@ export function SurgeriesCard({
             <CardTitle className="text-base">Próximas Cirurgias</CardTitle>
           </div>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {urgentSurgeries.length} {urgentSurgeries.length === 1 ? 'agendada' : 'agendadas'}
+            {upcomingSurgeries.length} {upcomingSurgeries.length === 1 ? 'agendada' : 'agendadas'}
           </span>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-2">
-          {urgentSurgeries.map((surgery, index) => {
+          {upcomingSurgeries.map((surgery, index) => {
           const surgeryDate = new Date(surgery.surgery_date);
           const isTodaySurgery = isToday(surgeryDate);
           const isTomorrowSurgery = isTomorrow(surgeryDate);
