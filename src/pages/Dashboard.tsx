@@ -219,10 +219,6 @@ const Dashboard = () => {
           
           {/* Quick Indicators */}
           <QuickIndicators 
-            monthlySurgeries={monthlySurgeries}
-            activePatients={activePatients}
-            pendingTasks={pendingTasks}
-            totalPatients={stats.totalPatients}
             scheduledSurgeries={stats.scheduledSurgeries}
             completedSurgeries={stats.completedSurgeries}
             pendingAuthorization={stats.pendingAuthorization}
