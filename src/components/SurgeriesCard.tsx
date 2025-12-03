@@ -3,7 +3,6 @@ import { Calendar, Clock, MapPin, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { isToday, isTomorrow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
 interface Surgery {
   id: string;
   name: string;
@@ -11,13 +10,14 @@ interface Surgery {
   surgery_date: string;
   hospital: string | null;
 }
-
 interface SurgeriesCardProps {
   surgeries: Surgery[];
   loading: boolean;
 }
-
-export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
+export function SurgeriesCard({
+  surgeries,
+  loading
+}: SurgeriesCardProps) {
   const navigate = useNavigate();
 
   // Filter urgent surgeries (today and tomorrow)
@@ -25,15 +25,12 @@ export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(23, 59, 59, 999);
-
-  const urgentSurgeries = surgeries.filter((surgery) => {
+  const urgentSurgeries = surgeries.filter(surgery => {
     const surgeryDate = new Date(surgery.surgery_date);
     return surgeryDate <= tomorrow;
   });
-
   if (loading) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-success" />
@@ -42,18 +39,13 @@ export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
-            ))}
+            {[1, 2].map(i => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   if (urgentSurgeries.length === 0) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-success" />
@@ -63,16 +55,13 @@ export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
         <CardContent>
           <div className="text-center py-6">
             <Calendar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Nenhuma cirurgia urgente</p>
+            <p className="text-muted-foreground text-xs">Nenhuma cirurgia agendada para os pr</p>
             <p className="text-xs text-muted-foreground/60">Você está em dia!</p>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -87,53 +76,27 @@ export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
       <CardContent className="pt-0">
         <div className="space-y-2">
           {urgentSurgeries.map((surgery, index) => {
-            const surgeryDate = new Date(surgery.surgery_date);
-            const isTodaySurgery = isToday(surgeryDate);
-            const isTomorrowSurgery = isTomorrow(surgeryDate);
-            const isUrgent = isTodaySurgery || isTomorrowSurgery;
-
-            const getUrgencyLabel = () => {
-              if (isTodaySurgery) return "HOJE";
-              if (isTomorrowSurgery) return "AMANHÃ";
-              return null;
-            };
-
-            const urgencyLabel = getUrgencyLabel();
-
-            return (
-              <button
-                key={surgery.id}
-                onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-                className={`w-full text-left p-3 rounded-lg border transition-all hover:shadow-md active:scale-[0.98] ${
-                  isTodaySurgery
-                    ? 'bg-destructive/10 border-destructive/30'
-                    : isTomorrowSurgery
-                    ? 'bg-warning/10 border-warning/30'
-                    : 'bg-muted/50 border-border'
-                }`}
-              >
+          const surgeryDate = new Date(surgery.surgery_date);
+          const isTodaySurgery = isToday(surgeryDate);
+          const isTomorrowSurgery = isTomorrow(surgeryDate);
+          const isUrgent = isTodaySurgery || isTomorrowSurgery;
+          const getUrgencyLabel = () => {
+            if (isTodaySurgery) return "HOJE";
+            if (isTomorrowSurgery) return "AMANHÃ";
+            return null;
+          };
+          const urgencyLabel = getUrgencyLabel();
+          return <button key={surgery.id} onClick={() => navigate(`/patients/${surgery.id}/exams`)} className={`w-full text-left p-3 rounded-lg border transition-all hover:shadow-md active:scale-[0.98] ${isTodaySurgery ? 'bg-destructive/10 border-destructive/30' : isTomorrowSurgery ? 'bg-warning/10 border-warning/30' : 'bg-muted/50 border-border'}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      {isUrgent && (
-                        <AlertCircle
-                          className={`h-3.5 w-3.5 shrink-0 ${
-                            isTodaySurgery ? 'text-destructive' : 'text-warning'
-                          }`}
-                        />
-                      )}
+                      {isUrgent && <AlertCircle className={`h-3.5 w-3.5 shrink-0 ${isTodaySurgery ? 'text-destructive' : 'text-warning'}`} />}
                       <span className="font-semibold text-sm text-foreground truncate">
                         {surgery.name}
                       </span>
-                      {urgencyLabel && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          isTodaySurgery
-                            ? 'bg-destructive/20 text-destructive'
-                            : 'bg-warning/20 text-warning'
-                        }`}>
+                      {urgencyLabel && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isTodaySurgery ? 'bg-destructive/20 text-destructive' : 'bg-warning/20 text-warning'}`}>
                           {urgencyLabel}
-                        </span>
-                      )}
+                        </span>}
                     </div>
                     <p className="text-xs text-muted-foreground capitalize truncate">
                       {surgery.procedure}
@@ -144,20 +107,18 @@ export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
                 <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    <span>{format(surgeryDate, "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
+                    <span>{format(surgeryDate, "dd/MM 'às' HH:mm", {
+                    locale: ptBR
+                  })}</span>
                   </div>
-                  {surgery.hospital && (
-                    <div className="flex items-center gap-1 truncate">
+                  {surgery.hospital && <div className="flex items-center gap-1 truncate">
                       <MapPin className="h-3 w-3 shrink-0" />
                       <span className="truncate">{surgery.hospital}</span>
-                    </div>
-                  )}
+                    </div>}
                 </div>
-              </button>
-            );
-          })}
+              </button>;
+        })}
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
