@@ -16,7 +16,6 @@ import UserManagement from "./pages/UserManagement";
 import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
-import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +44,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
-      <Route path="/landing" element={<LandingPage />} />
       <Route
         path="/"
         element={
