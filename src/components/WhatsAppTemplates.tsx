@@ -41,21 +41,24 @@ Qualquer dúvida, estou à disposição para orientá-${treatment === "o senhor"
   }
 
   function getPostOpMessage() {
-    return `Olá, ${firstName}! 
+    return `Olá, ${firstName}!
+
 Espero que ${treatment === "o senhor" ? "o senhor esteja" : treatment === "a senhora" ? "a senhora esteja" : "você esteja"} se recuperando bem da cirurgia.
 
 📋 Recomendações pós-operatórias:
+
 • Mantenha repouso conforme orientado pelo Dr. André Alves
 • Tome os medicamentos prescritos nos horários corretos
 • Observe a região operada e comunique qualquer alteração
-• Evite esforço físico nas primeiras semanas
-• Mantenha a alimentação leve e saudável
-• Compareça às consultas de retorno agendadas
+• Evite esforço físico intenso nos primeiros 3 dias
+• Curativo: O curativo é estéril. Mantenha-o no local por dois dias. Se o curativo se soltar antes, não há problema.
+• Higiene da Ferida: Mantenha a ferida sempre limpa e seca. A higienização deve ser feita com água e sabão neutro.
 
 Em caso de dúvidas ou qualquer sintoma preocupante, entre em contato imediatamente.
 
 Qualquer dúvida, estou à disposição.
-Melhoras! 🌸`;
+
+Uma boa recuperação!`;
   }
 
   function getExamFollowupMessage() {
