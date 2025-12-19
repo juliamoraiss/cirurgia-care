@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     if (!isValidToken) {
       return new Response(
         JSON.stringify({ 
-          error: 'Unauthorized - Invalid or missing token',
+          error: 'Acesso não autorizado',
           summary: '❌ Acesso não autorizado',
         }),
         {
@@ -224,10 +224,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in get-notifications-summary:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
+        error: 'Erro ao buscar notificações. Tente novamente.',
         summary: '❌ Erro ao buscar notificações',
       }), 
       {

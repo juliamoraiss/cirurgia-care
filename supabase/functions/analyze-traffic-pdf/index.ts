@@ -6,6 +6,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation functions
+function validateAndSanitizePatientName(name: unknown): string | null {
+  if (!name || typeof name !== 'string') return null;
+  const trimmed = name.trim();
+  if (trimmed.length < 2 || trimmed.length > 200) return null;
+  // Only allow reasonable characters for names
+  if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(trimmed)) return null;
+  return trimmed.slice(0, 200);
+}
+
+function validateExtractedData(data: unknown): Record<string, unknown> | null {
+  if (!data || typeof data !== 'object') return null;
+  
+  const validated: Record<string, unknown> = {};
+  const d = data as Record<string, unknown>;
+  
+  // Validate date fields
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (d.period_start && typeof d.period_start === 'string' && dateRegex.test(d.period_start)) {
+    validated.period_start = d.period_start;
+  } else {
+    validated.period_start = null;
+  }
+  
+  if (d.period_end && typeof d.period_end === 'string' && dateRegex.test(d.period_end)) {
+    validated.period_end = d.period_end;
+  } else {
+    validated.period_end = null;
+  }
+  
+  // Validate numeric fields (0-100000 range)
+  const numericFields = [
+    'total_leads', 'scheduled_appointments', 'not_scheduled',
+    'awaiting_response', 'no_continuity', 'no_contact_after_attempts',
+    'leads_outside_brasilia', 'active_leads', 'in_progress'
+  ];
+  
+  for (const field of numericFields) {
+    const val = d[field];
+    if (typeof val === 'number' && Number.isInteger(val) && val >= 0 && val <= 100000) {
+      validated[field] = val;
+    } else {
+      validated[field] = null;
+    }
+  }
+  
+  // Validate concierge_name
+  if (d.concierge_name && typeof d.concierge_name === 'string') {
+    validated.concierge_name = d.concierge_name.trim().slice(0, 200);
+  } else {
+    validated.concierge_name = null;
+  }
+  
+  // Validate scheduled_patients array
+  if (Array.isArray(d.scheduled_patients)) {
+    validated.scheduled_patients = d.scheduled_patients
+      .slice(0, 1000) // Max 1000 patients
+      .map(validateAndSanitizePatientName)
+      .filter((name): name is string => name !== null);
+  } else {
+    validated.scheduled_patients = [];
+  }
+  
+  return validated;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -44,6 +110,16 @@ serve(async (req) => {
     // Fallback: quando recebemos texto extraído do PDF (client-side)
     if (!file && text) {
       console.log('4. MODO TEXTO - Analisando texto extraído...');
+      
+      // Validate text length before processing
+      if (text.length > 100000) {
+        console.error('Text too large:', text.length);
+        return new Response(JSON.stringify({ error: 'Texto muito grande. Máximo permitido: 100KB' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
       const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
       if (!LOVABLE_API_KEY) {
@@ -109,7 +185,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        return new Response(JSON.stringify({ error: 'Erro ao analisar texto do PDF.', details: errorText }), {
+        return new Response(JSON.stringify({ error: 'Erro ao analisar texto do PDF. Tente novamente.' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -128,8 +204,18 @@ serve(async (req) => {
         console.log('12. Dados extraídos:', extractedData);
       } catch (e) {
         console.error('13. ERRO ao parsear resposta:', e);
-        return new Response(JSON.stringify({ error: 'Não foi possível extrair dados do texto do PDF.', details: String(e) }), {
+        return new Response(JSON.stringify({ error: 'Não foi possível extrair dados do texto do PDF. Tente novamente.' }), {
           status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Validate extracted data
+      const validatedData = validateExtractedData(extractedData);
+      if (!validatedData) {
+        console.error('14. Dados extraídos inválidos');
+        return new Response(JSON.stringify({ error: 'Dados extraídos do PDF são inválidos. Verifique o documento.' }), {
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
@@ -138,23 +224,23 @@ serve(async (req) => {
       const { data: reportData, error: insertError } = await supabaseClient
         .from('paid_traffic_reports')
         .insert({
-          report_date: extractedData.period_end || extractedData.period_start,
+          report_date: validatedData.period_end || validatedData.period_start || new Date().toISOString().split('T')[0],
           platform: 'Leads',
-          period_start: extractedData.period_start,
-          period_end: extractedData.period_end,
-          total_leads: extractedData.total_leads,
-          scheduled_appointments: extractedData.scheduled_appointments,
-          not_scheduled: extractedData.not_scheduled,
-          awaiting_response: extractedData.awaiting_response,
-          no_continuity: extractedData.no_continuity,
-          no_contact_after_attempts: extractedData.no_contact_after_attempts,
-          leads_outside_brasilia: extractedData.leads_outside_brasilia,
-          active_leads: extractedData.active_leads,
-          in_progress: extractedData.in_progress,
-          concierge_name: extractedData.concierge_name,
+          period_start: validatedData.period_start,
+          period_end: validatedData.period_end,
+          total_leads: validatedData.total_leads,
+          scheduled_appointments: validatedData.scheduled_appointments,
+          not_scheduled: validatedData.not_scheduled,
+          awaiting_response: validatedData.awaiting_response,
+          no_continuity: validatedData.no_continuity,
+          no_contact_after_attempts: validatedData.no_contact_after_attempts,
+          leads_outside_brasilia: validatedData.leads_outside_brasilia,
+          active_leads: validatedData.active_leads,
+          in_progress: validatedData.in_progress,
+          concierge_name: validatedData.concierge_name,
           pdf_file_path: null,
-          pdf_file_name: pdfFileName,
-          raw_data: extractedData,
+          pdf_file_name: pdfFileName ? pdfFileName.slice(0, 255) : null,
+          raw_data: validatedData,
           created_by: userId
         })
         .select()
@@ -162,7 +248,7 @@ serve(async (req) => {
 
       if (insertError) {
         console.error('15. ERRO ao inserir (texto):', insertError);
-        return new Response(JSON.stringify({ error: 'Erro ao salvar dados do relatório.', details: insertError.message }), {
+        return new Response(JSON.stringify({ error: 'Erro ao salvar dados do relatório. Tente novamente.' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -170,31 +256,30 @@ serve(async (req) => {
 
       console.log('16. Sucesso! Dados salvos:', reportData.id);
 
-      // Criar pacientes agendados
-      if (extractedData.scheduled_patients && Array.isArray(extractedData.scheduled_patients)) {
-        console.log('16.1 Criando pacientes agendados:', extractedData.scheduled_patients.length);
+      // Criar pacientes agendados with validated names
+      const scheduledPatients = validatedData.scheduled_patients as string[];
+      if (scheduledPatients && scheduledPatients.length > 0) {
+        console.log('16.1 Criando pacientes agendados:', scheduledPatients.length);
         
-        for (const patientName of extractedData.scheduled_patients) {
-          if (patientName && typeof patientName === 'string' && patientName.trim()) {
-            try {
+        for (const patientName of scheduledPatients) {
+          try {
             const { error: patientError } = await supabaseClient
               .from('patients')
               .insert({
-                name: patientName.trim(),
+                name: patientName,
                 procedure: 'simpatectomia',
                 origem: 'Tráfego Pago',
                 status: 'awaiting_consultation',
                 created_by: userId
               });
 
-              if (patientError) {
-                console.error('16.2 Erro ao criar paciente:', patientName, patientError);
-              } else {
-                console.log('16.3 Paciente criado:', patientName);
-              }
-            } catch (err) {
-              console.error('16.4 Erro ao processar paciente:', patientName, err);
+            if (patientError) {
+              console.error('16.2 Erro ao criar paciente:', patientName, patientError);
+            } else {
+              console.log('16.3 Paciente criado:', patientName);
             }
+          } catch (err) {
+            console.error('16.4 Erro ao processar paciente:', patientName, err);
           }
         }
       }
@@ -207,7 +292,10 @@ serve(async (req) => {
     // MODO PDF
     if (!file) {
       console.error('17. ERRO: Arquivo PDF não fornecido');
-      throw new Error('Arquivo PDF não fornecido');
+      return new Response(JSON.stringify({ error: 'Arquivo PDF não fornecido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('18. MODO PDF - Iniciando upload...');
@@ -216,8 +304,7 @@ serve(async (req) => {
     if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
       console.error('19. ERRO: Arquivo não é PDF', file.type);
       return new Response(JSON.stringify({ 
-        error: 'Arquivo inválido. Por favor, envie um arquivo PDF.',
-        fileType: file.type 
+        error: 'Arquivo inválido. Por favor, envie um arquivo PDF.'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -228,8 +315,7 @@ serve(async (req) => {
     if (file.size > 10 * 1024 * 1024) {
       console.error('20. ERRO: Arquivo muito grande', file.size);
       return new Response(JSON.stringify({ 
-        error: 'Arquivo muito grande. Tamanho máximo: 10MB',
-        fileSize: file.size 
+        error: 'Arquivo muito grande. Tamanho máximo: 10MB'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -240,7 +326,8 @@ serve(async (req) => {
     const sanitizedFileName = file.name
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9.-]/g, '_');
+      .replace(/[^a-zA-Z0-9.-]/g, '_')
+      .slice(0, 200); // Limit filename length
     const fileName = `${Date.now()}_${sanitizedFileName}`;
     
     console.log('22. Nome sanitizado:', fileName);
@@ -256,9 +343,7 @@ serve(async (req) => {
     if (uploadError) {
       console.error('24. ERRO NO UPLOAD:', uploadError);
       return new Response(JSON.stringify({ 
-        error: 'Erro ao fazer upload do PDF',
-        details: uploadError.message,
-        bucket: 'traffic-reports'
+        error: 'Erro ao fazer upload do PDF. Tente novamente.'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -274,7 +359,10 @@ serve(async (req) => {
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error('27. ERRO ao gerar URL assinada:', signedUrlError);
-      throw new Error('Não foi possível gerar URL assinada para o PDF');
+      return new Response(JSON.stringify({ error: 'Erro ao processar o PDF. Tente novamente.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('28. URL assinada gerada (primeiros 50 chars):', signedUrlData.signedUrl.slice(0, 50));
@@ -356,8 +444,7 @@ serve(async (req) => {
       }
       if (aiResponse.status === 400 && errorText.includes('Failed to extract')) {
         return new Response(JSON.stringify({
-          error: 'PDF não pode ser processado',
-          details: 'Este PDF parece ser uma imagem escaneada. Por favor, gere um novo PDF com texto selecionável.'
+          error: 'PDF não pode ser processado. Este PDF parece ser uma imagem escaneada. Por favor, gere um novo PDF com texto selecionável.'
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -365,9 +452,7 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ 
-        error: 'Erro ao processar o PDF com IA',
-        details: errorText.slice(0, 200),
-        status: aiResponse.status
+        error: 'Erro ao processar o PDF com IA. Tente novamente.'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -391,30 +476,43 @@ serve(async (req) => {
       console.log('38. Dados extraídos:', extractedData);
     } catch (parseError) {
       console.error('39. ERRO ao parsear resposta da IA:', parseError);
-      throw new Error('Não foi possível extrair dados estruturados do PDF');
+      return new Response(JSON.stringify({ error: 'Não foi possível extrair dados estruturados do PDF. Tente novamente.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate extracted data
+    const validatedData = validateExtractedData(extractedData);
+    if (!validatedData) {
+      console.error('40. Dados extraídos inválidos');
+      return new Response(JSON.stringify({ error: 'Dados extraídos do PDF são inválidos. Verifique o documento.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('40. Inserindo dados no banco...');
     const { data: reportData, error: insertError } = await supabaseClient
       .from('paid_traffic_reports')
       .insert({
-        report_date: extractedData.period_end || extractedData.period_start,
+        report_date: validatedData.period_end || validatedData.period_start || new Date().toISOString().split('T')[0],
         platform: 'Leads',
-        period_start: extractedData.period_start,
-        period_end: extractedData.period_end,
-        total_leads: extractedData.total_leads,
-        scheduled_appointments: extractedData.scheduled_appointments,
-        not_scheduled: extractedData.not_scheduled,
-        awaiting_response: extractedData.awaiting_response,
-        no_continuity: extractedData.no_continuity,
-        no_contact_after_attempts: extractedData.no_contact_after_attempts,
-        leads_outside_brasilia: extractedData.leads_outside_brasilia,
-        active_leads: extractedData.active_leads,
-        in_progress: extractedData.in_progress,
-        concierge_name: extractedData.concierge_name,
+        period_start: validatedData.period_start,
+        period_end: validatedData.period_end,
+        total_leads: validatedData.total_leads,
+        scheduled_appointments: validatedData.scheduled_appointments,
+        not_scheduled: validatedData.not_scheduled,
+        awaiting_response: validatedData.awaiting_response,
+        no_continuity: validatedData.no_continuity,
+        no_contact_after_attempts: validatedData.no_contact_after_attempts,
+        leads_outside_brasilia: validatedData.leads_outside_brasilia,
+        active_leads: validatedData.active_leads,
+        in_progress: validatedData.in_progress,
+        concierge_name: validatedData.concierge_name,
         pdf_file_path: uploadData.path,
-        pdf_file_name: file.name,
-        raw_data: extractedData,
+        pdf_file_name: file.name.slice(0, 255),
+        raw_data: validatedData,
         created_by: userId
       })
       .select()
@@ -422,36 +520,38 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('41. ERRO ao inserir no banco:', insertError);
-      throw insertError;
+      return new Response(JSON.stringify({ error: 'Erro ao salvar dados do relatório. Tente novamente.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('42. SUCESSO! Dados salvos:', reportData.id);
 
-    // Criar pacientes agendados
-    if (extractedData.scheduled_patients && Array.isArray(extractedData.scheduled_patients)) {
-      console.log('42.1 Criando pacientes agendados:', extractedData.scheduled_patients.length);
+    // Criar pacientes agendados with validated names
+    const scheduledPatients = validatedData.scheduled_patients as string[];
+    if (scheduledPatients && scheduledPatients.length > 0) {
+      console.log('42.1 Criando pacientes agendados:', scheduledPatients.length);
       
-      for (const patientName of extractedData.scheduled_patients) {
-        if (patientName && typeof patientName === 'string' && patientName.trim()) {
-          try {
-            const { error: patientError } = await supabaseClient
-              .from('patients')
-              .insert({
-                name: patientName.trim(),
-                procedure: 'simpatectomia',
-                origem: 'Tráfego Pago',
-                status: 'awaiting_consultation',
-                created_by: userId
-              });
+      for (const patientName of scheduledPatients) {
+        try {
+          const { error: patientError } = await supabaseClient
+            .from('patients')
+            .insert({
+              name: patientName,
+              procedure: 'simpatectomia',
+              origem: 'Tráfego Pago',
+              status: 'awaiting_consultation',
+              created_by: userId
+            });
 
-            if (patientError) {
-              console.error('42.2 Erro ao criar paciente:', patientName, patientError);
-            } else {
-              console.log('42.3 Paciente criado:', patientName);
-            }
-          } catch (err) {
-            console.error('42.4 Erro ao processar paciente:', patientName, err);
+          if (patientError) {
+            console.error('42.2 Erro ao criar paciente:', patientName, patientError);
+          } else {
+            console.log('42.3 Paciente criado:', patientName);
           }
+        } catch (err) {
+          console.error('42.4 Erro ao processar paciente:', patientName, err);
         }
       }
     }
@@ -467,10 +567,7 @@ serve(async (req) => {
     console.error('=== ERRO NA FUNÇÃO ===', error);
     console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        details: error instanceof Error ? error.stack : String(error)
-      }),
+      JSON.stringify({ error: 'Erro interno. Tente novamente mais tarde.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
