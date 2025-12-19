@@ -18,11 +18,35 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Validate token if provided
-    const url = new URL(req.url);
-    const providedToken = url.searchParams.get('token');
+    // Validate token from Authorization header (more secure than query params)
+    // Token should be provided as: Authorization: Bearer <token>
+    const authHeader = req.headers.get('authorization');
+    let providedToken: string | null = null;
     
+    if (authHeader) {
+      // Support both "Bearer <token>" and just "<token>" formats
+      if (authHeader.startsWith('Bearer ')) {
+        providedToken = authHeader.substring(7);
+      } else {
+        providedToken = authHeader;
+      }
+    }
+    
+    // Require valid token for any request - reject unauthenticated access
     const isValidToken = providedToken && providedToken === notificationToken;
+    
+    if (!isValidToken) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized - Invalid or missing token',
+          summary: '❌ Acesso não autorizado',
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     // Get current time in São Paulo timezone
     const now = new Date();
@@ -117,10 +141,10 @@ Deno.serve(async (req) => {
     // Get the base URL from environment or use default
     const baseUrl = 'https://medsystem.lovable.app';
 
-    // Format response based on token validation
+    // Format response - all requests are authenticated at this point
     const overdueTasksFormatted = (overdueTasks || []).map(task => ({
-      patient_name: isValidToken ? (task.patients as any)?.name : '***',
-      patient_id: isValidToken ? (task.patients as any)?.id : null,
+      patient_name: (task.patients as any)?.name,
+      patient_id: (task.patients as any)?.id,
       task_id: task.id,
       task_title: task.title,
       due_date: task.due_date,
@@ -129,8 +153,8 @@ Deno.serve(async (req) => {
     }));
 
     const todayTasksFormatted = (todayTasks || []).map(task => ({
-      patient_name: isValidToken ? (task.patients as any)?.name : '***',
-      patient_id: isValidToken ? (task.patients as any)?.id : null,
+      patient_name: (task.patients as any)?.name,
+      patient_id: (task.patients as any)?.id,
       task_id: task.id,
       task_title: task.title,
       due_date: task.due_date,
@@ -139,16 +163,16 @@ Deno.serve(async (req) => {
     }));
 
     const newPatientsFormatted = (newPatients || []).map(patient => ({
-      name: isValidToken ? patient.name : '***',
+      name: patient.name,
       procedure: patient.procedure,
       created_at: patient.created_at,
     }));
 
     const upcomingSurgeriesFormatted = (upcomingSurgeries || []).map(surgery => ({
-      patient_name: isValidToken ? surgery.name : '***',
+      patient_name: surgery.name,
       procedure: surgery.procedure,
       surgery_date: surgery.surgery_date,
-      hospital: isValidToken ? surgery.hospital : '***',
+      hospital: surgery.hospital,
     }));
 
     // Build summary text
@@ -192,7 +216,6 @@ Deno.serve(async (req) => {
         surgeries: upcomingSurgeriesFormatted,
       },
       summary,
-      authenticated: isValidToken,
     };
 
     return new Response(JSON.stringify(response), {
