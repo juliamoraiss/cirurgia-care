@@ -156,9 +156,14 @@ Dr. André`;
             className="bg-[#25D366] text-white hover:bg-[#20BA5A] h-14 w-14 rounded-lg shadow-lg"
             onClick={(e) => {
               e.stopPropagation();
-              const message = encodeURIComponent(getWhatsAppMessage());
               const phoneNumber = patient.phone.replace(/\D/g, '');
-              window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
+              // Admin gets pre-configured message, user gets empty chat
+              if (isAdmin) {
+                const message = encodeURIComponent(getWhatsAppMessage());
+                window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
+              } else {
+                window.open(`https://wa.me/55${phoneNumber}`, '_blank');
+              }
             }}
           >
             <MessageCircle className="h-5 w-5" />
