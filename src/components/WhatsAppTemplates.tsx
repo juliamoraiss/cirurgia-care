@@ -15,7 +15,7 @@ interface Patient {
 
 interface WhatsAppTemplatesProps {
   patient: Patient;
-  type: "pre_op" | "post_op" | "exam_followup";
+  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup";
   examName?: string;
 }
 
@@ -62,6 +62,14 @@ Qualquer dúvida, estou à disposição.
 Uma boa recuperação!`;
   }
 
+  function getPostOp30DaysMessage() {
+    return `Olá, ${firstName}, tudo bem?
+
+Meu nome é Júlia, trabalho com o Dr. André Alves. Passando para saber como você tem se sentido desde a cirurgia e como está sendo sua recuperação.
+Para nós, é muito importante saber como foi sua experiência, pois isso nos ajuda a cuidar cada vez melhor dos nossos pacientes.
+Agradecemos muito por compartilhar com a gente e pela confiança em nosso trabalho.`;
+  }
+
   function getExamFollowupMessage() {
     const exam = examName || "exame";
     return `Olá, ${firstName}! Tudo bem?
@@ -72,7 +80,13 @@ Caso ainda não tenha feito, tem previsão de quando pretende realizar?
 Obrigada pela atenção.`;
   }
 
-  const message = type === "pre_op" ? getPreOpMessage() : type === "post_op" ? getPostOpMessage() : getExamFollowupMessage();
+  const message = type === "pre_op" 
+    ? getPreOpMessage() 
+    : type === "post_op" 
+      ? getPostOpMessage() 
+      : type === "post_op_30_days"
+        ? getPostOp30DaysMessage()
+        : getExamFollowupMessage();
 
   function sendWhatsApp() {
     if (!phoneNumber || !message) {
@@ -94,7 +108,7 @@ Obrigada pela atenção.`;
       onClick={sendWhatsApp}
     >
       <MessageCircle className="h-4 w-4 mr-2" />
-      {type === "pre_op" ? "Enviar Instruções Pré-Op" : type === "post_op" ? "Enviar Recomendações Pós-Op" : "Enviar Cobrança de Exame"}
+      {type === "pre_op" ? "Enviar Instruções Pré-Op" : type === "post_op" ? "Enviar Recomendações Pós-Op" : type === "post_op_30_days" ? "Enviar Follow-up 30 Dias" : "Enviar Cobrança de Exame"}
     </Button>
   );
 }
