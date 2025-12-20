@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
 import {
   Accordion,
   AccordionContent,
@@ -395,8 +396,8 @@ const PatientForm = () => {
       // Mensagem para o médico com emojis usando Unicode
       const message = `\u{1F3E5} Nova Cirurgia Agendada\n\n\u{1F464} Paciente: ${patientName}\n\u{1F52C} Procedimento: ${procedure}\n\u{1F4C5} Data: ${formattedDate}\n\u{23F0} Horário: ${formattedTime}\n\u{1F3E5} Local: ${hospital}\n\n\u{1F4C6} Adicionar ao Google Agenda:\n${googleCalendarLink}`;
       
-      const whatsappUrl = `https://wa.me/55${doctorPhone}?text=${encodeWhatsAppMessage(message)}`;
-      window.open(whatsappUrl, '_blank');
+      const whatsappUrl = createWhatsAppUrl(doctorPhone, message);
+      safeWindowOpen(whatsappUrl);
     } catch (error) {
       console.error("Erro ao enviar WhatsApp ao médico:", error);
     }
@@ -937,8 +938,8 @@ const PatientForm = () => {
                         const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                         
                         const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
-                        const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-                        window.open(whatsappUrl, '_blank');
+                        const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
+                        safeWindowOpen(whatsappUrl);
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
@@ -972,8 +973,8 @@ const PatientForm = () => {
                       const examsWithCheckmarks = examsChecklist.map(exam => `✅ ${exam}`).join('\n');
                       const examsSection = examsWithCheckmarks || 'exames necessários';
                       const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'Hospital Brasília'}, gostaria de confirmar se ${treatment} já realizou ${examWord}:\n${examsSection}\n\nQualquer dúvida estou à disposição.\nObrigada.`;
-                      const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-                      window.open(whatsappUrl, '_blank');
+                      const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
+                      safeWindowOpen(whatsappUrl);
                     }}
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
