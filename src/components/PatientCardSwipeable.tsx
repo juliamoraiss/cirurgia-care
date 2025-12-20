@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StandardCard, CardInfo } from "@/components/StandardCard";
 import { StatusBadge } from "@/components/StatusBadge";
+import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
 
 interface PatientCardSwipeableProps {
   patient: {
@@ -159,10 +160,11 @@ Dr. André`;
               const phoneNumber = patient.phone.replace(/\D/g, '');
               // Admin gets pre-configured message, user gets empty chat
               if (isAdmin) {
-                const message = encodeURIComponent(getWhatsAppMessage());
-                window.open(`https://wa.me/55${phoneNumber}?text=${message}`, '_blank');
+                const whatsappUrl = createWhatsAppUrl(phoneNumber, getWhatsAppMessage());
+                safeWindowOpen(whatsappUrl);
               } else {
-                window.open(`https://wa.me/55${phoneNumber}`, '_blank');
+                const whatsappUrl = createWhatsAppUrl(phoneNumber);
+                safeWindowOpen(whatsappUrl);
               }
             }}
           >

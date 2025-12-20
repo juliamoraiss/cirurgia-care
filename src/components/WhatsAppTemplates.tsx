@@ -2,6 +2,7 @@ import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
 
 interface Patient {
   name: string;
@@ -77,8 +78,8 @@ Obrigada pela atenção.`;
     if (!phoneNumber || !message) {
       return;
     }
-    const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
+    const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
+    safeWindowOpen(whatsappUrl);
   }
 
   if (!phoneNumber) {
