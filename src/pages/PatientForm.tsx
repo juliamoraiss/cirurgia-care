@@ -52,16 +52,12 @@ import InputMask from "react-input-mask";
 // Validation schema with enhanced security
 const patientSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(200, "Nome deve ter no máximo 200 caracteres"),
-  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido. Formato: XXX.XXX.XXX-XX").optional().or(z.literal("")),
   phone: z.string().regex(/^\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}$/, "Telefone inválido. Formato: (XX) XXXXX-XXXX").optional().or(z.literal("")),
-  email: z.string().email("Email inválido").max(255, "Email deve ter no máximo 255 caracteres").optional().or(z.literal("")),
   birth_date: z.string().optional(),
   gender: z.enum(["masculino", "feminino"]).optional(),
   procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(500, "Procedimento deve ter no máximo 500 caracteres"),
   hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
-  insurance_number: z.string().max(100, "Número do convênio deve ter no máximo 100 caracteres").optional().or(z.literal("")),
-  
   status: z.enum(["awaiting_authorization", "awaiting_consultation", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
   origem: z.string().optional(),
 });
@@ -78,15 +74,12 @@ const PatientForm = () => {
   
   const [formData, setFormData] = useState({
     name: "",
-    cpf: "",
     phone: "",
-    email: "",
     birth_date: "",
     gender: "",
     procedure: "",
     hospital: "",
     insurance: "",
-    insurance_number: "",
     status: "awaiting_authorization",
     surgery_date: "",
     guide_validity_date: "",
@@ -142,15 +135,12 @@ const PatientForm = () => {
         
         setFormData({
           name: data.name || "",
-          cpf: data.cpf || "",
           phone: data.phone || "",
-          email: data.email || "",
           birth_date: data.birth_date || "",
           gender: data.gender || "",
           procedure: data.procedure || "",
           hospital: data.hospital || "",
           insurance: data.insurance || "",
-          insurance_number: data.insurance_number || "",
           status: data.status || "awaiting_authorization",
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
@@ -543,15 +533,12 @@ const PatientForm = () => {
       
       const patientData = {
         name: validatedData.name,
-        cpf: validatedData.cpf || null,
         phone: validatedData.phone || null,
-        email: validatedData.email || null,
         birth_date: validatedData.birth_date || null,
         gender: validatedData.gender || null,
         procedure: validatedData.procedure,
         hospital: validatedData.hospital || null,
         insurance: validatedData.insurance || null,
-        insurance_number: validatedData.insurance_number || null,
         status: validatedData.status as any,
         surgery_date: utcSurgeryDate,
         exams_checklist: checkedExams,
@@ -738,43 +725,6 @@ const PatientForm = () => {
                   {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
                 </div>
 
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="optional">
-                    <AccordionTrigger>Campos Opcionais</AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cpf">CPF</Label>
-                        <InputMask
-                          mask="999.999.999-99"
-                          value={formData.cpf}
-                          onChange={(e) => handleChange("cpf", e.target.value)}
-                        >
-                          {(inputProps: any) => (
-                            <Input
-                              {...inputProps}
-                              id="cpf"
-                              placeholder="XXX.XXX.XXX-XX"
-                              className={errors.cpf ? "border-destructive" : ""}
-                            />
-                          )}
-                        </InputMask>
-                        {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => handleChange("email", e.target.value)}
-                          className={errors.email ? "border-destructive" : ""}
-                        />
-                        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
               </div>
             )}
 
@@ -848,15 +798,6 @@ const PatientForm = () => {
                       </SelectContent>
                     </Select>
                     {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="insurance_number">Número do Convênio</Label>
-                    <Input
-                      id="insurance_number"
-                      value={formData.insurance_number}
-                      onChange={(e) => handleChange("insurance_number", e.target.value)}
-                    />
                   </div>
 
                   <div className="space-y-2">
