@@ -44,6 +44,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { PatientTasksSection } from "@/components/PatientTasksSection";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
+import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientFormSteps } from "@/components/PatientFormSteps";
 import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
 import InputMask from "react-input-mask";
@@ -1013,6 +1014,12 @@ const PatientForm = () => {
                 {isEditMode && id && (
                   <div className="pt-4">
                     <PatientNotesSection patientId={id} />
+                  </div>
+                )}
+
+                {isEditMode && id && (
+                  <div className="pt-4">
+                    <PatientFeedbacksSection patientId={id} />
                   </div>
                 )}
 

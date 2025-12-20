@@ -86,6 +86,47 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_feedbacks: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          feedback_type: string
+          id: string
+          image_name: string
+          image_path: string
+          patient_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          feedback_type: string
+          id?: string
+          image_name: string
+          image_path: string
+          patient_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          feedback_type?: string
+          id?: string
+          image_name?: string
+          image_path?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_feedbacks_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_files: {
         Row: {
           created_at: string
