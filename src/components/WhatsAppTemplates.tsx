@@ -66,7 +66,9 @@ Uma boa recuperação!`;
     return `Olá, ${firstName}, tudo bem?
 
 Meu nome é Júlia, trabalho com o Dr. André Alves. Passando para saber como você tem se sentido desde a cirurgia e como está sendo sua recuperação.
+
 Para nós, é muito importante saber como foi sua experiência, pois isso nos ajuda a cuidar cada vez melhor dos nossos pacientes.
+
 Agradecemos muito por compartilhar com a gente e pela confiança em nosso trabalho.`;
   }
 
