@@ -143,85 +143,86 @@ const Tasks = () => {
     const isOverdue = !task.completed && isPast(dueDate) && !isToday(dueDate);
 
     return (
-      <Card className={`mb-4 ${isOverdue ? "border-destructive" : ""}`}>
-        <CardHeader className="pb-3 px-3 sm:px-6">
-          <div className="flex items-start gap-2 sm:gap-3">
+      <Card className={`mb-3 shadow-sm transition-all hover:shadow-md ${isOverdue ? "border-destructive border-l-4" : "border-l-4 border-l-transparent"} ${task.completed ? "opacity-75" : ""}`}>
+        <CardContent className="p-3 sm:p-4">
+          {/* Header: Checkbox + Badges */}
+          <div className="flex items-start gap-2.5">
             <Checkbox
               checked={task.completed}
               onCheckedChange={() => toggleTaskCompletion(task.id, task.completed)}
-              className="mt-1 shrink-0"
+              className="mt-0.5 h-5 w-5 shrink-0"
             />
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                <Badge className={`${getTaskTypeColor(task.task_type)} text-xs shrink-0`}>
+            <div className="flex-1 min-w-0 space-y-2">
+              {/* Badges row */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge className={`${getTaskTypeColor(task.task_type)} text-[10px] sm:text-xs px-1.5 py-0.5`}>
                   {getTaskTypeLabel(task.task_type)}
                 </Badge>
                 {isOverdue && (
-                  <Badge variant="destructive" className="text-xs shrink-0">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                  <Badge variant="destructive" className="text-[10px] sm:text-xs px-1.5 py-0.5">
+                    <AlertCircle className="h-3 w-3 mr-0.5" />
                     Atrasada
                   </Badge>
                 )}
               </div>
-              <CardTitle className={`text-base sm:text-lg leading-tight ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+              
+              {/* Title */}
+              <h3 className={`text-sm sm:text-base font-medium leading-snug ${task.completed ? "line-through text-muted-foreground" : ""}`}>
                 {task.title}
-              </CardTitle>
+              </h3>
+              
+              {/* Description - hidden on mobile if too long */}
               {task.description && (
-                <CardDescription className="mt-1 text-sm">{task.description}</CardDescription>
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {task.description}
+                </p>
               )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-3 sm:px-6 pt-0">
-          <div className="flex flex-col gap-3 text-sm">
-            {/* Patient and date info */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                <User className="h-4 w-4 shrink-0" />
+              
+              {/* Patient & Date - compact row */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-1 border-t border-border/50">
                 <button
                   onClick={() => navigate(`/patients/${task.patient_id}`)}
-                  className="hover:underline truncate text-left"
+                  className="flex items-center gap-1 hover:text-primary transition-colors"
                 >
-                  {task.patient.name}
+                  <User className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[120px] sm:max-w-none">{task.patient.name}</span>
                 </button>
-              </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Clock className="h-4 w-4 shrink-0" />
-                <span className="text-xs sm:text-sm">
-                  {format(dueDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                </span>
-              </div>
-            </div>
-            
-            {/* Actions and completion status */}
-            <div className="flex flex-wrap items-center gap-2">
-              {task.completed && task.completed_at && (
-                <div className="flex items-center gap-1 text-green-600 text-xs sm:text-sm">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>Concluída em {format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>{format(dueDate, "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
                 </div>
-              )}
-              {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup") && (
-                <WhatsAppTemplates
-                  patient={{
-                    name: task.patient.name,
-                    phone: task.patient.phone || "",
-                    procedure: task.patient.procedure,
-                    hospital: task.patient.hospital || "",
-                    surgery_date: task.patient.surgery_date || "",
-                    gender: task.patient.gender || "",
-                  }}
-                  type={
-                    task.task_type === "pre_op_instructions" 
-                      ? "pre_op" 
-                      : task.task_type === "post_op_instructions" 
-                        ? "post_op" 
-                        : task.task_type === "post_op_30_days"
-                          ? "post_op_30_days"
-                          : "exam_followup"
-                  }
-                />
-              )}
+              </div>
+              
+              {/* Actions row */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {task.completed && task.completed_at && (
+                  <div className="flex items-center gap-1 text-green-600 text-xs">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>{format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+                  </div>
+                )}
+                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup") && (
+                  <WhatsAppTemplates
+                    patient={{
+                      name: task.patient.name,
+                      phone: task.patient.phone || "",
+                      procedure: task.patient.procedure,
+                      hospital: task.patient.hospital || "",
+                      surgery_date: task.patient.surgery_date || "",
+                      gender: task.patient.gender || "",
+                    }}
+                    type={
+                      task.task_type === "pre_op_instructions" 
+                        ? "pre_op" 
+                        : task.task_type === "post_op_instructions" 
+                          ? "post_op" 
+                          : task.task_type === "post_op_30_days"
+                            ? "post_op_30_days"
+                            : "exam_followup"
+                    }
+                  />
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
