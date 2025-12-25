@@ -116,6 +116,7 @@ const Tasks = () => {
       exam_followup: "Cobrança de Exame",
       pre_op_instructions: "Instruções Pré-Op",
       post_op_instructions: "Recomendações Pós-Op",
+      post_op_30_days: "Acompanhamento 30 Dias",
       custom: "Personalizado",
     };
     return labels[type] || type;
@@ -126,6 +127,7 @@ const Tasks = () => {
       exam_followup: "bg-blue-500",
       pre_op_instructions: "bg-purple-500",
       post_op_instructions: "bg-green-500",
+      post_op_30_days: "bg-amber-500",
       custom: "bg-gray-500",
     };
     return colors[type] || "bg-gray-500";
@@ -199,7 +201,7 @@ const Tasks = () => {
                   <span>Concluída em {format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                 </div>
               )}
-              {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions") && (
+              {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup") && (
                 <WhatsAppTemplates
                   patient={{
                     name: task.patient.name,
@@ -209,7 +211,15 @@ const Tasks = () => {
                     surgery_date: task.patient.surgery_date || "",
                     gender: task.patient.gender || "",
                   }}
-                  type={task.task_type === "pre_op_instructions" ? "pre_op" : "post_op"}
+                  type={
+                    task.task_type === "pre_op_instructions" 
+                      ? "pre_op" 
+                      : task.task_type === "post_op_instructions" 
+                        ? "post_op" 
+                        : task.task_type === "post_op_30_days"
+                          ? "post_op_30_days"
+                          : "exam_followup"
+                  }
                 />
               )}
             </div>
