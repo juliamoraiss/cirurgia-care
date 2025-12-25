@@ -124,11 +124,9 @@ const UserManagement = () => {
                 }
                 placeholder="Digite a senha"
                 minLength={8}
-                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
-                title="A senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas e números"
               />
               <p className="text-xs text-muted-foreground">
-                Mínimo de 8 caracteres, incluindo letras maiúsculas, minúsculas e números
+                Mínimo de 8 caracteres com complexidade adequada
               </p>
             </div>
 
