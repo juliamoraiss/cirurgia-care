@@ -254,26 +254,28 @@ const Tasks = () => {
       </div>
 
       <Tabs defaultValue="overdue" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto p-1">
-          <TabsTrigger value="overdue" className="flex items-center gap-1 text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
-            Atrasadas
+        <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsTrigger value="overdue" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+            <span>Atrasadas</span>
             {overdueTasks.length > 0 && (
-              <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+              <Badge variant="destructive" className="text-[9px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5">
                 {overdueTasks.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="today" className="flex items-center gap-1 text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
-            Hoje
+          <TabsTrigger value="today" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+            <span>Hoje</span>
             {todayTasks.length > 0 && (
-              <Badge className="text-[10px] h-5 px-1.5">{todayTasks.length}</Badge>
+              <Badge className="text-[9px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5">{todayTasks.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="future" className="text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
-            Futuras ({futureTasks.length})
+          <TabsTrigger value="future" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+            <span>Futuras</span>
+            <span className="text-[9px] sm:text-[10px]">({futureTasks.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
-            Concluídas ({completedTasks.length})
+          <TabsTrigger value="completed" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+            <span>Concluídas</span>
+            <span className="text-[9px] sm:text-[10px]">({completedTasks.length})</span>
           </TabsTrigger>
         </TabsList>
 
