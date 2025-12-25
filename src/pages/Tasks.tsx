@@ -245,11 +245,11 @@ const Tasks = () => {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Tarefas e Lembretes</h1>
-        <p className="text-muted-foreground">
-          Gerencie todas as tarefas e lembretes dos pacientes
+    <div className="container mx-auto py-4 sm:py-8 px-3 sm:px-4">
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Tarefas e Lembretes</h1>
+        <p className="text-xs sm:text-base text-muted-foreground">
+          Gerencie as tarefas dos pacientes
         </p>
       </div>
 
