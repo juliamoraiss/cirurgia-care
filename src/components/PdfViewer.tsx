@@ -37,7 +37,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ url, zoom }) => {
     if (!doc || !containerRef.current) return;
 
     const container = containerRef.current;
-    container.innerHTML = ""; // clear previous canvases
+    // Safe DOM clearing - avoids innerHTML for security
+    container.replaceChildren();
 
     const render = async () => {
       for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
