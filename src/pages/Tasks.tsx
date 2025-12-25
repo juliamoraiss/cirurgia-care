@@ -141,59 +141,62 @@ const Tasks = () => {
     const isOverdue = !task.completed && isPast(dueDate) && !isToday(dueDate);
 
     return (
-      <Card className={`mb-4 ${isOverdue ? "border-red-500" : ""}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3 flex-1">
-              <Checkbox
-                checked={task.completed}
-                onCheckedChange={() => toggleTaskCompletion(task.id, task.completed)}
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className={getTaskTypeColor(task.task_type)}>
-                    {getTaskTypeLabel(task.task_type)}
+      <Card className={`mb-4 ${isOverdue ? "border-destructive" : ""}`}>
+        <CardHeader className="pb-3 px-3 sm:px-6">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <Checkbox
+              checked={task.completed}
+              onCheckedChange={() => toggleTaskCompletion(task.id, task.completed)}
+              className="mt-1 shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <Badge className={`${getTaskTypeColor(task.task_type)} text-xs shrink-0`}>
+                  {getTaskTypeLabel(task.task_type)}
+                </Badge>
+                {isOverdue && (
+                  <Badge variant="destructive" className="text-xs shrink-0">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Atrasada
                   </Badge>
-                  {isOverdue && (
-                    <Badge variant="destructive">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Atrasada
-                    </Badge>
-                  )}
-                </div>
-                <CardTitle className={`text-lg ${task.completed ? "line-through text-muted-foreground" : ""}`}>
-                  {task.title}
-                </CardTitle>
-                {task.description && (
-                  <CardDescription className="mt-1">{task.description}</CardDescription>
                 )}
               </div>
+              <CardTitle className={`text-base sm:text-lg leading-tight ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+                {task.title}
+              </CardTitle>
+              {task.description && (
+                <CardDescription className="mt-1 text-sm">{task.description}</CardDescription>
+              )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <User className="h-4 w-4" />
+        <CardContent className="px-3 sm:px-6 pt-0">
+          <div className="flex flex-col gap-3 text-sm">
+            {/* Patient and date info */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                <User className="h-4 w-4 shrink-0" />
                 <button
                   onClick={() => navigate(`/patients/${task.patient_id}`)}
-                  className="hover:underline"
+                  className="hover:underline truncate text-left"
                 >
                   {task.patient.name}
                 </button>
               </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                {format(dueDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Clock className="h-4 w-4 shrink-0" />
+                <span className="text-xs sm:text-sm">
+                  {format(dueDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Actions and completion status */}
+            <div className="flex flex-wrap items-center gap-2">
               {task.completed && task.completed_at && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Concluída em {format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}
+                <div className="flex items-center gap-1 text-green-600 text-xs sm:text-sm">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>Concluída em {format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                 </div>
               )}
               {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions") && (
@@ -241,25 +244,25 @@ const Tasks = () => {
       </div>
 
       <Tabs defaultValue="overdue" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overdue" className="relative">
+        <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto p-1">
+          <TabsTrigger value="overdue" className="flex items-center gap-1 text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
             Atrasadas
             {overdueTasks.length > 0 && (
-              <Badge variant="destructive" className="ml-2">
+              <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
                 {overdueTasks.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="today" className="relative">
+          <TabsTrigger value="today" className="flex items-center gap-1 text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
             Hoje
             {todayTasks.length > 0 && (
-              <Badge className="ml-2">{todayTasks.length}</Badge>
+              <Badge className="text-[10px] h-5 px-1.5">{todayTasks.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="future">
+          <TabsTrigger value="future" className="text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
             Futuras ({futureTasks.length})
           </TabsTrigger>
-          <TabsTrigger value="completed">
+          <TabsTrigger value="completed" className="text-xs px-2 py-1.5 whitespace-nowrap shrink-0">
             Concluídas ({completedTasks.length})
           </TabsTrigger>
         </TabsList>
