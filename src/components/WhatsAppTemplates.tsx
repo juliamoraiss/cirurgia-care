@@ -102,15 +102,32 @@ Obrigada pela atenção.`;
     return null;
   }
 
+  const getButtonLabel = () => {
+    switch (type) {
+      case "pre_op":
+        return { short: "Enviar Pré-Op", full: "Enviar Instruções Pré-Op" };
+      case "post_op":
+        return { short: "Enviar Pós-Op", full: "Enviar Recomendações Pós-Op" };
+      case "post_op_30_days":
+        return { short: "Follow-up 30d", full: "Enviar Follow-up 30 Dias" };
+      default:
+        return { short: "Cobrar Exame", full: "Enviar Cobrança de Exame" };
+    }
+  };
+
+  const label = getButtonLabel();
+
   return (
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      size="sm"
+      className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
       onClick={sendWhatsApp}
     >
-      <MessageCircle className="h-4 w-4 mr-2" />
-      {type === "pre_op" ? "Enviar Instruções Pré-Op" : type === "post_op" ? "Enviar Recomendações Pós-Op" : type === "post_op_30_days" ? "Enviar Follow-up 30 Dias" : "Enviar Cobrança de Exame"}
+      <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+      <span className="hidden sm:inline">{label.full}</span>
+      <span className="sm:hidden">{label.short}</span>
     </Button>
   );
 }
