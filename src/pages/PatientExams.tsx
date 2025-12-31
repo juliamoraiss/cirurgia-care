@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,6 @@ interface PatientFile {
 const PatientExams = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const fromPage = searchParams.get("from") || "calendar";
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +66,7 @@ const PatientExams = () => {
       setPatient(data);
     } catch (error) {
       toast.error("Erro ao carregar dados do paciente");
-      navigate(fromPage === "patients" ? "/patients" : "/calendar");
+      navigate(-1);
     } finally {
       setLoading(false);
     }
