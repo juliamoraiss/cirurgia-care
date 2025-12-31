@@ -227,7 +227,7 @@ const Calendar = () => {
                           return (
                             <div
                               key={surgery.id}
-                              onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                              onClick={() => navigate(`/patients/${surgery.id}/exams`)}
                               className={`rounded-lg p-3 cursor-pointer border-l-4 ${
                                 getColorForIndex(surgeryIndex)
                               }`}
@@ -310,7 +310,7 @@ const Calendar = () => {
                                 return (
                                   <div
                                     key={surgery.id}
-                                    onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                                    onClick={() => navigate(`/patients/${surgery.id}/exams`)}
                                     className={`absolute left-1 right-1 rounded-lg p-2 cursor-pointer border-l-4 ${
                                       getColorForIndex(surgeryIndex)
                                     }`}
@@ -370,7 +370,7 @@ const Calendar = () => {
                           return (
                             <div
                               key={surgery.id}
-                              onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                              onClick={() => navigate(`/patients/${surgery.id}/exams`)}
                               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border-l-4 ${
                                 getColorForIndex(surgeryIndex)
                               } hover:shadow-md transition-shadow`}
@@ -489,7 +489,7 @@ const Calendar = () => {
                 className={`cursor-pointer hover:shadow-lg transition-shadow ${
                   selectedDaySurgeries.length > 1 ? getColorForIndex(index) : ""
                 }`}
-                onClick={() => navigate(`/patients/${surgery.id}/exams?from=calendar`)}
+                onClick={() => navigate(`/patients/${surgery.id}/exams`)}
               >
                 <CardContent className="p-4">
                   <div className="space-y-2">

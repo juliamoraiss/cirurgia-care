@@ -519,7 +519,7 @@ const Patients = () => {
                           requiredExams={requiredExams}
                           isAdmin={isAdmin}
                           onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
                           nextAction={nextAction}
                         />
                       );
@@ -546,7 +546,7 @@ const Patients = () => {
                           requiredExams={requiredExams}
                           isAdmin={isAdmin}
                           onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
                           nextAction={nextAction}
                         />
                       );
@@ -573,7 +573,7 @@ const Patients = () => {
                           requiredExams={requiredExams}
                           isAdmin={isAdmin}
                           onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
                           nextAction={nextAction}
                         />
                       );
@@ -600,7 +600,7 @@ const Patients = () => {
                           requiredExams={requiredExams}
                           isAdmin={isAdmin}
                           onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
                           nextAction={nextAction}
                         />
                       );
@@ -643,7 +643,7 @@ const Patients = () => {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/patients/${patient.id}/exams?from=patients`)}
+                      onClick={() => navigate(`/patients/${patient.id}/exams`)}
                     >
                       <TableCell className="font-medium">{patient.name}</TableCell>
                       <TableCell className="capitalize">{patient.procedure}</TableCell>
