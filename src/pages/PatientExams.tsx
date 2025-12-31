@@ -176,11 +176,11 @@ const PatientExams = () => {
       <div>
         <Button
           variant="ghost"
-          onClick={() => navigate(fromPage === "patients" ? "/patients" : "/calendar")}
+          onClick={() => navigate(-1)}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {fromPage === "patients" ? "Voltar para Pacientes" : "Voltar para Agenda"}
+          Voltar
         </Button>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">{patient.name}</h1>
         {patient.birth_date && (
