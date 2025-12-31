@@ -335,12 +335,12 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
                     <button
                       type="button"
                       onClick={() => setViewingImage(feedback.imageUrl!)}
-                      className="w-full cursor-pointer hover:opacity-90 transition-opacity"
+                      className="w-full cursor-pointer hover:opacity-90 transition-opacity overflow-hidden"
                     >
                       <img
                         src={feedback.imageUrl}
                         alt={`Feedback: ${getTypeLabel(feedback.feedback_type)}`}
-                        className="w-full h-auto"
+                        className="w-full h-auto max-h-64 object-cover object-top"
                       />
                     </button>
                   ) : (
