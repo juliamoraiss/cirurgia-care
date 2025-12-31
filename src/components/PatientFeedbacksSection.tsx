@@ -30,6 +30,7 @@ interface Feedback {
   image_path: string;
   image_name: string;
   created_at: string;
+  imageUrl?: string;
 }
 
 interface PatientFeedbacksSectionProps {
@@ -72,7 +73,22 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setFeedbacks(data || []);
+      
+      // Carregar URLs das imagens para cada feedback
+      const feedbacksWithUrls = await Promise.all(
+        (data || []).map(async (feedback) => {
+          try {
+            const { data: urlData } = await supabase.storage
+              .from("patient-feedbacks")
+              .createSignedUrl(feedback.image_path, 3600);
+            return { ...feedback, imageUrl: urlData?.signedUrl };
+          } catch {
+            return feedback;
+          }
+        })
+      );
+      
+      setFeedbacks(feedbacksWithUrls);
     } catch (error) {
       console.error("Erro ao carregar feedbacks:", error);
     } finally {
@@ -139,20 +155,6 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
     }
   }
 
-  async function viewImage(imagePath: string) {
-    try {
-      const { data, error } = await supabase.storage
-        .from("patient-feedbacks")
-        .createSignedUrl(imagePath, 3600);
-
-      if (error) throw error;
-      if (data?.signedUrl) {
-        setViewingImage(data.signedUrl);
-      }
-    } catch (error) {
-      toast.error("Erro ao carregar imagem");
-    }
-  }
 
   async function deleteFeedback(feedbackId: string, imagePath: string) {
     try {
@@ -296,22 +298,16 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
               Nenhum feedback adicionado ainda.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {feedbacks.map((feedback) => (
                 <div
                   key={feedback.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-muted/30"
+                  className="border rounded-lg overflow-hidden bg-muted/30"
                 >
-                  <button
-                    type="button"
-                    onClick={() => viewImage(feedback.image_path)}
-                    className="flex items-center gap-3 flex-1 text-left hover:opacity-70 transition-opacity"
-                  >
-                    <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Image className="h-5 w-5 text-primary" />
-                    </div>
+                  {/* Header com info e botão delete */}
+                  <div className="flex items-center justify-between p-3 border-b">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
+                      <p className="text-sm font-medium">
                         {getTypeLabel(feedback.feedback_type)}
                       </p>
                       {feedback.description && (
@@ -323,15 +319,37 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
                         {formatDate(feedback.created_at)}
                       </p>
                     </div>
-                  </button>
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteFeedback(feedback.id, feedback.image_path)}
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteFeedback(feedback.id, feedback.image_path)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Imagem diretamente visível */}
+                  {feedback.imageUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setViewingImage(feedback.imageUrl!)}
+                      className="w-full cursor-pointer hover:opacity-90 transition-opacity"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <img
+                        src={feedback.imageUrl}
+                        alt={`Feedback: ${getTypeLabel(feedback.feedback_type)}`}
+                        className="w-full h-auto"
+                      />
+                    </button>
+                  ) : (
+                    <div className="p-8 flex items-center justify-center">
+                      <div className="animate-pulse flex items-center gap-2 text-muted-foreground">
+                        <Image className="h-5 w-5" />
+                        <span className="text-sm">Carregando imagem...</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
