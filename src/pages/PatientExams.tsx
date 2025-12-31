@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2 } from "lu
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
+import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import PdfViewer from "@/components/PdfViewer";
 
 interface Patient {
@@ -16,6 +17,7 @@ interface Patient {
   hospital: string | null;
   surgery_date: string | null;
   birth_date: string | null;
+  status: string;
 }
 
 interface PatientFile {
@@ -58,7 +60,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, birth_date")
+        .select("id, name, procedure, hospital, surgery_date, birth_date, status")
         .eq("id", id)
         .single();
 
@@ -180,9 +182,9 @@ const PatientExams = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           {fromPage === "patients" ? "Voltar para Pacientes" : "Voltar para Agenda"}
         </Button>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Exames Pré-Operatórios</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">{patient.name}</h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          Paciente: {patient.name}
+          Exames Pré-Operatórios
           {patient.birth_date && (() => {
             const today = new Date();
             const birthDate = new Date(patient.birth_date);
@@ -277,6 +279,11 @@ const PatientExams = () => {
       </Card>
 
       <PatientNotesSection patientId={id!} />
+
+      {/* Mostrar seção de feedback apenas para pacientes com cirurgia realizada */}
+      {patient.status === 'completed' && (
+        <PatientFeedbacksSection patientId={id!} />
+      )}
 
       <Dialog open={!!viewingFile} onOpenChange={closeViewer}>
         <DialogContent className="max-w-[100vw] max-h-[100vh] h-[100vh] w-[100vw] md:max-w-5xl md:max-h-[95vh] md:h-[95vh] md:w-auto flex flex-col p-0 m-0 md:rounded-lg rounded-none overflow-hidden">
