@@ -268,27 +268,29 @@ const Patients = () => {
                       {/* Procedimentos */}
                       <div>
                         <h3 className="font-semibold mb-3">Procedimento</h3>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
-                            <div key={procedure} className="flex items-center space-x-2">
+                            <button
+                              key={procedure}
+                              type="button"
+                              className="flex items-center space-x-3 w-full py-3 px-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left"
+                              onClick={() => {
+                                if (filterProcedures.includes(procedure)) {
+                                  setFilterProcedures(filterProcedures.filter(p => p !== procedure));
+                                } else {
+                                  setFilterProcedures([...filterProcedures, procedure]);
+                                }
+                              }}
+                            >
                               <Checkbox
-                                id={`procedure-mobile-${procedure}`}
                                 checked={filterProcedures.includes(procedure)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setFilterProcedures([...filterProcedures, procedure]);
-                                  } else {
-                                    setFilterProcedures(filterProcedures.filter(p => p !== procedure));
-                                  }
-                                }}
+                                onCheckedChange={() => {}}
+                                className="pointer-events-none"
                               />
-                              <label
-                                htmlFor={`procedure-mobile-${procedure}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
-                              >
+                              <span className="text-sm font-medium capitalize">
                                 {procedure}
-                              </label>
-                            </div>
+                              </span>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -296,27 +298,29 @@ const Patients = () => {
                       {/* Hospitais */}
                       <div>
                         <h3 className="font-semibold mb-3">Hospital</h3>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada", "Hospital DF Star"].map((hospital) => (
-                            <div key={hospital} className="flex items-center space-x-2">
+                            <button
+                              key={hospital}
+                              type="button"
+                              className="flex items-center space-x-3 w-full py-3 px-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left"
+                              onClick={() => {
+                                if (filterHospitals.includes(hospital)) {
+                                  setFilterHospitals(filterHospitals.filter(h => h !== hospital));
+                                } else {
+                                  setFilterHospitals([...filterHospitals, hospital]);
+                                }
+                              }}
+                            >
                               <Checkbox
-                                id={`hospital-mobile-${hospital}`}
                                 checked={filterHospitals.includes(hospital)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setFilterHospitals([...filterHospitals, hospital]);
-                                  } else {
-                                    setFilterHospitals(filterHospitals.filter(h => h !== hospital));
-                                  }
-                                }}
+                                onCheckedChange={() => {}}
+                                className="pointer-events-none"
                               />
-                              <label
-                                htmlFor={`hospital-mobile-${hospital}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                              >
+                              <span className="text-sm font-medium">
                                 {hospital}
-                              </label>
-                            </div>
+                              </span>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -324,7 +328,7 @@ const Patients = () => {
                       {/* Status */}
                       <div>
                         <h3 className="font-semibold mb-3">Status</h3>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {[
                             { value: "awaiting_consultation", label: "Aguardando Consulta" },
                             { value: "awaiting_authorization", label: "Aguardando Autorização" },
@@ -332,25 +336,27 @@ const Patients = () => {
                             { value: "completed", label: "Cirurgia Realizada" },
                             { value: "cancelled", label: "Cirurgia Cancelada" }
                           ].map((status) => (
-                            <div key={status.value} className="flex items-center space-x-2">
+                            <button
+                              key={status.value}
+                              type="button"
+                              className="flex items-center space-x-3 w-full py-3 px-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left"
+                              onClick={() => {
+                                if (filterStatuses.includes(status.value)) {
+                                  setFilterStatuses(filterStatuses.filter(s => s !== status.value));
+                                } else {
+                                  setFilterStatuses([...filterStatuses, status.value]);
+                                }
+                              }}
+                            >
                               <Checkbox
-                                id={`status-mobile-${status.value}`}
                                 checked={filterStatuses.includes(status.value)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setFilterStatuses([...filterStatuses, status.value]);
-                                  } else {
-                                    setFilterStatuses(filterStatuses.filter(s => s !== status.value));
-                                  }
-                                }}
+                                onCheckedChange={() => {}}
+                                className="pointer-events-none"
                               />
-                              <label
-                                htmlFor={`status-mobile-${status.value}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                              >
+                              <span className="text-sm font-medium">
                                 {status.label}
-                              </label>
-                            </div>
+                              </span>
+                            </button>
                           ))}
                         </div>
                       </div>
