@@ -183,19 +183,20 @@ const PatientExams = () => {
           {fromPage === "patients" ? "Voltar para Pacientes" : "Voltar para Agenda"}
         </Button>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">{patient.name}</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Exames Pré-Operatórios
-          {patient.birth_date && (() => {
-            const today = new Date();
-            const birthDate = new Date(patient.birth_date);
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-              age--;
-            }
-            return ` • ${age} anos`;
-          })()}
-        </p>
+        {patient.birth_date && (
+          <p className="text-sm md:text-base text-muted-foreground">
+            {(() => {
+              const today = new Date();
+              const birthDate = new Date(patient.birth_date);
+              let age = today.getFullYear() - birthDate.getFullYear();
+              const monthDiff = today.getMonth() - birthDate.getMonth();
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+              }
+              return `${age} anos`;
+            })()}
+          </p>
+        )}
       </div>
 
       <Card>
