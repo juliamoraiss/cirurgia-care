@@ -38,6 +38,7 @@ Estou vindo aqui para passar as instruções para o seu procedimento.
 ⏰ Solicitamos que chegue com 2 horas de antecedência para os preparativos.
 🥣 É necessário realizar jejum absoluto de 8 horas (sólidos e líquidos) antes do horário da cirurgia.
 🚫 Não é permitido estar com extensão de cílios no dia da cirurgia.
+📋 Leve todos os exames pré-operatórios (laboratoriais, de imagem) e demais documentos solicitados pelo médico.
 
 Qualquer dúvida, estou à disposição para orientá-${treatment === "o senhor" ? "lo" : "la"}.`;
   }
