@@ -37,6 +37,7 @@ Estou vindo aqui para passar as instruções para o seu procedimento.
 📍 A sua cirurgia — ${patient.procedure} — está agendada para amanhã (${surgeryDateStr}) às ${surgeryTime}, no ${patient.hospital || "Hospital Brasília"}.
 ⏰ Solicitamos que chegue com 2 horas de antecedência para os preparativos.
 🥣 É necessário realizar jejum absoluto de 8 horas (sólidos e líquidos) antes do horário da cirurgia.
+🚫 Não é permitido estar com extensão de cílios no dia da cirurgia.
 
 Qualquer dúvida, estou à disposição para orientá-${treatment === "o senhor" ? "lo" : "la"}.`;
   }
