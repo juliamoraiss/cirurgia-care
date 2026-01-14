@@ -117,6 +117,8 @@ const Tasks = () => {
       pre_op_instructions: "Instruções Pré-Op",
       post_op_instructions: "Recomendações Pós-Op",
       post_op_30_days: "Acompanhamento 30 Dias",
+      surgery_confirmation_patient: "Confirmação ao Paciente",
+      surgery_confirmation_doctor: "Confirmação ao Médico",
       custom: "Personalizado",
     };
     return labels[type] || type;
@@ -128,6 +130,8 @@ const Tasks = () => {
       pre_op_instructions: "bg-purple-500",
       post_op_instructions: "bg-green-500",
       post_op_30_days: "bg-amber-500",
+      surgery_confirmation_patient: "bg-teal-500",
+      surgery_confirmation_doctor: "bg-indigo-500",
       custom: "bg-gray-500",
     };
     return colors[type] || "bg-gray-500";

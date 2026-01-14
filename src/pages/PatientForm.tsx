@@ -398,6 +398,48 @@ const PatientForm = () => {
     try {
       const surgeryDate = new Date(surgeryDateISO);
       
+      // Tarefa de confirmação ao paciente (imediatamente)
+      const confirmPatientDate = new Date();
+      
+      const { data: existingConfirmPatient } = await supabase
+        .from("patient_tasks")
+        .select("id")
+        .eq("patient_id", patientId)
+        .eq("task_type", "surgery_confirmation_patient")
+        .eq("completed", false)
+        .maybeSingle();
+      
+      if (!existingConfirmPatient) {
+        await supabase.from("patient_tasks").insert({
+          patient_id: patientId,
+          task_type: "surgery_confirmation_patient",
+          title: "Enviar confirmação da cirurgia ao paciente",
+          description: `Confirmar agendamento da cirurgia de ${procedure} com o paciente ${patientName}`,
+          due_date: confirmPatientDate.toISOString(),
+          created_by: user!.id,
+        });
+      }
+      
+      // Tarefa de confirmação ao médico (imediatamente)
+      const { data: existingConfirmDoctor } = await supabase
+        .from("patient_tasks")
+        .select("id")
+        .eq("patient_id", patientId)
+        .eq("task_type", "surgery_confirmation_doctor")
+        .eq("completed", false)
+        .maybeSingle();
+      
+      if (!existingConfirmDoctor) {
+        await supabase.from("patient_tasks").insert({
+          patient_id: patientId,
+          task_type: "surgery_confirmation_doctor",
+          title: "Enviar confirmação da cirurgia ao médico",
+          description: `Notificar o médico sobre a cirurgia de ${procedure} do paciente ${patientName}`,
+          due_date: confirmPatientDate.toISOString(),
+          created_by: user!.id,
+        });
+      }
+      
       // Tarefa de instruções pré-operatórias (1 dia antes, meia-noite)
       const preOpDate = new Date(surgeryDate);
       preOpDate.setDate(preOpDate.getDate() - 1);

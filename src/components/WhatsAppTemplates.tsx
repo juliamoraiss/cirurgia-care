@@ -15,14 +15,16 @@ interface Patient {
 
 interface WhatsAppTemplatesProps {
   patient: Patient;
-  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup";
+  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor";
   examName?: string;
+  doctorPhone?: string;
 }
 
-export function WhatsAppTemplates({ patient, type, examName }: WhatsAppTemplatesProps) {
+export function WhatsAppTemplates({ patient, type, examName, doctorPhone }: WhatsAppTemplatesProps) {
   const firstName = patient.name.split(" ")[0];
   const treatment = patient.gender === "masculino" ? "o senhor" : patient.gender === "feminino" ? "a senhora" : "você";
   const phoneNumber = patient.phone.replace(/\D/g, "");
+  const doctorPhoneNumber = doctorPhone?.replace(/\D/g, "") || "61999999999";
 
   function getPreOpMessage() {
     if (!patient.surgery_date) return "";
@@ -84,23 +86,79 @@ Caso ainda não tenha feito, tem previsão de quando pretende realizar?
 Obrigada pela atenção.`;
   }
 
+  function getSurgeryConfirmationPatientMessage() {
+    if (!patient.surgery_date) return "";
+
+    const surgeryDate = new Date(patient.surgery_date);
+    const formattedDate = format(surgeryDate, "dd/MM/yyyy", { locale: ptBR });
+    const formattedTime = format(surgeryDate, "HH:mm", { locale: ptBR });
+
+    return `Olá, ${firstName}! Tudo bem?
+Passando para confirmar que sua cirurgia foi agendada com sucesso.
+
+🗓 Data: ${formattedDate}
+⏰ Horário: ${formattedTime}
+🏥 Local: ${patient.hospital || "Hospital Brasília"}
+
+Qualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
+  }
+
+  function getSurgeryConfirmationDoctorMessage() {
+    if (!patient.surgery_date) return "";
+
+    const surgeryDate = new Date(patient.surgery_date);
+    const formattedDate = format(surgeryDate, "dd/MM/yyyy", { locale: ptBR });
+    const formattedTime = format(surgeryDate, "HH:mm", { locale: ptBR });
+
+    // Criar link do Google Calendar
+    const endDate = new Date(surgeryDate);
+    endDate.setHours(endDate.getHours() + 2);
+    
+    const formatCalendarDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+    
+    const calendarTitle = `Cirurgia: ${patient.procedure} - ${patient.name}`;
+    const calendarDetails = `Paciente: ${patient.name}\nProcedimento: ${patient.procedure}`;
+    const calendarLocation = patient.hospital || "Hospital Brasília";
+    
+    const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${formatCalendarDate(surgeryDate)}/${formatCalendarDate(endDate)}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
+
+    return `🏥 Nova Cirurgia Agendada
+
+👤 Paciente: ${patient.name}
+🔬 Procedimento: ${patient.procedure}
+📅 Data: ${formattedDate}
+⏰ Horário: ${formattedTime}
+🏥 Local: ${patient.hospital || "Hospital Brasília"}
+
+📆 Adicionar ao Google Agenda:
+${googleCalendarLink}`;
+  }
+
   const message = type === "pre_op" 
     ? getPreOpMessage() 
     : type === "post_op" 
       ? getPostOpMessage() 
       : type === "post_op_30_days"
         ? getPostOp30DaysMessage()
-        : getExamFollowupMessage();
+        : type === "surgery_confirmation_patient"
+          ? getSurgeryConfirmationPatientMessage()
+          : type === "surgery_confirmation_doctor"
+            ? getSurgeryConfirmationDoctorMessage()
+            : getExamFollowupMessage();
+
+  const targetPhone = type === "surgery_confirmation_doctor" ? doctorPhoneNumber : phoneNumber;
 
   function sendWhatsApp() {
-    if (!phoneNumber || !message) {
+    if (!targetPhone || !message) {
       return;
     }
-    const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
+    const whatsappUrl = createWhatsAppUrl(targetPhone, message);
     safeWindowOpen(whatsappUrl);
   }
 
-  if (!phoneNumber) {
+  if (!targetPhone) {
     return null;
   }
 
@@ -112,6 +170,10 @@ Obrigada pela atenção.`;
         return { short: "Enviar Pós-Op", full: "Enviar Recomendações Pós-Op" };
       case "post_op_30_days":
         return { short: "Follow-up 30d", full: "Enviar Follow-up 30 Dias" };
+      case "surgery_confirmation_patient":
+        return { short: "Confirmar Paciente", full: "Enviar Confirmação ao Paciente" };
+      case "surgery_confirmation_doctor":
+        return { short: "Confirmar Médico", full: "Enviar Confirmação ao Médico" };
       default:
         return { short: "Cobrar Exame", full: "Enviar Cobrança de Exame" };
     }

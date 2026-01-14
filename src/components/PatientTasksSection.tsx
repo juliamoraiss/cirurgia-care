@@ -195,6 +195,8 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
       exam_followup: "Cobrança de Exames",
       pre_op_instructions: "Instruções Pré-Op",
       post_op_instructions: "Recomendações Pós-Op",
+      surgery_confirmation_patient: "Confirmação ao Paciente",
+      surgery_confirmation_doctor: "Confirmação ao Médico",
       custom: "Personalizado",
     };
     return labels[type] || type;
@@ -344,7 +346,7 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                               locale: ptBR,
                             })}
                           </p>
-                          {(task.task_type === "custom" || task.task_type === "exam_followup" || task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions") && patient && (
+                          {(task.task_type === "custom" || task.task_type === "exam_followup" || task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "surgery_confirmation_patient" || task.task_type === "surgery_confirmation_doctor") && patient && (
                             <div className="mt-3">
                               <WhatsAppTemplates 
                                 patient={patient} 
@@ -353,6 +355,10 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                                     ? "post_op" 
                                     : task.task_type === "exam_followup" 
                                     ? "exam_followup" 
+                                    : task.task_type === "surgery_confirmation_patient"
+                                    ? "surgery_confirmation_patient"
+                                    : task.task_type === "surgery_confirmation_doctor"
+                                    ? "surgery_confirmation_doctor"
                                     : "pre_op"
                                 } 
                                 examName={task.task_type === "exam_followup" ? task.title : undefined}
