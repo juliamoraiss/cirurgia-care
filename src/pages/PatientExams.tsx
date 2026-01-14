@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
@@ -212,9 +212,34 @@ const PatientExams = () => {
               <span>{patient.hospital || "Não informado"}</span>
             </div>
             {patient.surgery_date && (
-              <div>
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold">Data da Cirurgia:</span>{" "}
                 <span>{new Date(patient.surgery_date).toLocaleString('pt-BR')}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => {
+                    const surgeryDate = new Date(patient.surgery_date!);
+                    const endDate = new Date(surgeryDate);
+                    endDate.setHours(endDate.getHours() + 2);
+                    
+                    const formatCalendarDate = (date: Date) => {
+                      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                    };
+                    
+                    const calendarTitle = `Cirurgia: ${patient.procedure} - ${patient.name}`;
+                    const calendarDetails = `Paciente: ${patient.name}\nProcedimento: ${patient.procedure}`;
+                    const calendarLocation = patient.hospital || "Hospital Brasília";
+                    
+                    const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${formatCalendarDate(surgeryDate)}/${formatCalendarDate(endDate)}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
+                    
+                    window.open(googleCalendarLink, '_blank');
+                  }}
+                >
+                  <Calendar className="h-3.5 w-3.5 mr-1" />
+                  Adicionar ao Calendário
+                </Button>
               </div>
             )}
           </div>
