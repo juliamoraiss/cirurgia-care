@@ -868,12 +868,26 @@ const PatientForm = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="surgery_date">Data da Cirurgia</Label>
-                  <Input
-                    id="surgery_date"
-                    type="datetime-local"
-                    value={formData.surgery_date}
-                    onChange={(e) => handleChange("surgery_date", e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="surgery_date"
+                      type="datetime-local"
+                      value={formData.surgery_date}
+                      onChange={(e) => handleChange("surgery_date", e.target.value)}
+                      className="flex-1"
+                    />
+                    {formData.surgery_date && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleChange("surgery_date", "")}
+                        title="Redefinir data da cirurgia"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
