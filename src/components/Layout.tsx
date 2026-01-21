@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import {
-  Activity,
+  Stethoscope,
+  Smile,
   LayoutDashboard,
   Users,
   Calendar,
@@ -98,7 +99,11 @@ export function Layout({ children }: LayoutProps) {
           }}
         >
           <div className="p-2 bg-primary rounded-lg">
-            <Activity className="h-6 w-6 text-primary-foreground" />
+            {isDentist ? (
+              <Smile className="h-6 w-6 text-primary-foreground" />
+            ) : (
+              <Stethoscope className="h-6 w-6 text-primary-foreground" />
+            )}
           </div>
           <div>
             <h1 className="text-lg font-bold text-sidebar-foreground">
@@ -223,7 +228,11 @@ export function Layout({ children }: LayoutProps) {
             onClick={() => navigate("/")}
           >
             <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Activity className="h-4 w-4 text-primary" />
+              {isDentist ? (
+                <Smile className="h-4 w-4 text-primary" />
+              ) : (
+                <Stethoscope className="h-4 w-4 text-primary" />
+              )}
             </div>
             <span className="font-semibold text-sm text-foreground">
               {isDentist ? "DentSystem" : "MedSystem"}
