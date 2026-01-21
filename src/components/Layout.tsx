@@ -28,7 +28,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
-  const { role, loading: roleLoading, isAdmin } = useUserRole();
+  const { role, loading: roleLoading, isAdmin, isDentist } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
@@ -110,8 +110,13 @@ export function Layout({ children }: LayoutProps) {
       {/* Menu de navegação */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
-          // Esconde "Tarefas" para usuários não-admin
-          if (item.path === "/tasks" && !isAdmin) {
+          // Esconde "Tarefas" para doctors (médicos) - dentistas e admins podem ver
+          if (item.path === "/tasks" && !isAdmin && !isDentist) {
+            return null;
+          }
+          
+          // Esconde "Tráfego Pago" para dentistas
+          if (item.path === "/paid-traffic" && isDentist) {
             return null;
           }
           
