@@ -66,7 +66,7 @@ const patientSchema = z.object({
 const PatientForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDentist, isDoctor } = useUserRole();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!id);
@@ -100,6 +100,13 @@ const PatientForm = () => {
   const encodeWhatsAppMessage = (message: string) => {
     return encodeURIComponent(message);
   };
+
+  // Auto-assign the current user as responsible for new patients if not admin
+  useEffect(() => {
+    if (!isEditMode && !isAdmin && user) {
+      setFormData(prev => ({ ...prev, responsible_user_id: user.id }));
+    }
+  }, [isEditMode, isAdmin, user]);
 
   useEffect(() => {
     if (id) {
@@ -592,11 +599,16 @@ const PatientForm = () => {
         responsible_user_id: formData.responsible_user_id,
       };
 
-      // Validate responsible_user_id for new patients
-      if (!isEditMode && !formData.responsible_user_id) {
+      // Validate responsible_user_id for new patients (only admins need to select)
+      if (!isEditMode && !formData.responsible_user_id && isAdmin) {
         toast.error("Selecione o profissional responsável pelo paciente");
         setLoading(false);
         return;
+      }
+      
+      // For non-admins creating patients, ensure their own ID is set
+      if (!isEditMode && !isAdmin && user) {
+        patientData.responsible_user_id = user.id;
       }
 
       let error;
@@ -662,15 +674,17 @@ const PatientForm = () => {
     );
   }
 
-  // Verificar se o usuário é admin
-  if (!isAdmin) {
+  // Verificar se o usuário pode criar/editar pacientes (admin ou dentist)
+  const canManagePatients = isAdmin || isDentist;
+  
+  if (!canManagePatients) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Acesso Restrito</CardTitle>
             <CardDescription>
-              Apenas administradores podem criar ou editar pacientes.
+              Apenas administradores e dentistas podem criar ou editar pacientes.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -778,12 +792,14 @@ const PatientForm = () => {
                   {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
                 </div>
 
-                {/* Professional selector - only for new patients or admin editing */}
-                <ProfessionalSelect
-                  value={formData.responsible_user_id}
-                  onChange={(value) => handleChange("responsible_user_id", value)}
-                  error={errors.responsible_user_id}
-                />
+                {/* Professional selector - only visible for admins */}
+                {isAdmin && (
+                  <ProfessionalSelect
+                    value={formData.responsible_user_id}
+                    onChange={(value) => handleChange("responsible_user_id", value)}
+                    error={errors.responsible_user_id}
+                  />
+                )}
 
               </div>
             )}
