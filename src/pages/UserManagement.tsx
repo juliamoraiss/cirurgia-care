@@ -18,7 +18,7 @@ const UserManagement = () => {
     username: "",
     password: "",
     fullName: "",
-    role: "user" as "admin" | "user",
+    role: "doctor" as "admin" | "doctor" | "dentist",
   });
 
   if (!isAdmin) {
@@ -62,7 +62,7 @@ const UserManagement = () => {
         username: "",
         password: "",
         fullName: "",
-        role: "user",
+        role: "doctor",
       });
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar usuário");
@@ -146,7 +146,7 @@ const UserManagement = () => {
               <Label htmlFor="role">Papel</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: "admin" | "user") =>
+                onValueChange={(value: "admin" | "doctor" | "dentist") =>
                   setFormData((prev) => ({ ...prev, role: value }))
                 }
               >
@@ -155,7 +155,8 @@ const UserManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="user">Usuário</SelectItem>
+                  <SelectItem value="doctor">Médico</SelectItem>
+                  <SelectItem value="dentist">Dentista</SelectItem>
                 </SelectContent>
               </Select>
             </div>
