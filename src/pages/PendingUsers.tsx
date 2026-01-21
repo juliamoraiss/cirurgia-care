@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Check, X, Users, Clock } from "lucide-react";
+import { ArrowLeft, Check, X, Users, Clock, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,6 +18,7 @@ interface PendingUser {
   email: string;
   created_at: string;
   approved: boolean;
+  user_type: "medico" | "dentista" | null;
 }
 
 const PendingUsers = () => {
@@ -38,7 +39,7 @@ const PendingUsers = () => {
       // Admin can view all profiles
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, created_at, approved")
+        .select("id, full_name, email, created_at, approved, user_type")
         .eq("approved", false)
         .order("created_at", { ascending: false });
 
@@ -122,14 +123,36 @@ const PendingUsers = () => {
             <Card key={pendingUser.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{pendingUser.full_name}</CardTitle>
-                    <CardDescription>{pendingUser.email}</CardDescription>
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${pendingUser.user_type === 'dentista' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                      {pendingUser.user_type === 'dentista' ? (
+                        <svg 
+                          className="h-5 w-5 text-blue-600"
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2"
+                        >
+                          <path d="M12 2C8.5 2 6 4.5 6 7.5c0 2 1 3.5 2 4.5-.5 2-1.5 6-1 8 .5 2 2 2.5 3 2.5s2-.5 2-2v-3c0-.5.5-1 1-1s1 .5 1 1v3c0 1.5 1 2 2 2s2.5-.5 3-2.5c.5-2-.5-6-1-8 1-1 2-2.5 2-4.5C20 4.5 17.5 2 14 2h-2z" />
+                        </svg>
+                      ) : (
+                        <Stethoscope className="h-5 w-5 text-green-600" />
+                      )}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{pendingUser.full_name}</CardTitle>
+                      <CardDescription>{pendingUser.email}</CardDescription>
+                    </div>
                   </div>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Pendente
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant={pendingUser.user_type === 'dentista' ? 'default' : 'secondary'}>
+                      {pendingUser.user_type === 'dentista' ? 'Dentista' : pendingUser.user_type === 'medico' ? 'Médico' : 'Não informado'}
+                    </Badge>
+                    <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                      <Clock className="h-3 w-3" />
+                      Pendente
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
