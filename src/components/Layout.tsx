@@ -101,8 +101,12 @@ export function Layout({ children }: LayoutProps) {
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">MedSystem</h1>
-            <p className="text-xs text-muted-foreground">Gestão Cirúrgica</p>
+            <h1 className="text-lg font-bold text-sidebar-foreground">
+              {isDentist ? "DentSystem" : "MedSystem"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {isDentist ? "Gestão de Pacientes" : "Gestão Cirúrgica"}
+            </p>
           </div>
         </div>
       </div>
@@ -221,7 +225,9 @@ export function Layout({ children }: LayoutProps) {
             <div className="p-1.5 bg-primary/10 rounded-lg">
               <Activity className="h-4 w-4 text-primary" />
             </div>
-            <span className="font-semibold text-sm text-foreground">MedSystem</span>
+            <span className="font-semibold text-sm text-foreground">
+              {isDentist ? "DentSystem" : "MedSystem"}
+            </span>
           </div>
           
           {/* Right: Profile */}
