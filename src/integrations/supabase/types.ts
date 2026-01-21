@@ -315,6 +315,7 @@ export type Database = {
           origem: string | null
           phone: string | null
           procedure: string
+          responsible_user_id: string
           status: Database["public"]["Enums"]["patient_status"]
           surgery_date: string | null
           updated_at: string
@@ -339,6 +340,7 @@ export type Database = {
           origem?: string | null
           phone?: string | null
           procedure: string
+          responsible_user_id: string
           status?: Database["public"]["Enums"]["patient_status"]
           surgery_date?: string | null
           updated_at?: string
@@ -363,6 +365,7 @@ export type Database = {
           origem?: string | null
           phone?: string | null
           procedure?: string
+          responsible_user_id?: string
           status?: Database["public"]["Enums"]["patient_status"]
           surgery_date?: string | null
           updated_at?: string

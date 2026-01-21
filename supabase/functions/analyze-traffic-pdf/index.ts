@@ -284,7 +284,8 @@ serve(async (req) => {
                 procedure: 'simpatectomia',
                 origem: 'Tráfego Pago',
                 status: 'awaiting_consultation',
-                created_by: userId
+                created_by: userId,
+                responsible_user_id: userId
               });
 
             if (patientError) {
@@ -556,7 +557,8 @@ serve(async (req) => {
               procedure: 'simpatectomia',
               origem: 'Tráfego Pago',
               status: 'awaiting_consultation',
-              created_by: userId
+              created_by: userId,
+              responsible_user_id: userId
             });
 
           if (patientError) {
