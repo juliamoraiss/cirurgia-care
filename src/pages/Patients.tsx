@@ -94,7 +94,7 @@ const getNextAction = (patient: Patient): { text: string; variant: "default" | "
 const Patients = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDentist } = useUserRole();
   const isMobile = useIsMobile();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,7 +231,7 @@ const Patients = () => {
             Gerencie todos os pacientes e procedimentos
           </p>
         </div>
-        {isAdmin && (
+        {(isAdmin || isDentist) && (
           <Button onClick={() => navigate("/patients/new")} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Novo Paciente
