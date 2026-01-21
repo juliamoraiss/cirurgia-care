@@ -13,6 +13,7 @@ import {
   UserPlus,
   CheckSquare,
   TrendingUp,
+  UserCheck,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -129,17 +130,30 @@ export function Layout({ children }: LayoutProps) {
         })}
         
         {isAdmin && (
-          <Button
-            variant={location.pathname === "/users" ? "default" : "ghost"}
-            className="w-full justify-start"
-            onClick={() => {
-              navigate("/users");
-              setIsOpen(false);
-            }}
-          >
-            <UserPlus className="h-4 w-4 mr-3" />
-            Gerenciar Usuários
-          </Button>
+          <>
+            <Button
+              variant={location.pathname === "/pending-users" ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => {
+                navigate("/pending-users");
+                setIsOpen(false);
+              }}
+            >
+              <UserCheck className="h-4 w-4 mr-3" />
+              Usuários Pendentes
+            </Button>
+            <Button
+              variant={location.pathname === "/users" ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => {
+                navigate("/users");
+                setIsOpen(false);
+              }}
+            >
+              <UserPlus className="h-4 w-4 mr-3" />
+              Criar Usuário
+            </Button>
+          </>
         )}
       </nav>
 

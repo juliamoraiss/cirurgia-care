@@ -13,6 +13,8 @@ import PatientForm from "./pages/PatientForm";
 import PatientExams from "./pages/PatientExams";
 import Calendar from "./pages/Calendar";
 import UserManagement from "./pages/UserManagement";
+import PendingUsers from "./pages/PendingUsers";
+import PendingApproval from "./pages/PendingApproval";
 import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import NotFound from "./pages/NotFound";
@@ -20,7 +22,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isApproved } = useAuth();
 
   if (loading) {
     return (
@@ -37,6 +39,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
+  if (!isApproved) {
+    return <Navigate to="/pending-approval" replace />;
+  }
+
   return <Layout>{children}</Layout>;
 }
 
@@ -44,6 +50,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/pending-approval" element={<PendingApproval />} />
       <Route
         path="/"
         element={
@@ -105,6 +112,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pending-users"
+        element={
+          <ProtectedRoute>
+            <PendingUsers />
           </ProtectedRoute>
         }
       />
