@@ -8,7 +8,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isApproved: boolean;
   signIn: (username: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -18,22 +20,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isApproved, setIsApproved] = useState(false);
   const navigate = useNavigate();
 
+  const checkApprovalStatus = async (userId: string) => {
+    const { data, error } = await supabase
+      .rpc('is_user_approved', { _user_id: userId });
+    
+    if (!error) {
+      setIsApproved(data === true);
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Defer approval check to avoid blocking
+          setTimeout(() => {
+            checkApprovalStatus(session.user.id);
+          }, 0);
+        } else {
+          setIsApproved(false);
+        }
+        
         setLoading(false);
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Then check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await checkApprovalStatus(session.user.id);
+      }
+      
       setLoading(false);
     });
 
@@ -57,12 +84,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email = emailData;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
+      
+      // Check approval status after login
+      if (data.user) {
+        const { data: approvedData } = await supabase
+          .rpc('is_user_approved', { _user_id: data.user.id });
+        
+        if (!approvedData) {
+          toast.info("Sua conta ainda está aguardando aprovação do administrador.");
+          navigate("/pending-approval");
+          return;
+        }
+      }
       
       toast.success("Login realizado com sucesso!");
       navigate("/");
@@ -72,33 +111,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Cadastro realizado! Aguarde a aprovação do administrador para acessar o sistema.");
+      navigate("/pending-approval");
+    } catch (error: any) {
+      if (error.message?.includes("already registered")) {
+        toast.error("Este email já está cadastrado.");
+      } else {
+        toast.error("Erro ao criar conta. Tente novamente.");
+      }
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       
-      // Se o erro for "session not found", considerar como logout bem-sucedido
-      // já que o objetivo (não estar autenticado) já foi atingido
       if (error && !error.message?.includes("Session not found")) {
         throw error;
       }
       
-      // Limpar estado local
       setSession(null);
       setUser(null);
+      setIsApproved(false);
       
       toast.success("Logout realizado com sucesso!");
       navigate("/auth");
     } catch (error: any) {
       toast.error("Erro ao fazer logout");
-      // Mesmo com erro, limpar estado e redirecionar
       setSession(null);
       setUser(null);
+      setIsApproved(false);
       navigate("/auth");
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isApproved, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
