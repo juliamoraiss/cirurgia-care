@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type UserRole = "admin" | "user" | null;
+export type UserRole = "admin" | "doctor" | "dentist" | null;
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -40,15 +40,19 @@ export function useUserRole() {
   }, [user]);
 
   const isAdmin = role === "admin";
-  const isUser = role === "user";
-  const canEdit = isAdmin; // apenas admin pode criar/editar
+  const isDoctor = role === "doctor";
+  const isDentist = role === "dentist";
+  const isProfessional = isDoctor || isDentist; // médico ou dentista
+  const canEdit = isAdmin; // apenas admin pode criar/editar usuários
   const canDelete = isAdmin; // apenas admin pode deletar
 
   return {
     role,
     loading,
     isAdmin,
-    isUser,
+    isDoctor,
+    isDentist,
+    isProfessional,
     canEdit,
     canDelete,
   };
