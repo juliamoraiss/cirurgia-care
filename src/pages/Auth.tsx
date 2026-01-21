@@ -101,9 +101,9 @@ const Auth = () => {
               <Activity className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Sistema de Cirurgias</CardTitle>
+          <CardTitle className="text-2xl font-bold">Sistema de Gestão</CardTitle>
           <CardDescription>
-            Gerencie pacientes e procedimentos cirúrgicos
+            Gerencie seus pacientes e procedimentos
           </CardDescription>
         </CardHeader>
         <CardContent>
