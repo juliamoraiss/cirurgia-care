@@ -13,6 +13,9 @@ import { toast } from "sonner";
 import { PendingPatients } from "@/components/PendingPatients";
 import { SurgeriesCard } from "@/components/SurgeriesCard";
 import { QuickIndicators } from "@/components/QuickIndicators";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useProfessionals } from "@/hooks/useProfessionals";
+
 interface DashboardStats {
   totalPatients: number;
   scheduledSurgeries: number;
@@ -27,6 +30,7 @@ interface Patient {
   insurance: string;
   hospital: string | null;
   status?: string;
+  responsible_user_id?: string;
 }
 interface SystemActivity {
   id: string;
@@ -45,6 +49,7 @@ const Dashboard = () => {
   const {
     isAdmin
   } = useUserRole();
+  const { professionals } = useProfessionals();
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     scheduledSurgeries: 0,
@@ -61,6 +66,7 @@ const Dashboard = () => {
   const [monthlySurgeries, setMonthlySurgeries] = useState(0);
   const [activePatients, setActivePatients] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
+  const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
@@ -87,14 +93,14 @@ const Dashboard = () => {
         const {
           data: allPatientsData,
           count: totalPatients
-        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status", {
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id", {
           count: "exact"
         });
 
         // Patients with surgery dates
         const {
           data: patientsWithSurgery
-        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status").not("surgery_date", "is", null).order("surgery_date", {
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id").not("surgery_date", "is", null).order("surgery_date", {
           ascending: true
         });
 
@@ -186,26 +192,61 @@ const Dashboard = () => {
       console.error("Error deleting activity:", error);
     }
   };
+  // Filter patients based on selected professional
+  const filterByProfessional = (patients: Patient[]) => {
+    if (!isAdmin || selectedProfessional === "all") return patients;
+    return patients.filter(p => p.responsible_user_id === selectedProfessional);
+  };
+
+  const filteredScheduledPatients = filterByProfessional(scheduledPatients);
+  const filteredPendingPatients = filterByProfessional(pendingPatients);
+
+  const getProfessionalName = (id: string) => {
+    const prof = professionals.find(p => p.id === id);
+    return prof?.full_name || "Não atribuído";
+  };
+
   return <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
         <div className="space-y-4">
-          <div>
-            <h1 className="md:text-4xl font-bold text-foreground tracking-tight text-2xl">
-              Bem-vindo, {userName || "..."}
-            </h1>
-            <p className="text-sm md:text-base text-muted-foreground/50 mt-1">
-              Visão geral do sistema de gestão cirúrgica
-            </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="md:text-4xl font-bold text-foreground tracking-tight text-2xl">
+                Bem-vindo, {userName || "..."}
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground/50 mt-1">
+                Visão geral do sistema de gestão
+              </p>
+            </div>
+            
+            {/* Professional filter for admins */}
+            {isAdmin && professionals.length > 0 && (
+              <div className="w-full md:w-64">
+                <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por profissional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os profissionais</SelectItem>
+                    {professionals.map((prof) => (
+                      <SelectItem key={prof.id} value={prof.id}>
+                        {prof.full_name} ({prof.user_type === "dentista" ? "Dentista" : "Médico"})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           
           {/* Quick Indicators */}
-          <QuickIndicators scheduledSurgeries={stats.scheduledSurgeries} completedSurgeries={stats.completedSurgeries} pendingAuthorization={stats.pendingAuthorization} loading={loading} />
+          <QuickIndicators scheduledSurgeries={filteredScheduledPatients.length} completedSurgeries={stats.completedSurgeries} pendingAuthorization={filteredPendingPatients.length} loading={loading} />
         </div>
 
         {/* Priority sections for mobile - show urgent info first */}
         <div className="grid gap-4 md:grid-cols-2">
-          <SurgeriesCard surgeries={scheduledPatients} loading={loading} />
-          <PendingPatients patients={pendingPatients} loading={loading} />
+          <SurgeriesCard surgeries={filteredScheduledPatients} loading={loading} />
+          <PendingPatients patients={filteredPendingPatients} loading={loading} />
         </div>
 
       <Card>

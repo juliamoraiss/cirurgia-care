@@ -47,6 +47,7 @@ import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientFormSteps } from "@/components/PatientFormSteps";
 import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
+import { ProfessionalSelect } from "@/components/ProfessionalSelect";
 import InputMask from "react-input-mask";
 
 // Validation schema with enhanced security
@@ -84,6 +85,7 @@ const PatientForm = () => {
     surgery_date: "",
     guide_validity_date: "",
     origem: "",
+    responsible_user_id: "",
   });
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
@@ -145,6 +147,7 @@ const PatientForm = () => {
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
           origem: data.origem || "",
+          responsible_user_id: data.responsible_user_id || "",
         });
         
         // Set checklist for the procedure and restore checked exams
@@ -586,7 +589,15 @@ const PatientForm = () => {
         exams_checklist: checkedExams,
         guide_validity_date: formData.guide_validity_date || null,
         origem: validatedData.origem || null,
+        responsible_user_id: formData.responsible_user_id,
       };
+
+      // Validate responsible_user_id for new patients
+      if (!isEditMode && !formData.responsible_user_id) {
+        toast.error("Selecione o profissional responsável pelo paciente");
+        setLoading(false);
+        return;
+      }
 
       let error;
       let savedPatientId = id;
@@ -766,6 +777,13 @@ const PatientForm = () => {
                   </Select>
                   {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
                 </div>
+
+                {/* Professional selector - only for new patients or admin editing */}
+                <ProfessionalSelect
+                  value={formData.responsible_user_id}
+                  onChange={(value) => handleChange("responsible_user_id", value)}
+                  error={errors.responsible_user_id}
+                />
 
               </div>
             )}
