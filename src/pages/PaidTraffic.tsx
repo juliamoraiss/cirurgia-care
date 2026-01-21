@@ -41,7 +41,7 @@ interface Report {
 
 const PDFUploadComponent = () => {
   const navigate = useNavigate();
-  const { isDentist, loading: roleLoading } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState('');
@@ -53,12 +53,12 @@ const PDFUploadComponent = () => {
   const [conversionsData, setConversionsData] = useState<any[]>([]);
   const [isLoadingConversions, setIsLoadingConversions] = useState(true);
 
-  // Redirect dentists - they shouldn't access this page
+  // Redirect non-admins - only admins can access this page
   useEffect(() => {
-    if (!roleLoading && isDentist) {
+    if (!roleLoading && !isAdmin) {
       navigate('/');
     }
-  }, [isDentist, roleLoading, navigate]);
+  }, [isAdmin, roleLoading, navigate]);
 
   const fetchReports = async () => {
     setIsLoadingReports(true);
