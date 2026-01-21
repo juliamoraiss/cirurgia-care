@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +40,8 @@ interface Report {
 }
 
 const PDFUploadComponent = () => {
+  const navigate = useNavigate();
+  const { isDentist, loading: roleLoading } = useUserRole();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState('');
@@ -48,6 +52,13 @@ const PDFUploadComponent = () => {
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   const [conversionsData, setConversionsData] = useState<any[]>([]);
   const [isLoadingConversions, setIsLoadingConversions] = useState(true);
+
+  // Redirect dentists - they shouldn't access this page
+  useEffect(() => {
+    if (!roleLoading && isDentist) {
+      navigate('/');
+    }
+  }, [isDentist, roleLoading, navigate]);
 
   const fetchReports = async () => {
     setIsLoadingReports(true);

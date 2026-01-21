@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
@@ -21,6 +21,16 @@ const UserManagement = () => {
     role: "doctor" as "admin" | "doctor" | "dentist",
   });
 
+  // Show loading while checking role
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Redirect non-admins
   if (!isAdmin) {
     navigate("/");
     return null;
