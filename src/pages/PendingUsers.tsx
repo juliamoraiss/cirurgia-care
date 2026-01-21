@@ -23,15 +23,9 @@ interface PendingUser {
 
 const PendingUsers = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  // Redirect non-admins
-  if (!isAdmin) {
-    navigate("/");
-    return null;
-  }
 
   const { data: pendingUsers, isLoading } = useQuery({
     queryKey: ["pending-users"],
@@ -46,6 +40,7 @@ const PendingUsers = () => {
       if (error) throw error;
       return data as PendingUser[];
     },
+    enabled: isAdmin, // Only fetch if user is admin
   });
 
   const approveMutation = useMutation({
@@ -88,6 +83,20 @@ const PendingUsers = () => {
       toast.error("Erro ao rejeitar usuário.");
     },
   });
+
+  // Redirect non-admins AFTER all hooks are called
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    navigate("/");
+    return null;
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
