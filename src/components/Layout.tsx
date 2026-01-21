@@ -124,8 +124,8 @@ export function Layout({ children }: LayoutProps) {
             return null;
           }
           
-          // Esconde "Tráfego Pago" para dentistas
-          if (item.path === "/paid-traffic" && isDentist) {
+          // Esconde "Tráfego Pago" para todos exceto admins
+          if (item.path === "/paid-traffic" && !isAdmin) {
             return null;
           }
           
