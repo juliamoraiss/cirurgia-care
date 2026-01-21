@@ -4,9 +4,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 export function FAB() {
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDentist } = useUserRole();
 
-  if (!isAdmin) return null;
+  // Show FAB for admins and dentists
+  if (!isAdmin && !isDentist) return null;
 
   return (
     <button
