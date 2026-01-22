@@ -34,18 +34,20 @@ interface Task {
 
 const Tasks = () => {
   const navigate = useNavigate();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { isAdmin, isDentist, loading: roleLoading } = useUserRole();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const canAccessTasks = isAdmin || isDentist;
+
   useEffect(() => {
-    if (!roleLoading && !isAdmin) {
-      toast.error("Acesso negado. Apenas administradores podem acessar esta página.");
+    if (!roleLoading && !canAccessTasks) {
+      toast.error("Acesso negado. Apenas administradores e dentistas podem acessar esta página.");
       navigate("/");
       return;
     }
     
-    if (!roleLoading && isAdmin) {
+    if (!roleLoading && canAccessTasks) {
       loadTasks();
 
       // Subscribe to realtime changes
@@ -68,7 +70,7 @@ const Tasks = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [isAdmin, roleLoading, navigate]);
+  }, [canAccessTasks, roleLoading, navigate]);
 
   async function loadTasks() {
     try {
