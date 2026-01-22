@@ -200,6 +200,21 @@ const Dashboard = () => {
 
   const filteredScheduledPatients = filterByProfessional(scheduledPatients);
   const filteredPendingPatients = filterByProfessional(pendingPatients);
+  
+  // Filter activities based on selected professional
+  const filteredActivities = (() => {
+    if (!isAdmin || selectedProfessional === "all") return activities;
+    
+    // Get patient IDs for the selected professional
+    const professionalPatientIds = allPatients
+      .filter(p => p.responsible_user_id === selectedProfessional)
+      .map(p => p.id);
+    
+    // Filter activities that belong to the selected professional's patients
+    return activities.filter(activity => 
+      activity.patient_id === null || professionalPatientIds.includes(activity.patient_id)
+    );
+  })();
 
   const getProfessionalName = (id: string) => {
     const prof = professionals.find(p => p.id === id);
@@ -263,11 +278,11 @@ const Dashboard = () => {
           {loading ? <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-4 text-muted-foreground text-sm">Carregando histórico...</p>
-            </div> : activities.length === 0 ? <div className="text-center py-8">
+            </div> : filteredActivities.length === 0 ? <div className="text-center py-8">
               <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground text-sm">Nenhuma atividade registrada ainda</p>
             </div> : <div className="space-y-4">
-              {activities.map(activity => {
+              {filteredActivities.map(activity => {
               const getActivityIcon = (type: string) => {
                 switch (type) {
                   case 'patient_created':
