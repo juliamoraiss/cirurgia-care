@@ -199,6 +199,7 @@ const Dashboard = () => {
   };
 
   const filteredScheduledPatients = filterByProfessional(scheduledPatients);
+  const filteredCompletedPatients = filterByProfessional(completedPatients);
   const filteredPendingPatients = filterByProfessional(pendingPatients);
   
   // Filter activities based on selected professional
@@ -255,7 +256,7 @@ const Dashboard = () => {
           </div>
           
           {/* Quick Indicators */}
-          <QuickIndicators scheduledSurgeries={filteredScheduledPatients.length} completedSurgeries={stats.completedSurgeries} pendingAuthorization={filteredPendingPatients.length} loading={loading} />
+          <QuickIndicators scheduledSurgeries={filteredScheduledPatients.length} completedSurgeries={filteredCompletedPatients.length} pendingAuthorization={filteredPendingPatients.length} loading={loading} />
         </div>
 
         {/* Priority sections for mobile - show urgent info first */}
