@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/BottomNav";
 import { FAB } from "@/components/FAB";
+import { NotificationToggle } from "@/components/NotificationToggle";
 
 interface LayoutProps {
   children: ReactNode;
@@ -239,17 +240,20 @@ export function Layout({ children }: LayoutProps) {
             </span>
           </div>
           
-          {/* Right: Profile */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-10 w-10 rounded-full bg-muted/50"
-            onClick={() => setIsOpen(true)}
-          >
-            <span className="text-xs font-bold text-muted-foreground uppercase">
-              {user?.email?.charAt(0) || "U"}
-            </span>
-          </Button>
+          {/* Right: Notifications + Profile */}
+          <div className="flex items-center gap-1">
+            <NotificationToggle />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-10 w-10 rounded-full bg-muted/50"
+              onClick={() => setIsOpen(true)}
+            >
+              <span className="text-xs font-bold text-muted-foreground uppercase">
+                {user?.email?.charAt(0) || "U"}
+              </span>
+            </Button>
+          </div>
         </div>
       </div>
 
