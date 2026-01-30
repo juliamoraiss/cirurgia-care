@@ -68,7 +68,7 @@ All colors MUST be HSL.
     --onco-diagnosis: 350 75% 50%;      /* Rosa/Vermelho - início da jornada */
     --onco-diagnosis-foreground: 0 0% 100%;
     
-    --onco-exam: 25 90% 50%;            /* Laranja - ação necessária */
+    --onco-exam: 315 70% 55%;            /* Magenta/Fúcsia - exames */
     --onco-exam-foreground: 0 0% 100%;
     
     --onco-treatment: 280 70% 55%;      /* Roxo - tratamento médico */
@@ -181,7 +181,7 @@ All colors MUST be HSL.
     --onco-diagnosis: 350 70% 60%;      /* Rosa/Vermelho */
     --onco-diagnosis-foreground: 0 0% 100%;
     
-    --onco-exam: 25 85% 55%;            /* Laranja */
+    --onco-exam: 315 65% 60%;            /* Magenta/Fúcsia */
     --onco-exam-foreground: 0 0% 100%;
     
     --onco-treatment: 280 65% 60%;      /* Roxo */
