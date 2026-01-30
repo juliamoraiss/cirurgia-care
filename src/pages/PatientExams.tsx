@@ -11,6 +11,7 @@ import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
 import { useUserRole } from "@/hooks/useUserRole";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface Patient {
   id: string;
@@ -227,7 +228,7 @@ const PatientExams = () => {
           <div className="grid gap-4">
             <div>
               <span className="font-semibold">Procedimento:</span>{" "}
-              <span className="capitalize">{patient.procedure}</span>
+              <span>{capitalizeFirst(patient.procedure)}</span>
             </div>
             <div>
               <span className="font-semibold">Hospital:</span>{" "}
