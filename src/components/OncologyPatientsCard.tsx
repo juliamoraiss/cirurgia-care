@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface OncologyPatient {
   id: string;
@@ -176,7 +177,7 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
                     </div>
                     
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {patient.procedure}
+                      {capitalizeFirst(patient.procedure)}
                       {patient.oncology_stage && ` • Estágio: ${patient.oncology_stage}`}
                     </p>
                     
