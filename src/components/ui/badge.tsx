@@ -15,6 +15,14 @@ const badgeVariants = cva(
         success: "border-transparent bg-success text-success-foreground hover:bg-success/80",
         warning: "border-transparent bg-warning text-warning-foreground hover:bg-warning/80",
         pending: "border-transparent bg-pending text-pending-foreground hover:bg-pending/80",
+        // Oncology-specific variants with distinct purple/violet palette
+        "onco-diagnosis": "border-transparent bg-[hsl(var(--onco-diagnosis))] text-[hsl(var(--onco-diagnosis-foreground))] hover:bg-[hsl(var(--onco-diagnosis))]/80",
+        "onco-exam": "border-transparent bg-[hsl(var(--onco-exam))] text-[hsl(var(--onco-exam-foreground))] hover:bg-[hsl(var(--onco-exam))]/80",
+        "onco-treatment": "border-transparent bg-[hsl(var(--onco-treatment))] text-[hsl(var(--onco-treatment-foreground))] hover:bg-[hsl(var(--onco-treatment))]/80",
+        "onco-consultation": "border-transparent bg-[hsl(var(--onco-consultation))] text-[hsl(var(--onco-consultation-foreground))] hover:bg-[hsl(var(--onco-consultation))]/80",
+        "onco-surgery": "border-transparent bg-[hsl(var(--onco-surgery))] text-[hsl(var(--onco-surgery-foreground))] hover:bg-[hsl(var(--onco-surgery))]/80",
+        "onco-followup": "border-transparent bg-[hsl(var(--onco-followup))] text-[hsl(var(--onco-followup-foreground))] hover:bg-[hsl(var(--onco-followup))]/80",
+        "onco-remission": "border-transparent bg-[hsl(var(--onco-remission))] text-[hsl(var(--onco-remission-foreground))] hover:bg-[hsl(var(--onco-remission))]/80",
       },
     },
     defaultVariants: {
