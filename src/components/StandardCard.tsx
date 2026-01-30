@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
+import { capitalizeFirst } from "@/lib/utils";
 
 export interface CardInfo {
   icon: LucideIcon;
@@ -54,8 +55,8 @@ export function StandardCard({
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm leading-tight truncate">{title}</h3>
               {subtitle && (
-                <p className="text-xs text-muted-foreground/80 capitalize mt-0.5 truncate">
-                  {subtitle}
+                <p className="text-xs text-muted-foreground/80 mt-0.5 truncate">
+                  {capitalizeFirst(subtitle)}
                 </p>
               )}
             </div>
