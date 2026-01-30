@@ -3,7 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, User, Calendar, ChevronRight, Stethoscope } from "lucide-react";
+import { 
+  Activity, 
+  User, 
+  Calendar, 
+  ChevronRight, 
+  Stethoscope,
+  FileText,
+  Pill,
+  HeartPulse,
+  AlertCircle,
+  CheckCircle
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,15 +38,15 @@ interface OncologyPatientsCardProps {
   isAdmin?: boolean;
 }
 
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "pending" }> = {
-  awaiting_consultation: { label: "Aguardando Consulta", variant: "secondary" },
-  awaiting_authorization: { label: "Aguardando Autorização", variant: "warning" },
-  authorized: { label: "Autorizado", variant: "success" },
-  pending_scheduling: { label: "Agendamento Pendente", variant: "pending" },
-  surgery_scheduled: { label: "Cirurgia Agendada", variant: "success" },
-  surgery_completed: { label: "Cirurgia Realizada", variant: "default" },
-  completed: { label: "Concluído", variant: "default" },
-  cancelled: { label: "Cancelado", variant: "destructive" },
+const eventTypeConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "pending" }> = {
+  diagnosis: { label: "Diagnóstico", variant: "destructive" },
+  exam: { label: "Exame", variant: "secondary" },
+  treatment_start: { label: "Tratamento", variant: "pending" },
+  consultation: { label: "Consulta", variant: "default" },
+  surgery: { label: "Cirurgia", variant: "success" },
+  follow_up: { label: "Acompanhamento", variant: "warning" },
+  remission: { label: "Remissão", variant: "success" },
+  other: { label: "Outro", variant: "outline" },
 };
 
 export function OncologyPatientsCard({ selectedProfessional, isAdmin }: OncologyPatientsCardProps) {
@@ -136,7 +147,8 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
         ) : (
           <div className="space-y-3">
             {patients.slice(0, 5).map((patient) => {
-              const statusInfo = statusConfig[patient.status] || { label: patient.status, variant: "secondary" as const };
+              const lastEventType = patient.last_event?.event_type || null;
+              const eventInfo = lastEventType ? eventTypeConfig[lastEventType] || eventTypeConfig.other : null;
               
               return (
                 <div
@@ -151,9 +163,15 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold text-sm truncate">{patient.name}</h4>
-                      <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0">
-                        {statusInfo.label}
-                      </Badge>
+                      {eventInfo ? (
+                        <Badge variant={eventInfo.variant} className="text-[10px] px-1.5 py-0">
+                          {eventInfo.label}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          Sem eventos
+                        </Badge>
+                      )}
                     </div>
                     
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -165,7 +183,7 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
                       <div className="flex items-center gap-1 mt-1">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">
-                          Último evento: {patient.last_event.title} -{" "}
+                          {patient.last_event.title} -{" "}
                           {formatDistanceToNow(new Date(patient.last_event.event_date), {
                             addSuffix: true,
                             locale: ptBR,
