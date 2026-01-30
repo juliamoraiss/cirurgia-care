@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      oncology_timeline: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          event_date: string
+          event_type: string
+          id: string
+          patient_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          event_date?: string
+          event_type: string
+          id?: string
+          patient_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          patient_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oncology_timeline_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paid_traffic_reports: {
         Row: {
           active_leads: number | null
@@ -310,8 +351,11 @@ export type Database = {
           id: string
           insurance: string | null
           insurance_number: string | null
+          is_oncology: boolean
           name: string
           notes: string | null
+          oncology_notes: string | null
+          oncology_stage: string | null
           origem: string | null
           phone: string | null
           procedure: string
@@ -335,8 +379,11 @@ export type Database = {
           id?: string
           insurance?: string | null
           insurance_number?: string | null
+          is_oncology?: boolean
           name: string
           notes?: string | null
+          oncology_notes?: string | null
+          oncology_stage?: string | null
           origem?: string | null
           phone?: string | null
           procedure: string
@@ -360,8 +407,11 @@ export type Database = {
           id?: string
           insurance?: string | null
           insurance_number?: string | null
+          is_oncology?: boolean
           name?: string
           notes?: string | null
+          oncology_notes?: string | null
+          oncology_stage?: string | null
           origem?: string | null
           phone?: string | null
           procedure?: string

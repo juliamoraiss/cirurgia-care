@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
+import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
 
 interface Patient {
@@ -18,6 +19,8 @@ interface Patient {
   surgery_date: string | null;
   birth_date: string | null;
   status: string;
+  is_oncology: boolean;
+  oncology_stage: string | null;
 }
 
 interface PatientFile {
@@ -58,7 +61,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, birth_date, status")
+        .select("id, name, procedure, hospital, surgery_date, birth_date, status, is_oncology, oncology_stage")
         .eq("id", id)
         .single();
 
@@ -303,6 +306,11 @@ const PatientExams = () => {
       </Card>
 
       <PatientNotesSection patientId={id!} />
+
+      {/* Oncology Timeline - only for oncology patients */}
+      {patient.is_oncology && (
+        <OncologyTimeline patientId={id!} patientName={patient.name} />
+      )}
 
       {/* Mostrar seção de feedback apenas para pacientes com cirurgia realizada */}
       {patient.status === 'completed' && (

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { PendingPatients } from "@/components/PendingPatients";
 import { SurgeriesCard } from "@/components/SurgeriesCard";
 import { QuickIndicators } from "@/components/QuickIndicators";
+import { OncologyPatientsCard } from "@/components/OncologyPatientsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
 
@@ -264,6 +265,12 @@ const Dashboard = () => {
           <SurgeriesCard surgeries={filteredScheduledPatients} loading={loading} />
           <PendingPatients patients={filteredPendingPatients} loading={loading} />
         </div>
+
+        {/* Oncology Patients Section */}
+        <OncologyPatientsCard 
+          selectedProfessional={selectedProfessional} 
+          isAdmin={isAdmin} 
+        />
 
       <Card>
         <CardHeader>

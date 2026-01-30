@@ -86,6 +86,8 @@ const PatientForm = () => {
     guide_validity_date: "",
     origem: "",
     responsible_user_id: "",
+    is_oncology: false,
+    oncology_stage: "",
   });
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
@@ -155,6 +157,8 @@ const PatientForm = () => {
           guide_validity_date: data.guide_validity_date || "",
           origem: data.origem || "",
           responsible_user_id: data.responsible_user_id || "",
+          is_oncology: data.is_oncology || false,
+          oncology_stage: data.oncology_stage || "",
         });
         
         // Set checklist for the procedure and restore checked exams
@@ -597,6 +601,8 @@ const PatientForm = () => {
         guide_validity_date: formData.guide_validity_date || null,
         origem: validatedData.origem || null,
         responsible_user_id: formData.responsible_user_id,
+        is_oncology: formData.is_oncology,
+        oncology_stage: formData.is_oncology ? formData.oncology_stage || null : null,
       };
 
       // Validate responsible_user_id for new patients (only admins need to select)
@@ -932,6 +938,49 @@ const PatientForm = () => {
                     value={formData.guide_validity_date}
                     onChange={(e) => handleChange("guide_validity_date", e.target.value)}
                   />
+                </div>
+
+                {/* Oncology Section */}
+                <div className="rounded-lg border p-4 space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="is_oncology"
+                      checked={formData.is_oncology}
+                      onCheckedChange={(checked) => 
+                        setFormData(prev => ({ ...prev, is_oncology: checked === true }))
+                      }
+                    />
+                    <div className="flex flex-col">
+                      <Label htmlFor="is_oncology" className="cursor-pointer font-semibold">
+                        Paciente Oncológico
+                      </Label>
+                      <span className="text-xs text-muted-foreground">
+                        Ativa timeline detalhada de acompanhamento
+                      </span>
+                    </div>
+                  </div>
+
+                  {formData.is_oncology && (
+                    <div className="space-y-2 pl-6 border-l-2 border-primary/20">
+                      <Label htmlFor="oncology_stage">Estágio do Câncer</Label>
+                      <Select
+                        value={formData.oncology_stage}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, oncology_stage: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o estágio (opcional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="I">Estágio I - Inicial</SelectItem>
+                          <SelectItem value="II">Estágio II - Localizado</SelectItem>
+                          <SelectItem value="III">Estágio III - Avançado Local</SelectItem>
+                          <SelectItem value="IV">Estágio IV - Metastático</SelectItem>
+                          <SelectItem value="Recidiva">Recidiva</SelectItem>
+                          <SelectItem value="Remissão">Remissão</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 <Accordion type="single" collapsible>
