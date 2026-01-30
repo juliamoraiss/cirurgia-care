@@ -16,6 +16,7 @@ import { QuickIndicators } from "@/components/QuickIndicators";
 import { OncologyPatientsCard } from "@/components/OncologyPatientsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface DashboardStats {
   totalPatients: number;
@@ -345,7 +346,7 @@ const Dashboard = () => {
                 const metadata = activity.metadata || {};
                 switch (activity.activity_type) {
                   case 'patient_created':
-                    return `Procedimento: ${metadata.procedure || 'Não informado'}`;
+                    return `Procedimento: ${capitalizeFirst(metadata.procedure) || 'Não informado'}`;
                   case 'surgery_scheduled':
                     return `${new Date(metadata.surgery_date).toLocaleString('pt-BR')} - ${metadata.hospital || 'Hospital não informado'}`;
                   case 'surgery_rescheduled':
@@ -361,7 +362,7 @@ const Dashboard = () => {
                   case 'status_updated':
                     return `${translateStatus(metadata.old_status)} → ${translateStatus(metadata.new_status)}`;
                   case 'procedure_updated':
-                    return `${metadata.old_procedure} → ${metadata.new_procedure}`;
+                    return `${capitalizeFirst(metadata.old_procedure)} → ${capitalizeFirst(metadata.new_procedure)}`;
                   default:
                     return '';
                 }
