@@ -464,6 +464,36 @@ export type Database = {
         }
         Relationships: []
       }
+      role_audit_log: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          role_after: string | null
+          role_before: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          role_after?: string | null
+          role_before?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          role_after?: string | null
+          role_before?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_activities: {
         Row: {
           activity_type: string
