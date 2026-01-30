@@ -195,7 +195,7 @@ const PatientExams = () => {
           {isAdmin && (
             <Button
               variant="outline"
-              onClick={() => navigate(`/patient-form/${id}`)}
+              onClick={() => navigate(`/patients/${id}`)}
             >
               <Pencil className="h-4 w-4 mr-2" />
               Editar Paciente
