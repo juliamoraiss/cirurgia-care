@@ -15,6 +15,22 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const fcmServerKey = Deno.env.get('FCM_SERVER_KEY');
+    const cronToken = Deno.env.get('NOTIFICATION_TOKEN');
+    
+    // Validate authentication token
+    const authHeader = req.headers.get('authorization');
+    const providedToken = authHeader?.replace('Bearer ', '');
+    
+    if (!cronToken || providedToken !== cronToken) {
+      console.warn('Unauthorized access attempt to send-daily-notifications');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      );
+    }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
