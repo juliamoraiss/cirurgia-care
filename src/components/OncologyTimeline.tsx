@@ -107,7 +107,7 @@ export function OncologyTimeline({ patientId, patientName }: OncologyTimelinePro
     event_type: "consultation",
     title: "",
     description: "",
-    event_date: new Date().toISOString().slice(0, 16),
+    event_date: new Date().toISOString().slice(0, 10),
   });
 
   useEffect(() => {
@@ -157,7 +157,7 @@ export function OncologyTimeline({ patientId, patientName }: OncologyTimelinePro
         event_type: "consultation",
         title: "",
         description: "",
-        event_date: new Date().toISOString().slice(0, 16),
+        event_date: new Date().toISOString().slice(0, 10),
       });
       setIsDialogOpen(false);
       loadEvents();
@@ -260,9 +260,9 @@ export function OncologyTimeline({ patientId, patientName }: OncologyTimelinePro
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Data e Hora</Label>
+                  <Label>Data</Label>
                   <Input
-                    type="datetime-local"
+                    type="date"
                     value={formData.event_date}
                     onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
                   />
@@ -325,7 +325,7 @@ export function OncologyTimeline({ patientId, patientName }: OncologyTimelinePro
                                 {config.label}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                {format(new Date(event.event_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                {format(new Date(event.event_date), "dd/MM/yyyy", { locale: ptBR })}
                               </span>
                             </div>
                             <h4 className="font-semibold mt-1.5">{event.title}</h4>
