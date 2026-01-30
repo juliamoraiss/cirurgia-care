@@ -38,14 +38,15 @@ interface OncologyPatientsCardProps {
   isAdmin?: boolean;
 }
 
-const eventTypeConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "pending" }> = {
-  diagnosis: { label: "Diagnóstico", variant: "destructive" },
-  exam: { label: "Exame", variant: "secondary" },
-  treatment_start: { label: "Tratamento", variant: "pending" },
-  consultation: { label: "Consulta", variant: "default" },
-  surgery: { label: "Cirurgia", variant: "success" },
-  follow_up: { label: "Acompanhamento", variant: "warning" },
-  remission: { label: "Remissão", variant: "success" },
+// Oncology-specific event colors - distinct from authorization status colors
+const eventTypeConfig: Record<string, { label: string; variant: "onco-diagnosis" | "onco-exam" | "onco-treatment" | "onco-consultation" | "onco-surgery" | "onco-followup" | "onco-remission" | "outline" }> = {
+  diagnosis: { label: "Diagnóstico", variant: "onco-diagnosis" },
+  exam: { label: "Exame", variant: "onco-exam" },
+  treatment_start: { label: "Tratamento", variant: "onco-treatment" },
+  consultation: { label: "Consulta", variant: "onco-consultation" },
+  surgery: { label: "Cirurgia", variant: "onco-surgery" },
+  follow_up: { label: "Acompanhamento", variant: "onco-followup" },
+  remission: { label: "Remissão", variant: "onco-remission" },
   other: { label: "Outro", variant: "outline" },
 };
 
