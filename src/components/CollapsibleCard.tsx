@@ -25,22 +25,22 @@ export function CollapsibleCard({
   return (
     <Card>
       <CardHeader
-        className="pb-3 cursor-pointer select-none"
+        className="px-4 py-3 cursor-pointer select-none"
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Icon className={`h-5 w-5 ${iconClassName}`} />
-            <CardTitle className="text-base">{title}</CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            {headerRight}
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
-          </div>
+        <div className="flex items-center gap-3">
+          <Icon className={`h-5 w-5 shrink-0 ${iconClassName}`} />
+          <CardTitle className="text-sm font-semibold flex-1 min-w-0 truncate">
+            {title}
+          </CardTitle>
+          {headerRight && (
+            <div className="shrink-0">{headerRight}</div>
+          )}
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
         </div>
       </CardHeader>
       <div
@@ -49,7 +49,7 @@ export function CollapsibleCard({
         }`}
       >
         <div className="overflow-hidden">
-          <CardContent className="pt-0">{children}</CardContent>
+          <CardContent className="px-4 pb-4 pt-0">{children}</CardContent>
         </div>
       </div>
     </Card>
