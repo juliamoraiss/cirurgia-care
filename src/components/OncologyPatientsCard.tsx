@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Activity, 
@@ -107,11 +107,11 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
   if (loading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            Pacientes Oncológicos
-          </CardTitle>
+            <CardTitle className="text-base">Pacientes Oncológicos</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center py-8">
@@ -124,16 +124,18 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-primary" />
-          <CardTitle>Pacientes Oncológicos</CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">Pacientes Oncológicos</CardTitle>
+          </div>
+          {patients.length > 0 && (
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {patients.length} em acompanhamento
+            </span>
+          )}
         </div>
-        <CardDescription>
-          {patients.length === 0
-            ? "Nenhum paciente oncológico ativo"
-            : `${patients.length} paciente(s) em acompanhamento`}
-        </CardDescription>
       </CardHeader>
       <CardContent>
         {patients.length === 0 ? (
