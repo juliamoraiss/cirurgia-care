@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList, Trash2 } from "lucide-react";
+import { CollapsibleCard } from "@/components/CollapsibleCard";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -273,17 +274,18 @@ const Dashboard = () => {
           isAdmin={isAdmin} 
         />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            <CardTitle>Histórico de Atividades</CardTitle>
-          </div>
-          <CardDescription>
-            Últimas atividades realizadas no sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <CollapsibleCard
+        icon={Activity}
+        title="Histórico de Atividades"
+        defaultOpen={false}
+        headerRight={
+          filteredActivities.length > 0 ? (
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {filteredActivities.length} registros
+            </span>
+          ) : undefined
+        }
+      >
           {loading ? <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-4 text-muted-foreground text-sm">Carregando histórico...</p>
@@ -407,8 +409,7 @@ const Dashboard = () => {
                   </div>;
             })}
             </div>}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
       </div>
     </TooltipProvider>;
 };

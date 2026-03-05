@@ -3,6 +3,7 @@ import { Clock, AlertCircle, User, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StandardCard, CardInfo } from "@/components/StandardCard";
 import { Badge } from "@/components/ui/badge";
+import { CollapsibleCard } from "@/components/CollapsibleCard";
 interface Patient {
   id: string;
   name: string;
@@ -51,17 +52,17 @@ export function PendingPatients({
         </CardContent>
       </Card>;
   }
-  return <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-warning" />
-          <CardTitle className="text-base">Pacientes aguardando autorização</CardTitle>
-        </div>
-        <CardDescription>
-          {patients.length} {patients.length === 1 ? 'paciente aguardando' : 'pacientes aguardando'} autorização
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+  return <CollapsibleCard
+      icon={Clock}
+      iconClassName="text-warning"
+      title="Pacientes aguardando autorização"
+      defaultOpen={true}
+      headerRight={
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          {patients.length} {patients.length === 1 ? 'aguardando' : 'aguardando'}
+        </span>
+      }
+    >
         <div className="space-y-3">
           {patients.map(patient => {
           const infos: CardInfo[] = [];
@@ -75,6 +76,5 @@ export function PendingPatients({
           return <StandardCard key={patient.id} title={patient.name} subtitle={patient.procedure} infos={infos} statusIcon={<AlertCircle className="h-4 w-4 text-warning" />} badge={<Badge variant="warning" className="text-[10px] px-1.5 py-0">Aguardando</Badge>} actionLabel="Ver detalhes" onAction={() => navigate(`/patients/${patient.id}/exams`)} onClick={() => navigate(`/patients/${patient.id}/exams`)} />;
         })}
         </div>
-      </CardContent>
-    </Card>;
+    </CollapsibleCard>;
 }

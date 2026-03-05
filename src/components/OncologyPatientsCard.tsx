@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/CollapsibleCard";
 import { Badge } from "@/components/ui/badge";
 import { 
   Activity, 
@@ -123,21 +124,18 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Pacientes Oncológicos</CardTitle>
-          </div>
-          {patients.length > 0 && (
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              {patients.length} em acompanhamento
-            </span>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
+    <CollapsibleCard
+      icon={Activity}
+      title="Pacientes Oncológicos"
+      defaultOpen={true}
+      headerRight={
+        patients.length > 0 ? (
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            {patients.length} em acompanhamento
+          </span>
+        ) : undefined
+      }
+    >
         {patients.length === 0 ? (
           <div className="text-center py-8">
             <Stethoscope className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -212,7 +210,6 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </CollapsibleCard>
   );
 }
