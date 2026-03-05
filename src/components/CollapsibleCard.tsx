@@ -30,7 +30,7 @@ export function CollapsibleCard({
       >
         <div className="flex items-center gap-3">
           <Icon className={`h-5 w-5 shrink-0 ${iconClassName}`} />
-          <CardTitle className="text-sm font-semibold flex-1 min-w-0 truncate">
+          <CardTitle className="text-sm font-semibold flex-1 min-w-0">
             {title}
           </CardTitle>
           {headerRight && (
