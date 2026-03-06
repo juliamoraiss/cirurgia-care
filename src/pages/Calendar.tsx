@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import GoogleCalendarConnect from "@/components/GoogleCalendarConnect";
+import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailability";
 
 interface Surgery {
   id: string;
@@ -30,10 +32,19 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedDaySurgeries, setSelectedDaySurgeries] = useState<Surgery[]>([]);
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const { busySlots, loading: busyLoading, fetchAvailability, getBusySlotsForDay, isDayFullyBusy, lastFetched } = useGoogleCalendarAvailability();
 
   useEffect(() => {
     loadSurgeries();
   }, []);
+
+  // Fetch Google Calendar availability when connected and date changes
+  useEffect(() => {
+    if (calendarConnected) {
+      fetchAvailability(currentDate);
+    }
+  }, [calendarConnected, currentDate, fetchAvailability]);
 
   async function loadSurgeries() {
     try {
@@ -145,6 +156,34 @@ const Calendar = () => {
           Visualize e gerencie os procedimentos agendados
         </p>
       </div>
+
+      {/* Google Calendar Connection */}
+      <GoogleCalendarConnect onConnectionChange={setCalendarConnected} />
+
+      {calendarConnected && lastFetched && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-muted-foreground/20 border border-muted-foreground/30" />
+              Ocupado (Google Agenda)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-green-500/20 border border-green-500/30" />
+              Livre
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => fetchAvailability(currentDate)}
+            disabled={busyLoading}
+          >
+            <RefreshCw className={`h-3 w-3 mr-1 ${busyLoading ? "animate-spin" : ""}`} />
+            {busyLoading ? "Atualizando..." : `Atualizado ${format(lastFetched, "HH:mm")}`}
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="space-y-4">
@@ -425,6 +464,8 @@ const Calendar = () => {
                 const daySurgeries = getSurgeriesForDay(day);
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isToday = isSameDay(day, new Date());
+                const dayBusySlots = calendarConnected ? getBusySlotsForDay(day) : [];
+                const isFullyBusy = calendarConnected && isDayFullyBusy(day);
 
                 return (
                   <div
@@ -434,12 +475,18 @@ const Calendar = () => {
                       isCurrentMonth ? "bg-background" : "bg-muted/30"
                     } ${isToday ? "ring-2 ring-primary" : ""} ${
                       daySurgeries.length > 0 ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-                    }`}
+                    } ${isFullyBusy ? "bg-muted/50" : ""}`}
                   >
-                    <div className={`font-bold mb-2 text-sm md:text-base ${
+                    <div className={`flex items-center justify-between font-bold mb-2 text-sm md:text-base ${
                       isCurrentMonth ? "text-foreground" : "text-muted-foreground"
                     }`}>
                       {format(day, "d")}
+                      {dayBusySlots.length > 0 && !isFullyBusy && (
+                        <span className="w-2 h-2 rounded-full bg-muted-foreground/40" title="Horários ocupados no Google Agenda" />
+                      )}
+                      {isFullyBusy && (
+                        <span className="text-[10px] font-normal text-muted-foreground">Ocupado</span>
+                      )}
                     </div>
                     <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[90px] md:max-h-[100px]">
                       {daySurgeries.map((surgery, surgeryIndex) => {
