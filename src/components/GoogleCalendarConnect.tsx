@@ -79,10 +79,17 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 
     if (!code) return;
 
-    const exchangeCodeKey = "google_calendar_exchange_code";
+    // Immediately remove code from URL to prevent re-processing on re-renders
+    window.history.replaceState({}, "", "/calendar");
 
-    // Prevent duplicate exchanges for the same authorization code
-    if (sessionStorage.getItem(exchangeCodeKey) === code) return;
+    // Prevent duplicate exchanges using a flag with the specific code
+    const exchangeCodeKey = "gcal_last_exchanged_code";
+    const lastExchangedCode = sessionStorage.getItem(exchangeCodeKey);
+    if (lastExchangedCode === code) {
+      // Already exchanged this code, just re-check connection status
+      checkConnection();
+      return;
+    }
     sessionStorage.setItem(exchangeCodeKey, code);
 
     setConnecting(true);
@@ -90,6 +97,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 
     const exchangeCode = async () => {
       try {
+        console.log("[GoogleCalendar] Exchanging code...");
         const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
           body: {
             action: "exchange_code",
@@ -98,7 +106,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
           },
         });
 
-        console.error("[GoogleCalendar] exchange_code response:", { data, error });
+        console.log("[GoogleCalendar] exchange_code response:", { data, error });
 
         if (error || !data?.success) {
           const detailedError = (data as { error?: string } | null)?.error || await extractFunctionErrorMessage(error);
@@ -110,14 +118,16 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 
         toast.success("Google Agenda conectada com sucesso!");
         await checkConnection();
+      } catch (err) {
+        console.error("[GoogleCalendar] Exception:", err);
+        toast.error("Erro inesperado ao conectar Google Agenda");
       } finally {
-        window.history.replaceState({}, "", "/calendar");
         setConnecting(false);
       }
     };
 
     void exchangeCode();
-  }, [checkConnection]);
+  }, []); // No dependencies - run once on mount
 
   const handleConnect = async () => {
     setConnecting(true);
