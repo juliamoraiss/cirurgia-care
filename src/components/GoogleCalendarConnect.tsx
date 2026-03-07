@@ -98,9 +98,13 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
           },
         });
 
+        console.error("[GoogleCalendar] exchange_code response:", { data, error });
+
         if (error || !data?.success) {
           const detailedError = (data as { error?: string } | null)?.error || await extractFunctionErrorMessage(error);
-          toast.error(detailedError || "Erro ao conectar Google Agenda");
+          const errorMsg = detailedError || "Erro ao conectar Google Agenda";
+          console.error("[GoogleCalendar] ERRO:", errorMsg);
+          toast.error(errorMsg);
           return;
         }
 
