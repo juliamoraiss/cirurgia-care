@@ -159,7 +159,12 @@ Deno.serve(async (req) => {
 
     // Action: status - check if connected
     if (action === "status") {
-      const { data } = await supabase
+      const supabaseService = createClient(
+        supabaseUrl,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      const { data } = await supabaseService
         .from("google_calendar_connections")
         .select("connected_at, calendar_timezone")
         .eq("user_id", user.id)
