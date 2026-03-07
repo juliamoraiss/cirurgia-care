@@ -107,8 +107,6 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
           toast.error(errorMsg);
           return;
         }
-          return;
-        }
 
         toast.success("Google Agenda conectada com sucesso!");
         await checkConnection();
