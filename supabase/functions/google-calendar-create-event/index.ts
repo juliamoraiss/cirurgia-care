@@ -56,21 +56,31 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
 
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error("Claims validation failed", claimsError);
+    let userId: string | undefined;
+    try {
+      const jwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
+      const { payload } = await jwtVerify(token, jwks, {
+        issuer: `${supabaseUrl}/auth/v1`,
+        audience: "authenticated",
+      });
+      userId = typeof payload.sub === "string" ? payload.sub : undefined;
+    } catch (err) {
+      console.error("JWT verification failed", err);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const user = { id: claimsData.claims.sub as string };
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const user = { id: userId };
 
     const {
       patient_name,
