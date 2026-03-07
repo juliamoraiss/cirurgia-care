@@ -59,7 +59,7 @@ const SurgeryAvailability = () => {
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
             <Settings2 className="h-7 w-7" />
             Disponibilidade para Cirurgias
           </h1>
