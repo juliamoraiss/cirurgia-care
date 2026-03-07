@@ -515,6 +515,49 @@ const PatientForm = () => {
     }
   };
 
+  const generateSchedulingLink = async () => {
+    if (!id || !user) return;
+    setGeneratingLink(true);
+    try {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const doctorId = formData.responsible_user_id || user.id;
+
+      const { data, error } = await supabase
+        .from("scheduling_links")
+        .insert({
+          patient_id: id,
+          doctor_id: doctorId,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select("token")
+        .single();
+
+      if (error) throw error;
+
+      const link = `${window.location.origin}/schedule/${data.token}`;
+      setSchedulingLink(link);
+      toast.success("Link de agendamento gerado!");
+    } catch (error) {
+      toast.error("Erro ao gerar link de agendamento");
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const copySchedulingLink = async () => {
+    if (!schedulingLink) return;
+    try {
+      await navigator.clipboard.writeText(schedulingLink);
+      setLinkCopied(true);
+      toast.success("Link copiado!");
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      toast.error("Erro ao copiar link");
+    }
+  };
+
   const handleDeletePatient = async () => {
     if (!id || !user) return;
 
