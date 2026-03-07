@@ -14,21 +14,20 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
 
-  const checkConnection = useCallback(async () => {
+  const checkConnection = useCallback(async (): Promise<boolean> => {
     try {
       const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
         body: { action: "status" },
       });
-      if (!error && data?.connected) {
-        setConnected(true);
-        onConnectionChange?.(true);
-      } else {
-        setConnected(false);
-        onConnectionChange?.(false);
-      }
+
+      const isConnected = !error && !!data?.connected;
+      setConnected(isConnected);
+      onConnectionChange?.(isConnected);
+      return isConnected;
     } catch {
       setConnected(false);
       onConnectionChange?.(false);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -116,8 +115,12 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
           return;
         }
 
-        toast.success("Google Agenda conectada com sucesso!");
-        await checkConnection();
+        const connectedNow = await checkConnection();
+        if (connectedNow) {
+          toast.success("Google Agenda conectada com sucesso!");
+        } else {
+          toast.error("Conexão concluída, mas a agenda não ficou vinculada. Tente reconectar.");
+        }
       } catch (err) {
         console.error("[GoogleCalendar] Exception:", err);
         toast.error("Erro inesperado ao conectar Google Agenda");
