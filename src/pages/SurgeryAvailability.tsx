@@ -98,19 +98,33 @@ const SurgeryAvailability = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Início</Label>
-                  <Input
-                    type="time"
+                  <Select
                     value={form.start_time}
-                    onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                  />
+                    onValueChange={v => setForm(f => ({ ...f, start_time: v }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => {
+                        const h = String(i).padStart(2, "0") + ":00";
+                        return <SelectItem key={h} value={h}>{h.slice(0, 2)}h</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>Fim</Label>
-                  <Input
-                    type="time"
+                  <Select
                     value={form.end_time}
-                    onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
-                  />
+                    onValueChange={v => setForm(f => ({ ...f, end_time: v }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => {
+                        const h = String(i).padStart(2, "0") + ":00";
+                        return <SelectItem key={h} value={h}>{h.slice(0, 2)}h</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
