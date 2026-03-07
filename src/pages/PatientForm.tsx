@@ -647,6 +647,32 @@ const PatientForm = () => {
         await createAutomaticTasks(savedPatientId, utcSurgeryDate, validatedData.name, validatedData.procedure);
       }
 
+      // Criar evento no Google Agenda do médico quando cirurgia é agendada/reagendada
+      const surgeryDateChanged = utcSurgeryDate !== originalSurgeryDate;
+      if (utcSurgeryDate && surgeryDateChanged) {
+        try {
+          const { data: calResult } = await supabase.functions.invoke("google-calendar-create-event", {
+            body: {
+              patient_name: validatedData.name,
+              procedure: validatedData.procedure,
+              hospital: validatedData.hospital || null,
+              surgery_date: utcSurgeryDate,
+              notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
+              patient_id: savedPatientId,
+              target_user_id: formData.responsible_user_id || user.id,
+            },
+          });
+
+          if (calResult?.success) {
+            toast.success("Cirurgia adicionada ao Google Agenda");
+          }
+          // Silently ignore if not connected — not blocking
+        } catch {
+          // Non-critical: don't block patient save
+          console.warn("Could not create Google Calendar event");
+        }
+      }
+
       if (files.length > 0 && savedPatientId) {
         await uploadFiles(savedPatientId);
       }
