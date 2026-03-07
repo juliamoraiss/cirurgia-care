@@ -154,15 +154,6 @@ const SurgeryAvailability = () => {
                 />
               </div>
 
-              <div>
-                <Label>Local / Hospital</Label>
-                <Input
-                  placeholder="Ex: Hospital Santa Lúcia"
-                  value={form.location || ""}
-                  onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                />
-              </div>
-
               <Button onClick={handleAdd} className="w-full">
                 Salvar horário
               </Button>
