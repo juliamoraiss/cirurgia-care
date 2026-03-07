@@ -133,6 +133,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/surgery-availability"
+        element={
+          <ProtectedRoute>
+            <SurgeryAvailability />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
