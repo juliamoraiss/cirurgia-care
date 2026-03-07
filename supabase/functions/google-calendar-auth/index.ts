@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
         client_id: GOOGLE_CLIENT_ID,
         redirect_uri: redirect_uri,
         response_type: "code",
-        scope: "https://www.googleapis.com/auth/calendar.readonly",
+        scope: "https://www.googleapis.com/auth/calendar.events",
         access_type: "offline",
         prompt: "consent",
         state: user.id,
