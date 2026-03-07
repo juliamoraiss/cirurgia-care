@@ -30,42 +30,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: authHeader,
+        apikey: supabaseAnonKey,
+      },
     });
 
-    let userId: string | null = null;
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsData?.claims?.sub) {
-      userId = claimsData.claims.sub as string;
-    }
-
-    if (!userId) {
-      const supabaseServiceAuth = createClient(
-        supabaseUrl,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    if (!userResponse.ok) {
+      console.error("Auth user lookup failed", await userResponse.text());
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-      const { data: userData, error: userError } = await supabaseServiceAuth.auth.getUser(token);
-      if (userData?.user?.id) {
-        userId = userData.user.id;
-      }
-
-      if (!userId) {
-        console.error("Auth validation failed", {
-          claimsError: claimsError?.message,
-          userError: userError?.message,
-        });
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
     }
 
-    const user = { id: userId };
+    const authUser = await userResponse.json();
+    if (!authUser?.id) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const user = { id: authUser.id as string };
 
     const payload = await req.json().catch(() => ({}));
     const { action, code, redirect_uri } = payload;
