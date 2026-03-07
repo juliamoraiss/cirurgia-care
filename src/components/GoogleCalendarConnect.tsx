@@ -16,8 +16,6 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const exchangedRef = useRef(false);
-  const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
 
   const checkConnection = useCallback(async (): Promise<boolean> => {
     try {
