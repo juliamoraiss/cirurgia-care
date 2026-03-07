@@ -156,15 +156,12 @@ const PatientForm = () => {
           status: data.status || "awaiting_authorization",
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
-        });
-        setOriginalSurgeryDate(data.surgery_date || null);
-        setFormData(prev => ({
-          ...prev,
           origem: data.origem || "",
           responsible_user_id: data.responsible_user_id || "",
           is_oncology: data.is_oncology || false,
           oncology_stage: data.oncology_stage || "",
         });
+        setOriginalSurgeryDate(data.surgery_date || null);
         
         // Set checklist for the procedure and restore checked exams
         const procedureExams = getExamsForProcedure(data.procedure || "");
