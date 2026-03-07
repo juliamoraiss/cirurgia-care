@@ -11,7 +11,11 @@ interface GoogleCalendarConnectProps {
 }
 
 const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProps) => {
+  const { session, loading: authLoading } = useAuth();
   const [connected, setConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const exchangedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
 
