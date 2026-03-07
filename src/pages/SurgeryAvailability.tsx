@@ -16,7 +16,7 @@ const DURATION_OPTIONS = [
   { value: 90, label: "1h30" },
   { value: 120, label: "2 horas" },
   { value: 180, label: "3 horas" },
-  { value: 240, label: "4 horas" },
+  { value: 240, label: "4 horas ou mais" },
 ];
 
 const SurgeryAvailability = () => {
