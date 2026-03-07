@@ -264,16 +264,21 @@ const Patients = () => {
                     <DrawerHeader>
                       <DrawerTitle>Filtros</DrawerTitle>
                     </DrawerHeader>
-                    <div className="px-4 pb-8 overflow-y-auto space-y-6">
+                    <div className="px-4 pb-6 space-y-4">
                       {/* Procedimentos */}
                       <div>
-                        <h3 className="font-semibold mb-3">Procedimento</h3>
-                        <div className="space-y-1">
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Procedimento</h3>
+                        <div className="flex flex-wrap gap-2">
                           {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
                             <button
                               key={procedure}
                               type="button"
-                              className="flex items-center space-x-3 w-full py-3 px-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left"
+                              className={cn(
+                                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors capitalize",
+                                filterProcedures.includes(procedure)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-foreground border-border hover:bg-muted"
+                              )}
                               onClick={() => {
                                 if (filterProcedures.includes(procedure)) {
                                   setFilterProcedures(filterProcedures.filter(p => p !== procedure));
@@ -282,14 +287,7 @@ const Patients = () => {
                                 }
                               }}
                             >
-                              <Checkbox
-                                checked={filterProcedures.includes(procedure)}
-                                onCheckedChange={() => {}}
-                                className="pointer-events-none"
-                              />
-                              <span className="text-sm font-medium capitalize">
-                                {procedure}
-                              </span>
+                              {procedure}
                             </button>
                           ))}
                         </div>
@@ -297,13 +295,18 @@ const Patients = () => {
 
                       {/* Hospitais */}
                       <div>
-                        <h3 className="font-semibold mb-3">Hospital</h3>
-                        <div className="space-y-1">
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Hospital</h3>
+                        <div className="flex flex-wrap gap-2">
                           {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada", "Hospital DF Star"].map((hospital) => (
                             <button
                               key={hospital}
                               type="button"
-                              className="flex items-center space-x-3 w-full py-3 px-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left"
+                              className={cn(
+                                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                                filterHospitals.includes(hospital)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-foreground border-border hover:bg-muted"
+                              )}
                               onClick={() => {
                                 if (filterHospitals.includes(hospital)) {
                                   setFilterHospitals(filterHospitals.filter(h => h !== hospital));
@@ -312,14 +315,7 @@ const Patients = () => {
                                 }
                               }}
                             >
-                              <Checkbox
-                                checked={filterHospitals.includes(hospital)}
-                                onCheckedChange={() => {}}
-                                className="pointer-events-none"
-                              />
-                              <span className="text-sm font-medium">
-                                {hospital}
-                              </span>
+                              {hospital.replace("Hospital ", "")}
                             </button>
                           ))}
                         </div>
@@ -327,19 +323,24 @@ const Patients = () => {
 
                       {/* Status */}
                       <div>
-                        <h3 className="font-semibold mb-3">Status</h3>
-                        <div className="space-y-1">
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Status</h3>
+                        <div className="flex flex-wrap gap-2">
                           {[
-                            { value: "awaiting_consultation", label: "Aguardando Consulta" },
-                            { value: "awaiting_authorization", label: "Aguardando Autorização" },
+                            { value: "awaiting_consultation", label: "Ag. Consulta" },
+                            { value: "awaiting_authorization", label: "Ag. Autorização" },
                             { value: "authorized", label: "Autorizado" },
-                            { value: "completed", label: "Cirurgia Realizada" },
-                            { value: "cancelled", label: "Cirurgia Cancelada" }
+                            { value: "completed", label: "Realizada" },
+                            { value: "cancelled", label: "Cancelada" }
                           ].map((status) => (
                             <button
                               key={status.value}
                               type="button"
-                              className="flex items-center space-x-3 w-full py-3 px-2 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left"
+                              className={cn(
+                                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                                filterStatuses.includes(status.value)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-foreground border-border hover:bg-muted"
+                              )}
                               onClick={() => {
                                 if (filterStatuses.includes(status.value)) {
                                   setFilterStatuses(filterStatuses.filter(s => s !== status.value));
@@ -348,14 +349,7 @@ const Patients = () => {
                                 }
                               }}
                             >
-                              <Checkbox
-                                checked={filterStatuses.includes(status.value)}
-                                onCheckedChange={() => {}}
-                                className="pointer-events-none"
-                              />
-                              <span className="text-sm font-medium">
-                                {status.label}
-                              </span>
+                              {status.label}
                             </button>
                           ))}
                         </div>
