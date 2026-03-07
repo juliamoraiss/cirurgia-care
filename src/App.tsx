@@ -20,6 +20,7 @@ import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import SurgeryAvailability from "./pages/SurgeryAvailability";
 import NotFound from "./pages/NotFound";
+import PublicSchedule from "./pages/PublicSchedule";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +142,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/schedule/:token" element={<PublicSchedule />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

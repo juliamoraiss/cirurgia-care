@@ -530,6 +530,44 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduling_links: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          expires_at: string
+          id: string
+          patient_id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          expires_at: string
+          id?: string
+          patient_id: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          expires_at?: string
+          id?: string
+          patient_id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_links_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       surgery_availability: {
         Row: {
           created_at: string
