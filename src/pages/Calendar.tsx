@@ -234,20 +234,6 @@ const Calendar = () => {
                   </p>
                 )}
               </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm py-4 text-center">
-                      Nenhuma cirurgia agendada para este dia
-                    </p>
-                  )}
-                </div>
-              )}
             </>
           )}
         </CardContent>
