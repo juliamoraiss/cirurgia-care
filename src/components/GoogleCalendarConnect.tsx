@@ -67,14 +67,18 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
     return maybeError?.message || null;
   };
 
-  // Handle OAuth callback code from URL - wait for auth session to be ready
+  // Handle OAuth callback code - read from sessionStorage (saved in main.tsx before Supabase intercepts)
   useEffect(() => {
-    if (authLoading) return; // Wait for auth to initialize
-    if (!session) return; // No session, can't exchange
-    if (exchangedRef.current) return; // Already processed
+    if (authLoading) return;
+    if (!session) return;
+    if (exchangedRef.current) return;
 
+    // Check sessionStorage first (saved before Supabase could consume the URL param)
+    const code = sessionStorage.getItem("google_calendar_code");
+    
+    // Also check URL params as fallback
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const urlCode = params.get("code");
     const oauthError = params.get("error");
 
     if (oauthError) {
@@ -83,10 +87,12 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
       return;
     }
 
-    if (!code) return;
+    const finalCode = code || urlCode;
+    if (!finalCode) return;
 
     // Mark as processed immediately
     exchangedRef.current = true;
+    sessionStorage.removeItem("google_calendar_code");
     window.history.replaceState({}, "", "/calendar");
 
     setConnecting(true);
