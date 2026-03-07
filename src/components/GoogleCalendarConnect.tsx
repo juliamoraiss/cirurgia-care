@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Calendar, Check, Loader2, Unlink } from "lucide-react";
 
@@ -10,9 +11,11 @@ interface GoogleCalendarConnectProps {
 }
 
 const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProps) => {
+  const { session, loading: authLoading } = useAuth();
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const exchangedRef = useRef(false);
 
   const checkConnection = useCallback(async (): Promise<boolean> => {
     try {
@@ -64,8 +67,12 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
     return maybeError?.message || null;
   };
 
-  // Handle OAuth callback code from URL
+  // Handle OAuth callback code from URL - wait for auth session to be ready
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to initialize
+    if (!session) return; // No session, can't exchange
+    if (exchangedRef.current) return; // Already processed
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const oauthError = params.get("error");
@@ -78,25 +85,16 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 
     if (!code) return;
 
-    // Immediately remove code from URL to prevent re-processing on re-renders
+    // Mark as processed immediately
+    exchangedRef.current = true;
     window.history.replaceState({}, "", "/calendar");
-
-    // Prevent duplicate exchanges using a flag with the specific code
-    const exchangeCodeKey = "gcal_last_exchanged_code";
-    const lastExchangedCode = sessionStorage.getItem(exchangeCodeKey);
-    if (lastExchangedCode === code) {
-      // Already exchanged this code, just re-check connection status
-      checkConnection();
-      return;
-    }
-    sessionStorage.setItem(exchangeCodeKey, code);
 
     setConnecting(true);
     const redirectUri = `${window.location.origin}/calendar`;
 
     const exchangeCode = async () => {
       try {
-        console.log("[GoogleCalendar] Exchanging code...");
+        console.log("[GoogleCalendar] Exchanging code with valid session...");
         const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
           body: {
             action: "exchange_code",
@@ -130,7 +128,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
     };
 
     void exchangeCode();
-  }, []); // No dependencies - run once on mount
+  }, [authLoading, session, checkConnection]);
 
   const handleConnect = async () => {
     setConnecting(true);
