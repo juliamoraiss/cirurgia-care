@@ -142,6 +142,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/schedule/:token" element={<PublicSchedule />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
