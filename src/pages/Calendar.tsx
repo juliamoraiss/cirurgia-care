@@ -86,6 +86,10 @@ const Calendar = () => {
 
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
 
+  // Events for the month, filtered by selected day if any
+  const monthSurgeries = surgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
+  const eventsToShow = selectedDay ? selectedDaySurgeries : monthSurgeries;
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div>
