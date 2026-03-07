@@ -115,8 +115,12 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
           return;
         }
 
-        toast.success("Google Agenda conectada com sucesso!");
-        await checkConnection();
+        const connectedNow = await checkConnection();
+        if (connectedNow) {
+          toast.success("Google Agenda conectada com sucesso!");
+        } else {
+          toast.error("Conexão concluída, mas a agenda não ficou vinculada. Tente reconectar.");
+        }
       } catch (err) {
         console.error("[GoogleCalendar] Exception:", err);
         toast.error("Erro inesperado ao conectar Google Agenda");

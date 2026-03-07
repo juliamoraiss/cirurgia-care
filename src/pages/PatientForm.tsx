@@ -650,26 +650,41 @@ const PatientForm = () => {
       // Criar evento no Google Agenda do médico quando cirurgia é agendada/reagendada
       const surgeryDateChanged = utcSurgeryDate !== originalSurgeryDate;
       if (utcSurgeryDate && surgeryDateChanged) {
-        try {
-          const { data: calResult } = await supabase.functions.invoke("google-calendar-create-event", {
-            body: {
-              patient_name: validatedData.name,
-              procedure: validatedData.procedure,
-              hospital: validatedData.hospital || null,
-              surgery_date: utcSurgeryDate,
-              notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
-              patient_id: savedPatientId,
-              target_user_id: formData.responsible_user_id || user.id,
-            },
-          });
+        const targetCalendarUserId = formData.responsible_user_id || (!isAdmin ? user.id : null);
 
-          if (calResult?.success) {
-            toast.success("Cirurgia adicionada ao Google Agenda");
+        if (!targetCalendarUserId) {
+          toast.warning("Paciente salvo, mas sem profissional responsável para sincronizar no Google Agenda.");
+        } else {
+          try {
+            const { data: calResult, error: calError } = await supabase.functions.invoke("google-calendar-create-event", {
+              body: {
+                patient_name: validatedData.name,
+                procedure: validatedData.procedure,
+                hospital: validatedData.hospital || null,
+                surgery_date: utcSurgeryDate,
+                notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
+                patient_id: savedPatientId,
+                target_user_id: targetCalendarUserId,
+              },
+            });
+
+            const calendarResponse = calResult as { success?: boolean; connected?: boolean; error?: string } | null;
+
+            if (calError) {
+              toast.warning("Paciente salvo, mas houve falha ao enviar para o Google Agenda.");
+              console.warn("Google Calendar invoke error:", calError.message);
+            } else if (calendarResponse?.success) {
+              toast.success("Cirurgia adicionada ao Google Agenda");
+            } else if (calendarResponse?.connected === false) {
+              toast.warning("Paciente salvo, mas o profissional responsável não está com Google Agenda conectado.");
+            } else if (calendarResponse?.error) {
+              toast.warning(`Paciente salvo, mas não foi possível sincronizar: ${calendarResponse.error}`);
+            }
+          } catch (err) {
+            // Non-critical: don't block patient save
+            console.warn("Could not create Google Calendar event", err);
+            toast.warning("Paciente salvo, mas ocorreu erro ao sincronizar com Google Agenda.");
           }
-          // Silently ignore if not connected — not blocking
-        } catch {
-          // Non-critical: don't block patient save
-          console.warn("Could not create Google Calendar event");
         }
       }
 
