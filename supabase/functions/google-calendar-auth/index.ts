@@ -44,7 +44,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, code, redirect_uri } = await req.json();
+    const payload = await req.json().catch(() => ({}));
+    const { action, code, redirect_uri } = payload;
 
     // Action: get_auth_url - returns the Google OAuth URL
     if (action === "get_auth_url") {
@@ -89,7 +90,19 @@ Deno.serve(async (req) => {
       if (!tokenResponse.ok) {
         console.error("Google token exchange failed:", tokenData);
         return new Response(
-          JSON.stringify({ error: "Failed to exchange code for tokens" }),
+          JSON.stringify({
+            error:
+              tokenData?.error_description ||
+              tokenData?.error ||
+              "Falha ao trocar o código de autorização",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!tokenData?.access_token || !tokenData?.expires_in) {
+        return new Response(
+          JSON.stringify({ error: "Resposta inválida do Google OAuth" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -102,12 +115,34 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
+      // Google may omit refresh_token on subsequent consents; keep previously stored one
+      let refreshTokenToStore = tokenData.refresh_token as string | undefined;
+      if (!refreshTokenToStore) {
+        const { data: existingConnection } = await supabaseService
+          .from("google_calendar_connections")
+          .select("refresh_token")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        refreshTokenToStore = existingConnection?.refresh_token;
+      }
+
+      if (!refreshTokenToStore) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "Não foi possível obter refresh_token do Google. Remova o acesso do app nas permissões da conta Google e tente conectar novamente.",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { error: upsertError } = await supabaseService
         .from("google_calendar_connections")
         .upsert({
           user_id: user.id,
           access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
+          refresh_token: refreshTokenToStore,
           token_expires_at: expiresAt,
           updated_at: new Date().toISOString(),
         }, { onConflict: "user_id" });
@@ -115,7 +150,7 @@ Deno.serve(async (req) => {
       if (upsertError) {
         console.error("Failed to store tokens:", upsertError);
         return new Response(
-          JSON.stringify({ error: "Failed to store connection" }),
+          JSON.stringify({ error: "Falha ao salvar conexão do Google Agenda" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -168,7 +203,7 @@ Deno.serve(async (req) => {
         .from("google_calendar_connections")
         .select("connected_at, calendar_timezone")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       return new Response(
         JSON.stringify({ connected: !!data, connection: data }),
