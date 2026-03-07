@@ -97,6 +97,7 @@ const PatientForm = () => {
   const [checkedExams, setCheckedExams] = useState<string[]>([]);
   const [deletingPatient, setDeletingPatient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
@@ -160,6 +161,7 @@ const PatientForm = () => {
           is_oncology: data.is_oncology || false,
           oncology_stage: data.oncology_stage || "",
         });
+        setOriginalSurgeryDate(data.surgery_date || null);
         
         // Set checklist for the procedure and restore checked exams
         const procedureExams = getExamsForProcedure(data.procedure || "");
@@ -643,6 +645,32 @@ const PatientForm = () => {
       // Criar tarefas automaticamente se houver data de cirurgia
       if (utcSurgeryDate && savedPatientId) {
         await createAutomaticTasks(savedPatientId, utcSurgeryDate, validatedData.name, validatedData.procedure);
+      }
+
+      // Criar evento no Google Agenda do médico quando cirurgia é agendada/reagendada
+      const surgeryDateChanged = utcSurgeryDate !== originalSurgeryDate;
+      if (utcSurgeryDate && surgeryDateChanged) {
+        try {
+          const { data: calResult } = await supabase.functions.invoke("google-calendar-create-event", {
+            body: {
+              patient_name: validatedData.name,
+              procedure: validatedData.procedure,
+              hospital: validatedData.hospital || null,
+              surgery_date: utcSurgeryDate,
+              notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
+              patient_id: savedPatientId,
+              target_user_id: formData.responsible_user_id || user.id,
+            },
+          });
+
+          if (calResult?.success) {
+            toast.success("Cirurgia adicionada ao Google Agenda");
+          }
+          // Silently ignore if not connected — not blocking
+        } catch {
+          // Non-critical: don't block patient save
+          console.warn("Could not create Google Calendar event");
+        }
       }
 
       if (files.length > 0 && savedPatientId) {
