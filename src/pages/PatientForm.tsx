@@ -97,6 +97,7 @@ const PatientForm = () => {
   const [checkedExams, setCheckedExams] = useState<string[]>([]);
   const [deletingPatient, setDeletingPatient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
