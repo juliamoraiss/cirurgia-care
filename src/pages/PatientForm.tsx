@@ -708,7 +708,6 @@ const PatientForm = () => {
           }
         }
       }
-      }
 
       if (files.length > 0 && savedPatientId) {
         await uploadFiles(savedPatientId);
