@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Plus, Trash2, MapPin, Settings2 } from "lucide-react";
+import { Clock, Plus, Trash2, MapPin, Settings2, ChevronUp, ChevronDown } from "lucide-react";
 import { useSurgeryAvailability, DAY_NAMES, DAY_SHORT, type SurgeryAvailabilityInput } from "@/hooks/useSurgeryAvailability";
 
 const DURATION_OPTIONS = [
