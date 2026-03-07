@@ -99,6 +99,9 @@ const PatientForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
   const [googleCalendarEventId, setGoogleCalendarEventId] = useState<string | null>(null);
+  const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
