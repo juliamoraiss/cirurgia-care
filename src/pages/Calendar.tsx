@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
@@ -9,6 +9,8 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import GoogleCalendarConnect from "@/components/GoogleCalendarConnect";
 import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailability";
+import { useSurgeryAvailability } from "@/hooks/useSurgeryAvailability";
+import { CalendarDayView } from "@/components/CalendarDayView";
 
 interface Surgery {
   id: string;
@@ -25,7 +27,8 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(false);
-  const { getBusySlotsForDay, isDayFullyBusy, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
+  const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
+  const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
 
   useEffect(() => {
     loadSurgeries();
@@ -47,7 +50,7 @@ const Calendar = () => {
 
       if (error) throw error;
       setSurgeries(data || []);
-    } catch (error) {
+    } catch {
       toast.error("Erro ao carregar cirurgias agendadas");
     } finally {
       setLoading(false);
@@ -60,11 +63,10 @@ const Calendar = () => {
   const calendarEnd = endOfWeek(monthEnd, { locale: ptBR });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  const getSurgeriesForDay = (day: Date) => {
-    return surgeries
-      .filter((surgery) => isSameDay(new Date(surgery.surgery_date), day))
+  const getSurgeriesForDay = (day: Date) =>
+    surgeries
+      .filter((s) => isSameDay(new Date(s.surgery_date), day))
       .sort((a, b) => new Date(a.surgery_date).getTime() - new Date(b.surgery_date).getTime());
-  };
 
   const getColorForIndex = (index: number) => {
     const colors = [
@@ -83,20 +85,33 @@ const Calendar = () => {
   };
 
   const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
-
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
-
-  // Events for the month, filtered by selected day if any
   const monthSurgeries = surgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
   const eventsToShow = selectedDay ? selectedDaySurgeries : monthSurgeries;
 
+  // Check if selected day has availability config
+  const selectedDayHasAvailability = selectedDay
+    ? getSlotsForDay(selectedDay.getDay()).length > 0
+    : false;
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Visualize e gerencie os procedimentos agendados
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Visualize e gerencie os procedimentos agendados
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => navigate("/surgery-availability")}
+        >
+          <Settings2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Disponibilidade</span>
+        </Button>
       </div>
 
       <GoogleCalendarConnect onConnectionChange={setCalendarConnected} />
@@ -125,7 +140,7 @@ const Calendar = () => {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
               <p className="mt-4 text-muted-foreground">Carregando...</p>
             </div>
           ) : (
@@ -147,6 +162,7 @@ const Calendar = () => {
                     const isSelected = selectedDay && isSameDay(day, selectedDay);
                     const dayBusySlots = calendarConnected ? getBusySlotsForDay(day) : [];
                     const isFullyBusy = calendarConnected && isDayFullyBusy(day);
+                    const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
 
                     return (
                       <div
@@ -168,6 +184,12 @@ const Calendar = () => {
                             <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />
                           )}
                         </div>
+                        {/* Availability indicator */}
+                        {hasAvailability && daySurgeries.length === 0 && (
+                          <div className="mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 inline-block" />
+                          </div>
+                        )}
                         {daySurgeries.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-0.5">
                             {daySurgeries.length <= 3 ? (
@@ -185,57 +207,76 @@ const Calendar = () => {
                 </div>
               </div>
 
-              {/* Events List */}
+              {/* Day View or Events List */}
               <div className="mt-6 border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">
-                    {selectedDay
-                      ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                      : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
-                  </h3>
-                  {selectedDay && (
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
-                      Ver todo o mês
-                    </Button>
-                  )}
-                </div>
-                {eventsToShow.length > 0 ? (
-                  <div className="space-y-3">
-                    {eventsToShow.map((surgery, index) => {
-                      const surgeryDate = new Date(surgery.surgery_date);
-                      return (
-                        <Card
-                          key={surgery.id}
-                          className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getColorForIndex(index)}`}
-                          onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-base truncate">{surgery.name}</h4>
-                                <p className="text-sm text-muted-foreground capitalize">{surgery.procedure}</p>
-                                {surgery.hospital && (
-                                  <p className="text-xs text-muted-foreground mt-1">{surgery.hospital}</p>
-                                )}
-                                {!selectedDay && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="text-lg font-bold ml-4">
-                                {format(surgeryDate, "HH:mm")}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
+                {selectedDay && selectedDayHasAvailability ? (
+                  <>
+                    <div className="flex items-center justify-end mb-3">
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
+                        Ver todo o mês
+                      </Button>
+                    </div>
+                    <CalendarDayView
+                      date={selectedDay}
+                      surgeries={surgeries}
+                      availabilitySlots={availabilitySlots}
+                      busySlots={busySlots}
+                      calendarConnected={calendarConnected}
+                    />
+                  </>
                 ) : (
-                  <p className="text-muted-foreground text-sm py-4 text-center">
-                    {selectedDay ? "Nenhuma cirurgia agendada para este dia" : "Nenhuma cirurgia agendada para este mês"}
-                  </p>
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold">
+                        {selectedDay
+                          ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                          : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
+                      </h3>
+                      {selectedDay && (
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
+                          Ver todo o mês
+                        </Button>
+                      )}
+                    </div>
+                    {eventsToShow.length > 0 ? (
+                      <div className="space-y-3">
+                        {eventsToShow.map((surgery, index) => {
+                          const surgeryDate = new Date(surgery.surgery_date);
+                          return (
+                            <Card
+                              key={surgery.id}
+                              className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getColorForIndex(index)}`}
+                              onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-base truncate">{surgery.name}</h4>
+                                    <p className="text-sm text-muted-foreground capitalize">{surgery.procedure}</p>
+                                    {surgery.hospital && (
+                                      <p className="text-xs text-muted-foreground mt-1">{surgery.hospital}</p>
+                                    )}
+                                    {!selectedDay && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="text-lg font-bold ml-4">
+                                    {format(surgeryDate, "HH:mm")}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm py-4 text-center">
+                        {selectedDay ? "Nenhuma cirurgia agendada para este dia" : "Nenhuma cirurgia agendada para este mês"}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </>

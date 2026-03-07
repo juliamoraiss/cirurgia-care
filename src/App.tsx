@@ -18,6 +18,7 @@ import PendingUsers from "./pages/PendingUsers";
 import PendingApproval from "./pages/PendingApproval";
 import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
+import SurgeryAvailability from "./pages/SurgeryAvailability";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -129,6 +130,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PaidTraffic />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/surgery-availability"
+        element={
+          <ProtectedRoute>
+            <SurgeryAvailability />
           </ProtectedRoute>
         }
       />

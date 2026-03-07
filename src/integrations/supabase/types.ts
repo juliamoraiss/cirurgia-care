@@ -530,6 +530,48 @@ export type Database = {
         }
         Relationships: []
       }
+      surgery_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          default_duration_minutes: number
+          doctor_id: string
+          end_time: string
+          id: string
+          is_active: boolean
+          location: string | null
+          max_surgeries_per_day: number
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          default_duration_minutes?: number
+          doctor_id: string
+          end_time: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          max_surgeries_per_day?: number
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          default_duration_minutes?: number
+          doctor_id?: string
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          max_surgeries_per_day?: number
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_activities: {
         Row: {
           activity_type: string
