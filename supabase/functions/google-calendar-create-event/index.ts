@@ -53,33 +53,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        Authorization: authHeader,
-        apikey: supabaseAnonKey,
-      },
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    if (!userResponse.ok) {
-      console.error("Auth user lookup failed", await userResponse.text());
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("Claims validation failed", claimsError);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const authUser = await userResponse.json();
-    if (!authUser?.id) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const user = { id: authUser.id as string };
+    const user = { id: claimsData.claims.sub as string };
 
     const {
       patient_name,
