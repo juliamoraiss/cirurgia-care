@@ -60,14 +60,35 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    let userId: string | null = null;
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (claimsData?.claims?.sub) {
+      userId = claimsData.claims.sub as string;
     }
-    const user = { id: claimsData.claims.sub as string };
+
+    if (!userId) {
+      const supabaseServiceAuth = createClient(
+        supabaseUrl,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: userData, error: userError } = await supabaseServiceAuth.auth.getUser(token);
+      if (userData?.user?.id) {
+        userId = userData.user.id;
+      }
+
+      if (!userId) {
+        console.error("Auth validation failed", {
+          claimsError: claimsError?.message,
+          userError: userError?.message,
+        });
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    const user = { id: userId };
 
     const {
       patient_name,
