@@ -42,34 +42,46 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-    const state = params.get("state");
+    const oauthError = params.get("error");
 
-    if (code && state === "google_calendar") {
-      setConnecting(true);
-      const redirectUri = `${window.location.origin}/calendar`;
-
-      supabase.functions
-        .invoke("google-calendar-auth", {
-          body: {
-            action: "exchange_code",
-            code,
-            redirect_uri: redirectUri,
-          },
-        })
-        .then(({ data, error }) => {
-          if (error || !data?.success) {
-            toast.error("Erro ao conectar Google Agenda");
-          } else {
-            toast.success("Google Agenda conectada com sucesso!");
-            setConnected(true);
-            onConnectionChange?.(true);
-          }
-          // Clean URL
-          window.history.replaceState({}, "", "/calendar");
-        })
-        .finally(() => setConnecting(false));
+    if (oauthError) {
+      toast.error("Autorização do Google recusada ou inválida");
+      window.history.replaceState({}, "", "/calendar");
+      return;
     }
-  }, [onConnectionChange]);
+
+    if (!code) return;
+
+    // Prevent duplicate exchanges on re-renders
+    if (sessionStorage.getItem("google_calendar_exchanging") === "1") return;
+    sessionStorage.setItem("google_calendar_exchanging", "1");
+
+    setConnecting(true);
+    const redirectUri = `${window.location.origin}/calendar`;
+
+    supabase.functions
+      .invoke("google-calendar-auth", {
+        body: {
+          action: "exchange_code",
+          code,
+          redirect_uri: redirectUri,
+        },
+      })
+      .then(async ({ data, error }) => {
+        if (error || !data?.success) {
+          toast.error(data?.error || "Erro ao conectar Google Agenda");
+          return;
+        }
+
+        toast.success("Google Agenda conectada com sucesso!");
+        await checkConnection();
+      })
+      .finally(() => {
+        sessionStorage.removeItem("google_calendar_exchanging");
+        window.history.replaceState({}, "", "/calendar");
+        setConnecting(false);
+      });
+  }, [checkConnection, onConnectionChange]);
 
   const handleConnect = async () => {
     setConnecting(true);
