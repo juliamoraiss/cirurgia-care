@@ -517,6 +517,22 @@ const PatientForm = () => {
 
     setDeletingPatient(true);
     try {
+      // Excluir evento do Google Agenda se existir
+      if (googleCalendarEventId && formData.responsible_user_id) {
+        try {
+          await supabase.functions.invoke("google-calendar-create-event", {
+            body: {
+              action: "delete",
+              existing_event_id: googleCalendarEventId,
+              patient_id: id,
+              target_user_id: formData.responsible_user_id,
+            },
+          });
+        } catch (err) {
+          console.warn("Could not delete Google Calendar event", err);
+        }
+      }
+
       // Primeiro, excluir todos os arquivos do storage
       const { data: filesData } = await supabase
         .from("patient_files")
