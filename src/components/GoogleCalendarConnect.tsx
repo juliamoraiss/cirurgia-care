@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Calendar, Check, Loader2, Unlink, RefreshCw } from "lucide-react";
+import { Calendar, Check, Loader2, Unlink } from "lucide-react";
 
 interface GoogleCalendarConnectProps {
   onConnectionChange?: (connected: boolean) => void;
@@ -38,6 +38,33 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
     checkConnection();
   }, [checkConnection]);
 
+  const extractFunctionErrorMessage = async (error: unknown): Promise<string | null> => {
+    const maybeError = error as {
+      message?: string;
+      context?: { json?: () => Promise<any>; text?: () => Promise<string> };
+    };
+
+    if (maybeError?.context?.json) {
+      try {
+        const parsed = await maybeError.context.json();
+        if (parsed?.error) return String(parsed.error);
+      } catch {
+        // noop
+      }
+    }
+
+    if (maybeError?.context?.text) {
+      try {
+        const text = await maybeError.context.text();
+        if (text) return text;
+      } catch {
+        // noop
+      }
+    }
+
+    return maybeError?.message || null;
+  };
+
   // Handle OAuth callback code from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -52,36 +79,41 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 
     if (!code) return;
 
-    // Prevent duplicate exchanges on re-renders
-    if (sessionStorage.getItem("google_calendar_exchanging") === "1") return;
-    sessionStorage.setItem("google_calendar_exchanging", "1");
+    const exchangeCodeKey = "google_calendar_exchange_code";
+
+    // Prevent duplicate exchanges for the same authorization code
+    if (sessionStorage.getItem(exchangeCodeKey) === code) return;
+    sessionStorage.setItem(exchangeCodeKey, code);
 
     setConnecting(true);
     const redirectUri = `${window.location.origin}/calendar`;
 
-    supabase.functions
-      .invoke("google-calendar-auth", {
-        body: {
-          action: "exchange_code",
-          code,
-          redirect_uri: redirectUri,
-        },
-      })
-      .then(async ({ data, error }) => {
+    const exchangeCode = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
+          body: {
+            action: "exchange_code",
+            code,
+            redirect_uri: redirectUri,
+          },
+        });
+
         if (error || !data?.success) {
-          toast.error(data?.error || "Erro ao conectar Google Agenda");
+          const detailedError = (data as { error?: string } | null)?.error || await extractFunctionErrorMessage(error);
+          toast.error(detailedError || "Erro ao conectar Google Agenda");
           return;
         }
 
         toast.success("Google Agenda conectada com sucesso!");
         await checkConnection();
-      })
-      .finally(() => {
-        sessionStorage.removeItem("google_calendar_exchanging");
+      } finally {
         window.history.replaceState({}, "", "/calendar");
         setConnecting(false);
-      });
-  }, [checkConnection, onConnectionChange]);
+      }
+    };
+
+    void exchangeCode();
+  }, [checkConnection]);
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -192,3 +224,4 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 };
 
 export default GoogleCalendarConnect;
+
