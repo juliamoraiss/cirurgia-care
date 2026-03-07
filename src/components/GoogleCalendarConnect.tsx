@@ -104,7 +104,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
         const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
           body: {
             action: "exchange_code",
-            code,
+            code: finalCode,
             redirect_uri: redirectUri,
           },
         });
