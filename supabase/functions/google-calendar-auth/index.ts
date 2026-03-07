@@ -32,17 +32,21 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    let userId: string | undefined;
+    const tokenParts = token.split(".");
+    if (tokenParts.length !== 3) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let userId: string | null = null;
     try {
-      const jwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
-      const { payload } = await jwtVerify(token, jwks, {
-        issuer: `${supabaseUrl}/auth/v1`,
-        audience: "authenticated",
-      });
-      userId = typeof payload.sub === "string" ? payload.sub : undefined;
-    } catch (err) {
-      console.error("JWT verification failed", err);
+      const payload = JSON.parse(atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      userId = typeof payload?.sub === "string" ? payload.sub : null;
+    } catch {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -50,6 +54,23 @@ Deno.serve(async (req) => {
     }
 
     if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const verifyResponse = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?select=id&id=eq.${encodeURIComponent(userId)}&limit=1`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: authHeader,
+        },
+      }
+    );
+
+    if (verifyResponse.status === 401 || verifyResponse.status === 403) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
