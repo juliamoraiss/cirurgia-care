@@ -181,33 +181,59 @@ const Calendar = () => {
                 </div>
               </div>
 
-              {/* Selected Day Events */}
-              {selectedDay && (
-                <div className="mt-6 border-t pt-4">
-                  <h3 className="text-lg font-semibold mb-3">
-                    {format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {/* Events List */}
+              <div className="mt-6 border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">
+                    {selectedDay
+                      ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                      : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
                   </h3>
-                  {selectedDaySurgeries.length > 0 ? (
-                    <div className="space-y-3">
-                      {selectedDaySurgeries.map((surgery, index) => {
-                        const surgeryDate = new Date(surgery.surgery_date);
-                        return (
-                          <Card
-                            key={surgery.id}
-                            className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getColorForIndex(index)}`}
-                            onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-bold text-base truncate">{surgery.name}</h4>
-                                  <p className="text-sm text-muted-foreground capitalize">{surgery.procedure}</p>
-                                  {surgery.hospital && (
-                                    <p className="text-xs text-muted-foreground mt-1">{surgery.hospital}</p>
-                                  )}
-                                </div>
-                                <div className="text-lg font-bold ml-4">
-                                  {format(surgeryDate, "HH:mm")}
+                  {selectedDay && (
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
+                      Ver todo o mês
+                    </Button>
+                  )}
+                </div>
+                {eventsToShow.length > 0 ? (
+                  <div className="space-y-3">
+                    {eventsToShow.map((surgery, index) => {
+                      const surgeryDate = new Date(surgery.surgery_date);
+                      return (
+                        <Card
+                          key={surgery.id}
+                          className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getColorForIndex(index)}`}
+                          onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-base truncate">{surgery.name}</h4>
+                                <p className="text-sm text-muted-foreground capitalize">{surgery.procedure}</p>
+                                {surgery.hospital && (
+                                  <p className="text-xs text-muted-foreground mt-1">{surgery.hospital}</p>
+                                )}
+                                {!selectedDay && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-lg font-bold ml-4">
+                                {format(surgeryDate, "HH:mm")}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm py-4 text-center">
+                    {selectedDay ? "Nenhuma cirurgia agendada para este dia" : "Nenhuma cirurgia agendada para este mês"}
+                  </p>
+                )}
+              </div>
                                 </div>
                               </div>
                             </CardContent>
