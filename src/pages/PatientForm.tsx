@@ -39,7 +39,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2, Link2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PatientTasksSection } from "@/components/PatientTasksSection";
