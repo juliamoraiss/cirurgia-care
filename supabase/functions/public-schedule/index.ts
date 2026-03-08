@@ -120,8 +120,15 @@ Deno.serve(async (req) => {
         );
 
         for (const slot of daySlots) {
-          // Count surgeries already on this day for this slot config
           const dateStr = date.toISOString().split("T")[0];
+
+          // Check if date is blocked
+          const isBlocked = (scheduleBlocks || []).some(
+            (b: any) => dateStr >= b.start_date && dateStr <= b.end_date
+          );
+          if (isBlocked) continue;
+
+          // Count surgeries already on this day for this slot config
 
           const surgeriesOnDay = (existingSurgeries || []).filter((s: any) => {
             const sDate = new Date(s.surgery_date).toISOString().split("T")[0];
