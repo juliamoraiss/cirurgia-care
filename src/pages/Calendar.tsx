@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2, CalendarOff } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2, CalendarOff, Ban, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,9 +31,13 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
+  const [blockEndDate, setBlockEndDate] = useState("");
+  const [blockMode, setBlockMode] = useState<"single" | "period">("single");
   const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
-  const { isDateBlocked } = useScheduleBlocks();
+  const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
   useEffect(() => {
     loadSurgeries();
@@ -84,6 +91,35 @@ const Calendar = () => {
 
   const handleDayClick = (day: Date) => {
     setSelectedDay(prev => prev && isSameDay(prev, day) ? null : day);
+  };
+
+  const handleBlockDay = () => {
+    if (!selectedDay) return;
+    setBlockMode("single");
+    setBlockReason("");
+    setBlockEndDate("");
+    setBlockDialogOpen(true);
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!selectedDay) return;
+    const startStr = format(selectedDay, "yyyy-MM-dd");
+    const endStr = blockMode === "period" && blockEndDate ? blockEndDate : startStr;
+    if (blockMode === "period" && endStr < startStr) {
+      toast.error("A data final deve ser maior ou igual à data inicial");
+      return;
+    }
+    await addBlock(startStr, endStr, blockReason || undefined);
+    setBlockDialogOpen(false);
+  };
+
+  const handleUnblockDay = async () => {
+    if (!selectedDay) return;
+    const dateStr = format(selectedDay, "yyyy-MM-dd");
+    const block = blocks.find(b => dateStr >= b.start_date && dateStr <= b.end_date);
+    if (block) {
+      await deleteBlock(block.id);
+    }
   };
 
   const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
@@ -221,7 +257,18 @@ const Calendar = () => {
               <div className="mt-6 border-t pt-4">
                 {selectedDay && selectedDayHasAvailability ? (
                   <>
-                    <div className="flex items-center justify-end mb-3">
+                    <div className="flex items-center justify-end gap-2 mb-3">
+                      {selectedDay && isDateBlocked(selectedDay) ? (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Desbloquear
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
+                          <Ban className="h-3.5 w-3.5" />
+                          Bloquear
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
                         Ver todo o mês
                       </Button>
@@ -242,11 +289,26 @@ const Calendar = () => {
                           ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
                           : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
                       </h3>
-                      {selectedDay && (
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
-                          Ver todo o mês
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {selectedDay && (
+                          <>
+                            {isDateBlocked(selectedDay) ? (
+                              <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Desbloquear
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
+                                <Ban className="h-3.5 w-3.5" />
+                                Bloquear
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
+                              Ver todo o mês
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                     {eventsToShow.length > 0 ? (
                       <div className="space-y-3">
@@ -293,6 +355,66 @@ const Calendar = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Block Dialog */}
+      <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5" />
+              Bloquear Agenda
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {selectedDay && `A partir de ${format(selectedDay, "dd/MM/yyyy")}`}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant={blockMode === "single" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setBlockMode("single")}
+              >
+                Apenas este dia
+              </Button>
+              <Button
+                variant={blockMode === "period" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setBlockMode("period")}
+              >
+                Período
+              </Button>
+            </div>
+            {blockMode === "period" && (
+              <div className="space-y-2">
+                <Label>Data final</Label>
+                <Input
+                  type="date"
+                  value={blockEndDate}
+                  min={selectedDay ? format(selectedDay, "yyyy-MM-dd") : undefined}
+                  onChange={(e) => setBlockEndDate(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Motivo (opcional)</Label>
+              <Input
+                placeholder="Ex: Férias, Congresso..."
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBlockDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmBlock} disabled={blockMode === "period" && !blockEndDate}>
+              Confirmar Bloqueio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
