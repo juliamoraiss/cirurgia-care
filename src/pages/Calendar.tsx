@@ -289,11 +289,26 @@ const Calendar = () => {
                           ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
                           : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
                       </h3>
-                      {selectedDay && (
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
-                          Ver todo o mês
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {selectedDay && (
+                          <>
+                            {isDateBlocked(selectedDay) ? (
+                              <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Desbloquear
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
+                                <Ban className="h-3.5 w-3.5" />
+                                Bloquear
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
+                              Ver todo o mês
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                     {eventsToShow.length > 0 ? (
                       <div className="space-y-3">
