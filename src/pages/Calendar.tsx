@@ -207,32 +207,28 @@ const Calendar = () => {
                       <div
                         key={index}
                         onClick={() => handleDayClick(day)}
-                        className={`border rounded-lg p-1.5 md:p-2 min-h-[60px] md:min-h-[80px] flex flex-col cursor-pointer transition-all ${
-                          isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-50"
+                        className={`border rounded-xl p-1 min-h-[52px] md:min-h-[72px] flex flex-col items-center cursor-pointer transition-all ${
+                          isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-40"
                         } ${isToday ? "ring-2 ring-primary" : ""} ${
                           isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
-                        } ${isFullyBusy || isBlocked ? "bg-muted/40" : ""}`}
+                        } ${isBlocked ? "bg-destructive/5" : ""}`}
                       >
-                        <div className={`flex items-center justify-between text-sm md:text-base font-bold ${
+                        <div className={`flex items-center justify-center w-full text-xs md:text-sm font-semibold ${
                           isCurrentMonth ? "text-foreground" : "text-muted-foreground"
                         }`}>
-                          <span className={isToday ? "bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-xs" : ""}>
+                          <span className={isToday ? "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs" : "w-6 h-6 flex items-center justify-center"}>
                             {format(day, "d")}
                           </span>
-                          {dayBusySlots.length > 0 && !isFullyBusy && (
-                            <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />
-                          )}
                         </div>
                         {/* Blocked indicator */}
                         {isBlocked && (
-                          <div className="mt-1 flex items-center gap-1">
+                          <div className="mt-0.5 flex items-center justify-center">
                             <CalendarOff className="h-3 w-3 text-destructive/70" />
-                            <span className="text-[9px] text-destructive/70 font-medium">Bloqueado</span>
                           </div>
                         )}
                         {/* Availability indicator */}
                         {!isBlocked && hasAvailability && daySurgeries.length === 0 && (
-                          <div className="mt-1">
+                          <div className="mt-0.5 flex justify-center">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 inline-block" />
                           </div>
                         )}
@@ -283,32 +279,30 @@ const Calendar = () => {
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-semibold">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                      <h3 className="text-base sm:text-lg font-semibold">
                         {selectedDay
                           ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
                           : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
                       </h3>
-                      <div className="flex items-center gap-2">
-                        {selectedDay && (
-                          <>
-                            {isDateBlocked(selectedDay) ? (
-                              <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Desbloquear
-                              </Button>
-                            ) : (
-                              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
-                                <Ban className="h-3.5 w-3.5" />
-                                Bloquear
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
-                              Ver todo o mês
+                      {selectedDay && (
+                        <div className="flex items-center gap-2">
+                          {isDateBlocked(selectedDay) ? (
+                            <Button variant="outline" size="sm" className="gap-1.5 text-destructive flex-1 sm:flex-none" onClick={handleUnblockDay}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Desbloquear
                             </Button>
-                          </>
-                        )}
-                      </div>
+                          ) : (
+                            <Button variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none" onClick={handleBlockDay}>
+                              <Ban className="h-3.5 w-3.5" />
+                              Bloquear
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" className="flex-1 sm:flex-none" onClick={() => setSelectedDay(null)}>
+                            Ver mês
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     {eventsToShow.length > 0 ? (
                       <div className="space-y-3">
