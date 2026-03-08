@@ -100,6 +100,13 @@ Deno.serve(async (req) => {
         .gte("surgery_date", now.toISOString())
         .lte("surgery_date", thirtyDaysLater.toISOString());
 
+      // Get schedule blocks for the doctor
+      const { data: scheduleBlocks } = await supabase
+        .from("schedule_blocks")
+        .select("start_date, end_date")
+        .eq("doctor_id", link.doctor_id)
+        .gte("end_date", now.toISOString().split("T")[0]);
+
       // Build available slots for the next 30 days
       const slots: { date: string; time: string; datetime: string }[] = [];
 
