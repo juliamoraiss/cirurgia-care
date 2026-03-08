@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2, CalendarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import GoogleCalendarConnect from "@/components/GoogleCalendarConnect";
 import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailability";
 import { useSurgeryAvailability } from "@/hooks/useSurgeryAvailability";
+import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
 import { CalendarDayView } from "@/components/CalendarDayView";
 
 interface Surgery {
@@ -29,6 +30,7 @@ const Calendar = () => {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
+  const { isDateBlocked } = useScheduleBlocks();
 
   useEffect(() => {
     loadSurgeries();
@@ -163,6 +165,7 @@ const Calendar = () => {
                     const dayBusySlots = calendarConnected ? getBusySlotsForDay(day) : [];
                     const isFullyBusy = calendarConnected && isDayFullyBusy(day);
                     const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
+                    const isBlocked = isDateBlocked(day);
 
                     return (
                       <div
@@ -172,7 +175,7 @@ const Calendar = () => {
                           isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-50"
                         } ${isToday ? "ring-2 ring-primary" : ""} ${
                           isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
-                        } ${isFullyBusy ? "bg-muted/40" : ""}`}
+                        } ${isFullyBusy || isBlocked ? "bg-muted/40" : ""}`}
                       >
                         <div className={`flex items-center justify-between text-sm md:text-base font-bold ${
                           isCurrentMonth ? "text-foreground" : "text-muted-foreground"
@@ -184,8 +187,15 @@ const Calendar = () => {
                             <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />
                           )}
                         </div>
+                        {/* Blocked indicator */}
+                        {isBlocked && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <CalendarOff className="h-3 w-3 text-destructive/70" />
+                            <span className="text-[9px] text-destructive/70 font-medium">Bloqueado</span>
+                          </div>
+                        )}
                         {/* Availability indicator */}
-                        {hasAvailability && daySurgeries.length === 0 && (
+                        {!isBlocked && hasAvailability && daySurgeries.length === 0 && (
                           <div className="mt-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 inline-block" />
                           </div>

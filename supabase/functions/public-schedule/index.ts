@@ -100,6 +100,13 @@ Deno.serve(async (req) => {
         .gte("surgery_date", now.toISOString())
         .lte("surgery_date", thirtyDaysLater.toISOString());
 
+      // Get schedule blocks for the doctor
+      const { data: scheduleBlocks } = await supabase
+        .from("schedule_blocks")
+        .select("start_date, end_date")
+        .eq("doctor_id", link.doctor_id)
+        .gte("end_date", now.toISOString().split("T")[0]);
+
       // Build available slots for the next 30 days
       const slots: { date: string; time: string; datetime: string }[] = [];
 
@@ -113,8 +120,15 @@ Deno.serve(async (req) => {
         );
 
         for (const slot of daySlots) {
-          // Count surgeries already on this day for this slot config
           const dateStr = date.toISOString().split("T")[0];
+
+          // Check if date is blocked
+          const isBlocked = (scheduleBlocks || []).some(
+            (b: any) => dateStr >= b.start_date && dateStr <= b.end_date
+          );
+          if (isBlocked) continue;
+
+          // Count surgeries already on this day for this slot config
 
           const surgeriesOnDay = (existingSurgeries || []).filter((s: any) => {
             const sDate = new Date(s.surgery_date).toISOString().split("T")[0];
