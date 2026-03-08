@@ -355,6 +355,66 @@ const Calendar = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Block Dialog */}
+      <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5" />
+              Bloquear Agenda
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {selectedDay && `A partir de ${format(selectedDay, "dd/MM/yyyy")}`}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant={blockMode === "single" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setBlockMode("single")}
+              >
+                Apenas este dia
+              </Button>
+              <Button
+                variant={blockMode === "period" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setBlockMode("period")}
+              >
+                Período
+              </Button>
+            </div>
+            {blockMode === "period" && (
+              <div className="space-y-2">
+                <Label>Data final</Label>
+                <Input
+                  type="date"
+                  value={blockEndDate}
+                  min={selectedDay ? format(selectedDay, "yyyy-MM-dd") : undefined}
+                  onChange={(e) => setBlockEndDate(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Motivo (opcional)</Label>
+              <Input
+                placeholder="Ex: Férias, Congresso..."
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBlockDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmBlock} disabled={blockMode === "period" && !blockEndDate}>
+              Confirmar Bloqueio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
