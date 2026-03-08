@@ -225,14 +225,13 @@ const Calendar = () => {
                         </div>
                         {/* Blocked indicator */}
                         {isBlocked && (
-                          <div className="mt-1 flex items-center gap-1">
+                          <div className="mt-0.5 flex items-center justify-center">
                             <CalendarOff className="h-3 w-3 text-destructive/70" />
-                            <span className="text-[9px] text-destructive/70 font-medium">Bloqueado</span>
                           </div>
                         )}
                         {/* Availability indicator */}
                         {!isBlocked && hasAvailability && daySurgeries.length === 0 && (
-                          <div className="mt-1">
+                          <div className="mt-0.5 flex justify-center">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 inline-block" />
                           </div>
                         )}
