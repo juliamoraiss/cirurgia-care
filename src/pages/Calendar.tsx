@@ -207,21 +207,18 @@ const Calendar = () => {
                       <div
                         key={index}
                         onClick={() => handleDayClick(day)}
-                        className={`border rounded-lg p-1.5 md:p-2 min-h-[60px] md:min-h-[80px] flex flex-col cursor-pointer transition-all ${
-                          isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-50"
+                        className={`border rounded-xl p-1 min-h-[52px] md:min-h-[72px] flex flex-col items-center cursor-pointer transition-all ${
+                          isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-40"
                         } ${isToday ? "ring-2 ring-primary" : ""} ${
                           isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
-                        } ${isFullyBusy || isBlocked ? "bg-muted/40" : ""}`}
+                        } ${isBlocked ? "bg-destructive/5" : ""}`}
                       >
-                        <div className={`flex items-center justify-between text-sm md:text-base font-bold ${
+                        <div className={`flex items-center justify-center w-full text-xs md:text-sm font-semibold ${
                           isCurrentMonth ? "text-foreground" : "text-muted-foreground"
                         }`}>
-                          <span className={isToday ? "bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-xs" : ""}>
+                          <span className={isToday ? "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs" : "w-6 h-6 flex items-center justify-center"}>
                             {format(day, "d")}
                           </span>
-                          {dayBusySlots.length > 0 && !isFullyBusy && (
-                            <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />
-                          )}
                         </div>
                         {/* Blocked indicator */}
                         {isBlocked && (
