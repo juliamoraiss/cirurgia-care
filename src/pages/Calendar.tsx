@@ -30,6 +30,7 @@ const Calendar = () => {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
+  const { isDateBlocked } = useScheduleBlocks();
 
   useEffect(() => {
     loadSurgeries();
