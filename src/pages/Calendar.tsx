@@ -37,7 +37,7 @@ const Calendar = () => {
   const [blockMode, setBlockMode] = useState<"single" | "period">("single");
   const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
-  const { isDateBlocked } = useScheduleBlocks();
+  const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
   useEffect(() => {
     loadSurgeries();
