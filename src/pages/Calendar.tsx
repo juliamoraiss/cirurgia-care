@@ -257,7 +257,18 @@ const Calendar = () => {
               <div className="mt-6 border-t pt-4">
                 {selectedDay && selectedDayHasAvailability ? (
                   <>
-                    <div className="flex items-center justify-end mb-3">
+                    <div className="flex items-center justify-end gap-2 mb-3">
+                      {selectedDay && isDateBlocked(selectedDay) ? (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Desbloquear
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
+                          <Ban className="h-3.5 w-3.5" />
+                          Bloquear
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
                         Ver todo o mês
                       </Button>
