@@ -93,6 +93,35 @@ const Calendar = () => {
     setSelectedDay(prev => prev && isSameDay(prev, day) ? null : day);
   };
 
+  const handleBlockDay = () => {
+    if (!selectedDay) return;
+    setBlockMode("single");
+    setBlockReason("");
+    setBlockEndDate("");
+    setBlockDialogOpen(true);
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!selectedDay) return;
+    const startStr = format(selectedDay, "yyyy-MM-dd");
+    const endStr = blockMode === "period" && blockEndDate ? blockEndDate : startStr;
+    if (blockMode === "period" && endStr < startStr) {
+      toast.error("A data final deve ser maior ou igual à data inicial");
+      return;
+    }
+    await addBlock(startStr, endStr, blockReason || undefined);
+    setBlockDialogOpen(false);
+  };
+
+  const handleUnblockDay = async () => {
+    if (!selectedDay) return;
+    const dateStr = format(selectedDay, "yyyy-MM-dd");
+    const block = blocks.find(b => dateStr >= b.start_date && dateStr <= b.end_date);
+    if (block) {
+      await deleteBlock(block.id);
+    }
+  };
+
   const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
   const monthSurgeries = surgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
