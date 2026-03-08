@@ -133,7 +133,7 @@ const Calendar = () => {
     : false;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24 md:pb-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
