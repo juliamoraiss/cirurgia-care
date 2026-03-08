@@ -282,32 +282,30 @@ const Calendar = () => {
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-semibold">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                      <h3 className="text-base sm:text-lg font-semibold">
                         {selectedDay
                           ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
                           : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
                       </h3>
-                      <div className="flex items-center gap-2">
-                        {selectedDay && (
-                          <>
-                            {isDateBlocked(selectedDay) ? (
-                              <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Desbloquear
-                              </Button>
-                            ) : (
-                              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
-                                <Ban className="h-3.5 w-3.5" />
-                                Bloquear
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
-                              Ver todo o mês
+                      {selectedDay && (
+                        <div className="flex items-center gap-2">
+                          {isDateBlocked(selectedDay) ? (
+                            <Button variant="outline" size="sm" className="gap-1.5 text-destructive flex-1 sm:flex-none" onClick={handleUnblockDay}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Desbloquear
                             </Button>
-                          </>
-                        )}
-                      </div>
+                          ) : (
+                            <Button variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none" onClick={handleBlockDay}>
+                              <Ban className="h-3.5 w-3.5" />
+                              Bloquear
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" className="flex-1 sm:flex-none" onClick={() => setSelectedDay(null)}>
+                            Ver mês
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     {eventsToShow.length > 0 ? (
                       <div className="space-y-3">
