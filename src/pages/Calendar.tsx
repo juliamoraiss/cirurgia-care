@@ -165,6 +165,7 @@ const Calendar = () => {
                     const dayBusySlots = calendarConnected ? getBusySlotsForDay(day) : [];
                     const isFullyBusy = calendarConnected && isDayFullyBusy(day);
                     const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
+                    const isBlocked = isDateBlocked(day);
 
                     return (
                       <div
