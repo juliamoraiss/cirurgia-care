@@ -175,7 +175,7 @@ const Calendar = () => {
                           isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-50"
                         } ${isToday ? "ring-2 ring-primary" : ""} ${
                           isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
-                        } ${isFullyBusy ? "bg-muted/40" : ""}`}
+                        } ${isFullyBusy || isBlocked ? "bg-muted/40" : ""}`}
                       >
                         <div className={`flex items-center justify-between text-sm md:text-base font-bold ${
                           isCurrentMonth ? "text-foreground" : "text-muted-foreground"
