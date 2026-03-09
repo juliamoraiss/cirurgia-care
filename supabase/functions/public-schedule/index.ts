@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
     // Get patient info (minimal data)
     const { data: patient } = await supabase
       .from("patients")
-      .select("id, name, procedure, hospital")
+      .select("id, name, procedure, hospital, guide_validity_date")
       .eq("id", link.patient_id)
       .single();
 
@@ -253,6 +253,7 @@ Deno.serve(async (req) => {
 
       // Build available slots for the next 30 days
       const slots: { date: string; time: string; datetime: string }[] = [];
+      const guideValidityDate = patient.guide_validity_date ? new Date(patient.guide_validity_date + "T23:59:59") : null;
 
       for (let d = 1; d <= 30; d++) {
         const date = new Date(now);
@@ -265,6 +266,9 @@ Deno.serve(async (req) => {
 
         for (const slot of daySlots) {
           const dateStr = date.toISOString().split("T")[0];
+
+          // Skip dates after guide validity date
+          if (guideValidityDate && new Date(dateStr) > guideValidityDate) continue;
 
           // Check if date is blocked
           const isBlocked = (scheduleBlocks || []).some(
@@ -322,6 +326,7 @@ Deno.serve(async (req) => {
         procedure: patient.procedure,
         hospital: patient.hospital,
         doctor_name: doctorProfile?.full_name || "Médico",
+        guide_validity_date: patient.guide_validity_date || null,
         slots,
       });
     }
