@@ -89,6 +89,7 @@ const PublicSchedule = () => {
       if (!res.ok) {
         if (result.status === "used") {
           setUsedLinkData(result);
+          setExistingFiles(result.existing_files || []);
           setState("used");
         } else if (result.status === "expired") {
           setState("expired");
