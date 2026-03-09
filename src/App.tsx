@@ -143,7 +143,7 @@ function AppRoutes() {
         }
       />
       <Route path="/agendar/:token" element={<PublicSchedule />} />
-      <Route path="/schedule/:token" element={<PublicSchedule />} />
+      <Route path="/schedule/:token" element={<Navigate to={window.location.pathname.replace('/schedule/', '/agendar/')} replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
