@@ -20,6 +20,7 @@ interface ScheduleData {
   procedure: string;
   hospital: string | null;
   doctor_name: string;
+  guide_validity_date: string | null;
   slots: Slot[];
 }
 
