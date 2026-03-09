@@ -169,6 +169,13 @@ Deno.serve(async (req) => {
         .eq("id", link.doctor_id)
         .single();
 
+      // Fetch existing uploaded files for this patient
+      const { data: existingFiles } = await supabase
+        .from("patient_files")
+        .select("id, file_name, file_type, file_size, created_at")
+        .eq("patient_id", link.patient_id)
+        .order("created_at", { ascending: false });
+
       return json({
         status: "used",
         patient_id: link.patient_id,
@@ -177,6 +184,7 @@ Deno.serve(async (req) => {
         hospital: usedPatient?.hospital,
         surgery_date: usedPatient?.surgery_date,
         doctor_name: doctorProfile?.full_name || "Médico",
+        existing_files: existingFiles || [],
       });
     }
 
