@@ -71,6 +71,7 @@ const Dashboard = () => {
   const [activePatients, setActivePatients] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
+  const [showNotifications, setShowNotifications] = useState(false);
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
