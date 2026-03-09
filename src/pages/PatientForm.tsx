@@ -59,7 +59,7 @@ const patientSchema = z.object({
   procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(500, "Procedimento deve ter no máximo 500 caracteres"),
   hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
   insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
-  status: z.enum(["awaiting_authorization", "awaiting_consultation", "authorized", "pending_scheduling", "scheduled", "completed", "cancelled"]),
+  status: z.enum(["awaiting_authorization", "awaiting_consultation", "authorized", "pending_scheduling", "surgery_scheduled", "surgery_completed", "completed", "cancelled"]),
   origem: z.string().optional(),
 });
 
@@ -1029,8 +1029,11 @@ const PatientForm = () => {
                           Aguardando Consulta
                         </SelectItem>
                         <SelectItem value="authorized">Autorizado</SelectItem>
-                        <SelectItem value="completed">Cirurgia Realizada</SelectItem>
-                        <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
+                        <SelectItem value="pending_scheduling">Aguardando Agendamento</SelectItem>
+                        <SelectItem value="surgery_scheduled">Cirurgia Agendada</SelectItem>
+                        <SelectItem value="surgery_completed">Cirurgia Realizada (Pós-Op)</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
