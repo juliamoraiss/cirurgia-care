@@ -12,8 +12,6 @@ import { format, isPast, isToday, isFuture } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { WhatsAppTemplates } from "@/components/WhatsAppTemplates";
 import { useUserRole } from "@/hooks/useUserRole";
-import { PullToRefresh } from "@/components/PullToRefresh";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Task {
   id: string;
