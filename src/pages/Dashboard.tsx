@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList, Trash2 } from "lucide-react";
@@ -18,8 +18,6 @@ import { OncologyPatientsCard } from "@/components/OncologyPatientsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { capitalizeFirst } from "@/lib/utils";
-import { PullToRefresh } from "@/components/PullToRefresh";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardStats {
   totalPatients: number;
