@@ -142,6 +142,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/agendar/:token" element={<PublicSchedule />} />
       <Route path="/schedule/:token" element={<PublicSchedule />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
