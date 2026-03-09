@@ -78,6 +78,7 @@ const PublicSchedule = () => {
 
       if (!res.ok) {
         if (result.status === "used") {
+          setUsedLinkData(result);
           setState("used");
         } else if (result.status === "expired") {
           setState("expired");
