@@ -53,6 +53,7 @@ const Dashboard = () => {
     isAdmin
   } = useUserRole();
   const { professionals } = useProfessionals();
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     scheduledSurgeries: 0,
@@ -225,7 +226,8 @@ const Dashboard = () => {
     return prof?.full_name || "Não atribuído";
   };
 
-  return <TooltipProvider>
+  return (
+    <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -406,11 +408,13 @@ const Dashboard = () => {
                 }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>}
-                  </div>;
+                  </div>
             })}
-            </div>}
-      </CollapsibleCard>
+              </div>
+            }
+          </CollapsibleCard>
       </div>
-    </TooltipProvider>;
+    </TooltipProvider>
+  );
 };
 export default Dashboard;

@@ -1,7 +1,8 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
   Stethoscope,
@@ -21,17 +22,29 @@ import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/BottomNav";
 import { FAB } from "@/components/FAB";
 import { NotificationToggle } from "@/components/NotificationToggle";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface LayoutProps {
   children: ReactNode;
+  onRefresh?: () => Promise<void>;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, onRefresh }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { role, loading: roleLoading, isAdmin, isDentist } = useUserRole();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Default refresh: reload page
+  const handleRefresh = useCallback(async () => {
+    if (onRefresh) {
+      await onRefresh();
+    } else {
+      window.location.reload();
+    }
+  }, [onRefresh]);
 
   const menuItems = [
     {
@@ -259,7 +272,13 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 pb-20 md:pb-0">
-        {children}
+        {isMobile ? (
+          <PullToRefresh onRefresh={handleRefresh} className="min-h-full">
+            {children}
+          </PullToRefresh>
+        ) : (
+          children
+        )}
       </main>
 
       {/* Mobile Navigation */}
