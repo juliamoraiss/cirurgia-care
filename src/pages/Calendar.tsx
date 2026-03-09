@@ -15,6 +15,8 @@ import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailabi
 import { useSurgeryAvailability } from "@/hooks/useSurgeryAvailability";
 import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
 import { CalendarDayView } from "@/components/CalendarDayView";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Surgery {
   id: string;
