@@ -454,6 +454,19 @@ const PublicSchedule = () => {
               </CardContent>
             </Card>
 
+            {data.guide_validity_date && (
+              <Card className="mb-4 rounded-2xl shadow-md border-warning/30 bg-warning/5">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+                    <span className="text-foreground">
+                      Guia válida até <strong>{new Date(data.guide_validity_date + "T12:00:00").toLocaleDateString("pt-BR")}</strong>. Apenas datas dentro da validade estão disponíveis.
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {availableDates.length === 0 ? (
               <Card className="rounded-2xl shadow-md">
                 <CardContent className="py-12 text-center">
