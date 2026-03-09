@@ -148,6 +148,7 @@ function AppRoutes() {
         }
       />
       <Route path="/agendar/:token" element={<PublicSchedule />} />
+      <Route path="/schedule/:token" element={<RedirectSchedule />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
