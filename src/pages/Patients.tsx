@@ -329,8 +329,11 @@ const Patients = () => {
                             { value: "awaiting_consultation", label: "Ag. Consulta" },
                             { value: "awaiting_authorization", label: "Ag. Autorização" },
                             { value: "authorized", label: "Autorizado" },
-                            { value: "completed", label: "Realizada" },
-                            { value: "cancelled", label: "Cancelada" }
+                            { value: "pending_scheduling", label: "Ag. Agendamento" },
+                            { value: "surgery_scheduled", label: "Cirurgia Agendada" },
+                            { value: "surgery_completed", label: "Cirurgia Realizada" },
+                            { value: "completed", label: "Concluído" },
+                            { value: "cancelled", label: "Cancelado" }
                           ].map((status) => (
                             <button
                               key={status.value}
