@@ -208,6 +208,30 @@ const PublicSchedule = () => {
     }
   };
 
+  const deleteFile = async (fileId: string) => {
+    if (!token) return;
+    setDeletingFileId(fileId);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/public-schedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ action: "delete_file", token, file_id: fileId }),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setExistingFiles(prev => prev.filter(f => f.id !== fileId));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingFileId(null);
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
