@@ -155,8 +155,29 @@ Deno.serve(async (req) => {
       return json({ error: "Link não encontrado" }, 404);
     }
 
+    // Return patient data even if link is used to allow post-scheduling uploads
     if (link.used_at) {
-      return json({ error: "Este link já foi utilizado", status: "used" }, 410);
+      const { data: usedPatient } = await supabase
+        .from("patients")
+        .select("id, name, procedure, hospital, surgery_date")
+        .eq("id", link.patient_id)
+        .single();
+
+      const { data: doctorProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", link.doctor_id)
+        .single();
+
+      return json({
+        status: "used",
+        patient_id: link.patient_id,
+        patient_name: usedPatient?.name,
+        procedure: usedPatient?.procedure,
+        hospital: usedPatient?.hospital,
+        surgery_date: usedPatient?.surgery_date,
+        doctor_name: doctorProfile?.full_name || "Médico",
+      });
     }
 
     if (new Date(link.expires_at) < new Date()) {
