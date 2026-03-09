@@ -648,23 +648,9 @@ const PublicSchedule = () => {
                           </div>
                         ))}
 
-                        <Button
-                          onClick={uploadFiles}
-                          disabled={uploading}
-                          className="w-full rounded-xl"
-                        >
-                          {uploading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Enviando...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
-                            </>
-                          )}
-                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Os arquivos serão enviados automaticamente ao confirmar o agendamento.
+                        </p>
                       </div>
                     )}
 
