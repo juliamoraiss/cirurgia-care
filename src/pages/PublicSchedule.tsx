@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, User, Stethoscope, CheckCircle2, AlertTriangle, Loader2, MessageCircle, Upload, FileText, X, Paperclip } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Stethoscope, CheckCircle2, AlertTriangle, Loader2, MessageCircle, Upload, FileText, X, Paperclip, Trash2 } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -64,6 +64,7 @@ const PublicSchedule = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ uploaded: string[]; errors: string[] } | null>(null);
   const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -204,6 +205,30 @@ const PublicSchedule = () => {
       setUploadResult({ uploaded: [], errors: ["Erro de conexão ao enviar arquivos"] });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const deleteFile = async (fileId: string) => {
+    if (!token) return;
+    setDeletingFileId(fileId);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/public-schedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ action: "delete_file", token, file_id: fileId }),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setExistingFiles(prev => prev.filter(f => f.id !== fileId));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingFileId(null);
     }
   };
 
@@ -651,6 +676,18 @@ const PublicSchedule = () => {
                       {new Date(file.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
+                  <button
+                    onClick={() => deleteFile(file.id)}
+                    disabled={deletingFileId === file.id}
+                    className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0 transition-colors"
+                    title="Excluir arquivo"
+                  >
+                    {deletingFileId === file.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                    )}
+                  </button>
                 </div>
               ))}
             </CardContent>

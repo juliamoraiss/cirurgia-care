@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
     }
 
     // Handle JSON actions (existing logic)
-    const { action, token, slot } = await req.json();
+    const { action, token, slot, file_id } = await req.json();
 
     if (!token || typeof token !== "string") {
       return json({ error: "Token inválido" }, 400);
@@ -404,6 +404,40 @@ Deno.serve(async (req) => {
         hospital: patient.hospital,
         patient_id: patient.id,
       });
+    }
+
+    if (action === "delete_file") {
+      if (!file_id || typeof file_id !== "string") {
+        return json({ error: "ID do arquivo não informado" }, 400);
+      }
+
+      // Get the file record to verify it belongs to this patient
+      const { data: fileRecord, error: fileError } = await supabase
+        .from("patient_files")
+        .select("id, file_path, patient_id")
+        .eq("id", file_id)
+        .eq("patient_id", link.patient_id)
+        .single();
+
+      if (fileError || !fileRecord) {
+        return json({ error: "Arquivo não encontrado" }, 404);
+      }
+
+      // Delete from storage
+      await supabase.storage.from("patient-files").remove([fileRecord.file_path]);
+
+      // Delete from database
+      const { error: deleteError } = await supabase
+        .from("patient_files")
+        .delete()
+        .eq("id", file_id);
+
+      if (deleteError) {
+        console.error("Error deleting file:", deleteError);
+        return json({ error: "Erro ao excluir arquivo" }, 500);
+      }
+
+      return json({ success: true, message: "Arquivo excluído com sucesso" });
     }
 
     return json({ error: "Ação inválida" }, 400);
