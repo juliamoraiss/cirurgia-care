@@ -313,6 +313,7 @@ const Calendar = () => {
 
       {/* Day detail section */}
       {!loading && (
+        <AnimatePresence mode="wait">
         <div className="mx-4 mb-24">
           {selectedDay && selectedDayHasAvailability ? (
             <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
