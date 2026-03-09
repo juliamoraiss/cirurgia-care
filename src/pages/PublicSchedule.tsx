@@ -42,6 +42,7 @@ const PublicSchedule = () => {
   const { token } = useParams<{ token: string }>();
   const [state, setState] = useState<PageState>("loading");
   const [data, setData] = useState<ScheduleData | null>(null);
+  const [usedLinkData, setUsedLinkData] = useState<UsedLinkData | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
