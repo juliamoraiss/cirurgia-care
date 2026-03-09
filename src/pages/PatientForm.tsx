@@ -257,7 +257,16 @@ const PatientForm = () => {
       formattedValue = formatNameToTitleCase(value);
     }
     
-    setFormData((prev) => ({ ...prev, [field]: formattedValue }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: formattedValue };
+      
+      // Auto-revert status when surgery date is cleared
+      if (field === 'surgery_date' && !formattedValue && (prev.status === 'surgery_scheduled' || prev.status === 'pending_scheduling')) {
+        updated.status = 'authorized';
+      }
+      
+      return updated;
+    });
     
     if (field === 'procedure') {
       const newExams = getExamsForProcedure(value);
