@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
     // Get patient info (minimal data)
     const { data: patient } = await supabase
       .from("patients")
-      .select("id, name, procedure, hospital")
+      .select("id, name, procedure, hospital, guide_validity_date")
       .eq("id", link.patient_id)
       .single();
 
