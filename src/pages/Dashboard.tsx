@@ -53,7 +53,7 @@ const Dashboard = () => {
     isAdmin
   } = useUserRole();
   const { professionals } = useProfessionals();
-  const isMobile = useIsMobile();
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     scheduledSurgeries: 0,
