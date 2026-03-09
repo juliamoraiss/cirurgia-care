@@ -95,7 +95,7 @@ const SurgeryAvailability = () => {
             <Settings2 className="h-7 w-7" />
             Disponibilidade para Cirurgias
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">
+          <p className="md:text-base text-muted-foreground mt-1 text-xs">
             Configure seus horários e bloqueios de agenda
           </p>
         </div>
