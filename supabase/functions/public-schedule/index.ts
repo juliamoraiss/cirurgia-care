@@ -326,6 +326,7 @@ Deno.serve(async (req) => {
         procedure: patient.procedure,
         hospital: patient.hospital,
         doctor_name: doctorProfile?.full_name || "Médico",
+        guide_validity_date: patient.guide_validity_date || null,
         slots,
       });
     }
