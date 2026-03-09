@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2, CalendarOff, Ban, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
