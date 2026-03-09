@@ -64,6 +64,7 @@ const PublicSchedule = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ uploaded: string[]; errors: string[] } | null>(null);
   const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
