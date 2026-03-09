@@ -160,7 +160,7 @@ const PublicSchedule = () => {
     try {
       const formData = new FormData();
       formData.append("token", token);
-      formData.append("patient_id", confirmedPatientId);
+      formData.append("patient_id", patientId);
       selectedFiles.forEach((file, i) => {
         formData.append(`file_${i}`, file);
       });
