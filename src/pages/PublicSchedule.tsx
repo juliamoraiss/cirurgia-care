@@ -134,7 +134,38 @@ const PublicSchedule = () => {
 
       setConfirmedDate(result.scheduled_date);
       setConfirmedHospital(result.hospital);
-      setConfirmedPatientId(result.patient_id || data?.patient_id || null);
+      const patientId = result.patient_id || data?.patient_id || null;
+      setConfirmedPatientId(patientId);
+
+      // Auto-upload attached files if any
+      if (selectedFiles.length > 0 && patientId) {
+        setUploading(true);
+        try {
+          const formData = new FormData();
+          formData.append("token", token);
+          formData.append("patient_id", patientId);
+          selectedFiles.forEach((file, i) => {
+            formData.append(`file_${i}`, file);
+          });
+
+          const uploadRes = await fetch(`${SUPABASE_URL}/functions/v1/public-schedule`, {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY },
+            body: formData,
+          });
+
+          const uploadResultData = await uploadRes.json();
+          setUploadResult({ uploaded: uploadResultData.uploaded || [], errors: uploadResultData.errors || [] });
+          if (uploadResultData.uploaded?.length) {
+            setSelectedFiles([]);
+          }
+        } catch {
+          setUploadResult({ uploaded: [], errors: ["Erro ao enviar arquivos anexados"] });
+        } finally {
+          setUploading(false);
+        }
+      }
+
       setState("success");
     } catch {
       setErrorMessage("Erro de conexão. Tente novamente.");
