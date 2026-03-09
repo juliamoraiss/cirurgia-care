@@ -17,13 +17,13 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 const DURATION_OPTIONS = [
-  { value: 30, label: "30 min" },
-  { value: 60, label: "1 hora" },
-  { value: 90, label: "1h30" },
-  { value: 120, label: "2 horas" },
-  { value: 180, label: "3 horas" },
-  { value: 240, label: "4 horas ou mais" },
-];
+{ value: 30, label: "30 min" },
+{ value: 60, label: "1 hora" },
+{ value: 90, label: "1h30" },
+{ value: 120, label: "2 horas" },
+{ value: 180, label: "3 horas" },
+{ value: 240, label: "4 horas ou mais" }];
+
 
 const SurgeryAvailability = () => {
   const { slots, loading, addSlot, updateSlot, deleteSlot } = useSurgeryAvailability();
@@ -36,7 +36,7 @@ const SurgeryAvailability = () => {
     end_time: "12:00",
     default_duration_minutes: 120,
     max_surgeries_per_day: 3,
-    location: "",
+    location: ""
   });
 
   // Block form state
@@ -48,7 +48,7 @@ const SurgeryAvailability = () => {
   const handleAdd = async () => {
     await addSlot({
       ...form,
-      location: form.location?.trim() || null,
+      location: form.location?.trim() || null
     });
     setDialogOpen(false);
     setForm({
@@ -57,16 +57,16 @@ const SurgeryAvailability = () => {
       end_time: "12:00",
       default_duration_minutes: 120,
       max_surgeries_per_day: 3,
-      location: "",
+      location: ""
     });
   };
 
   const handleAddBlock = async () => {
     if (!blockStartDate) return;
     const start = format(blockStartDate, "yyyy-MM-dd");
-    const end = blockMode === "range" && blockEndDate
-      ? format(blockEndDate, "yyyy-MM-dd")
-      : start;
+    const end = blockMode === "range" && blockEndDate ?
+    format(blockEndDate, "yyyy-MM-dd") :
+    start;
     await addBlock(start, end, blockReason);
     setBlockDialogOpen(false);
     setBlockStartDate(undefined);
@@ -76,7 +76,7 @@ const SurgeryAvailability = () => {
 
   // Group slots by day
   const slotsByDay = new Map<number, typeof slots>();
-  slots.forEach(slot => {
+  slots.forEach((slot) => {
     const existing = slotsByDay.get(slot.day_of_week) || [];
     existing.push(slot);
     slotsByDay.set(slot.day_of_week, existing);
@@ -84,14 +84,14 @@ const SurgeryAvailability = () => {
 
   // Filter future blocks
   const today = new Date().toISOString().split("T")[0];
-  const futureBlocks = blocks.filter(b => b.end_date >= today);
-  const pastBlocks = blocks.filter(b => b.end_date < today);
+  const futureBlocks = blocks.filter((b) => b.end_date >= today);
+  const pastBlocks = blocks.filter((b) => b.end_date < today);
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="md:text-2xl font-bold text-foreground flex items-center gap-2 text-base">
             <Settings2 className="h-7 w-7" />
             Disponibilidade para Cirurgias
           </h1>
@@ -119,9 +119,9 @@ const SurgeryAvailability = () => {
                     type="button"
                     variant={blockMode === "single" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { setBlockMode("single"); setBlockEndDate(undefined); }}
-                    className="flex-1"
-                  >
+                    onClick={() => {setBlockMode("single");setBlockEndDate(undefined);}}
+                    className="flex-1">
+                    
                     Data única
                   </Button>
                   <Button
@@ -129,8 +129,8 @@ const SurgeryAvailability = () => {
                     variant={blockMode === "range" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setBlockMode("range")}
-                    className="flex-1"
-                  >
+                    className="flex-1">
+                    
                     Período
                   </Button>
                 </div>
@@ -152,15 +152,15 @@ const SurgeryAvailability = () => {
                         onSelect={setBlockStartDate}
                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                         initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
+                        className={cn("p-3 pointer-events-auto")} />
+                      
                     </PopoverContent>
                   </Popover>
                 </div>
 
                 {/* End date (range mode only) */}
-                {blockMode === "range" && (
-                  <div>
+                {blockMode === "range" &&
+                <div>
                     <Label>Data final</Label>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -171,17 +171,17 @@ const SurgeryAvailability = () => {
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
-                          mode="single"
-                          selected={blockEndDate}
-                          onSelect={setBlockEndDate}
-                          disabled={(date) => date < (blockStartDate || new Date())}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
+                        mode="single"
+                        selected={blockEndDate}
+                        onSelect={setBlockEndDate}
+                        disabled={(date) => date < (blockStartDate || new Date())}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")} />
+                      
                       </PopoverContent>
                     </Popover>
                   </div>
-                )}
+                }
 
                 {/* Reason */}
                 <div>
@@ -189,15 +189,15 @@ const SurgeryAvailability = () => {
                   <Input
                     placeholder="Ex: Férias, congresso, folga..."
                     value={blockReason}
-                    onChange={e => setBlockReason(e.target.value)}
-                  />
+                    onChange={(e) => setBlockReason(e.target.value)} />
+                  
                 </div>
 
                 <Button
                   onClick={handleAddBlock}
                   className="w-full"
-                  disabled={!blockStartDate || (blockMode === "range" && !blockEndDate)}
-                >
+                  disabled={!blockStartDate || blockMode === "range" && !blockEndDate}>
+                  
                   Bloquear {blockMode === "range" ? "período" : "data"}
                 </Button>
               </div>
@@ -220,13 +220,13 @@ const SurgeryAvailability = () => {
                   <Label>Dia da semana</Label>
                   <Select
                     value={String(form.day_of_week)}
-                    onValueChange={v => setForm(f => ({ ...f, day_of_week: Number(v) }))}
-                  >
+                    onValueChange={(v) => setForm((f) => ({ ...f, day_of_week: Number(v) }))}>
+                    
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {DAY_NAMES.map((name, i) => (
-                        <SelectItem key={i} value={String(i)}>{name}</SelectItem>
-                      ))}
+                      {DAY_NAMES.map((name, i) =>
+                      <SelectItem key={i} value={String(i)}>{name}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -236,8 +236,8 @@ const SurgeryAvailability = () => {
                     <Label>Início</Label>
                     <Select
                       value={form.start_time}
-                      onValueChange={v => setForm(f => ({ ...f, start_time: v }))}
-                    >
+                      onValueChange={(v) => setForm((f) => ({ ...f, start_time: v }))}>
+                      
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: 24 }, (_, i) => {
@@ -251,8 +251,8 @@ const SurgeryAvailability = () => {
                     <Label>Fim</Label>
                     <Select
                       value={form.end_time}
-                      onValueChange={v => setForm(f => ({ ...f, end_time: v }))}
-                    >
+                      onValueChange={(v) => setForm((f) => ({ ...f, end_time: v }))}>
+                      
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: 24 }, (_, i) => {
@@ -268,13 +268,13 @@ const SurgeryAvailability = () => {
                   <Label>Duração padrão da cirurgia</Label>
                   <Select
                     value={String(form.default_duration_minutes)}
-                    onValueChange={v => setForm(f => ({ ...f, default_duration_minutes: Number(v) }))}
-                  >
+                    onValueChange={(v) => setForm((f) => ({ ...f, default_duration_minutes: Number(v) }))}>
+                    
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {DURATION_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
-                      ))}
+                      {DURATION_OPTIONS.map((opt) =>
+                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -286,8 +286,8 @@ const SurgeryAvailability = () => {
                     min={1}
                     max={20}
                     value={form.max_surgeries_per_day}
-                    onChange={e => setForm(f => ({ ...f, max_surgeries_per_day: Number(e.target.value) }))}
-                  />
+                    onChange={(e) => setForm((f) => ({ ...f, max_surgeries_per_day: Number(e.target.value) }))} />
+                  
                 </div>
 
                 <Button onClick={handleAdd} className="w-full">
@@ -300,8 +300,8 @@ const SurgeryAvailability = () => {
       </div>
 
       {/* Schedule Blocks Section */}
-      {(futureBlocks.length > 0 || blocksLoading) && (
-        <Card>
+      {(futureBlocks.length > 0 || blocksLoading) &&
+      <Card>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <CalendarOff className="h-4 w-4 text-destructive" />
@@ -309,47 +309,47 @@ const SurgeryAvailability = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-2">
-            {futureBlocks.map(block => {
-              const isSingleDay = block.start_date === block.end_date;
-              const startFormatted = format(new Date(block.start_date + "T12:00:00"), "dd/MM/yyyy");
-              const endFormatted = format(new Date(block.end_date + "T12:00:00"), "dd/MM/yyyy");
+            {futureBlocks.map((block) => {
+            const isSingleDay = block.start_date === block.end_date;
+            const startFormatted = format(new Date(block.start_date + "T12:00:00"), "dd/MM/yyyy");
+            const endFormatted = format(new Date(block.end_date + "T12:00:00"), "dd/MM/yyyy");
 
-              return (
-                <div
-                  key={block.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5"
-                >
+            return (
+              <div
+                key={block.id}
+                className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+                
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground">
                       {isSingleDay ? startFormatted : `${startFormatted} – ${endFormatted}`}
                     </div>
-                    {block.reason && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{block.reason}</p>
-                    )}
+                    {block.reason &&
+                  <p className="text-xs text-muted-foreground mt-0.5">{block.reason}</p>
+                  }
                   </div>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => deleteBlock(block.id)}
-                  >
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={() => deleteBlock(block.id)}>
+                  
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              );
-            })}
+                </div>);
+
+          })}
           </CardContent>
         </Card>
-      )}
+      }
 
       {/* Availability Slots */}
-      {loading ? (
-        <div className="text-center py-12">
+      {loading ?
+      <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
-      ) : slots.length === 0 ? (
-        <Card>
+        </div> :
+      slots.length === 0 ?
+      <Card>
           <CardContent className="py-12 text-center">
             <Clock className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-1">Nenhum horário configurado</h3>
@@ -361,13 +361,13 @@ const SurgeryAvailability = () => {
               Adicionar horário
             </Button>
           </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {Array.from(slotsByDay.entries())
-            .sort(([a], [b]) => a - b)
-            .map(([dayOfWeek, daySlots]) => (
-              <Card key={dayOfWeek}>
+        </Card> :
+
+      <div className="space-y-3">
+          {Array.from(slotsByDay.entries()).
+        sort(([a], [b]) => a - b).
+        map(([dayOfWeek, daySlots]) =>
+        <Card key={dayOfWeek}>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
                     <Badge variant="outline" className="text-xs px-2">
@@ -377,13 +377,13 @@ const SurgeryAvailability = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-2">
-                  {daySlots.map(slot => (
-                    <div
-                      key={slot.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
-                        slot.is_active ? "bg-background" : "bg-muted/30 opacity-60"
-                      }`}
-                    >
+                  {daySlots.map((slot) =>
+            <div
+              key={slot.id}
+              className={`flex items-center justify-between p-3 rounded-lg border ${
+              slot.is_active ? "bg-background" : "bg-muted/30 opacity-60"}`
+              }>
+              
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 text-sm font-medium">
                           <Clock className="h-3.5 w-3.5 text-primary" />
@@ -393,36 +393,36 @@ const SurgeryAvailability = () => {
                           <span>Duração: {slot.default_duration_minutes}min</span>
                           <span>Máx: {slot.max_surgeries_per_day}/dia</span>
                         </div>
-                        {slot.location && (
-                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                        {slot.location &&
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                             <MapPin className="h-3 w-3" />
                             {slot.location}
                           </div>
-                        )}
+                }
                       </div>
                       <div className="flex items-center gap-2 ml-2">
                         <Switch
-                          checked={slot.is_active}
-                          onCheckedChange={checked => updateSlot(slot.id, { is_active: checked })}
-                        />
+                  checked={slot.is_active}
+                  onCheckedChange={(checked) => updateSlot(slot.id, { is_active: checked })} />
+                
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => deleteSlot(slot.id)}
-                        >
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={() => deleteSlot(slot.id)}>
+                  
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                  ))}
+            )}
                 </CardContent>
               </Card>
-            ))}
+        )}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default SurgeryAvailability;
