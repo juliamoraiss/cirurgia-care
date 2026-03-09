@@ -861,6 +861,23 @@ const PublicSchedule = () => {
                 )}
               </div>
 
+              {/* Upload result feedback */}
+              {uploadResult && uploadResult.uploaded.length > 0 && (
+                <div className="p-3 bg-success/10 rounded-xl mt-4 w-full">
+                  <p className="text-sm text-success font-medium flex items-center gap-2">
+                    <Paperclip className="h-4 w-4" />
+                    {uploadResult.uploaded.length} exame(s) enviado(s) com sucesso!
+                  </p>
+                </div>
+              )}
+              {uploadResult && uploadResult.errors.length > 0 && (
+                <div className="p-3 bg-destructive/10 rounded-xl mt-2 w-full">
+                  {uploadResult.errors.map((err, i) => (
+                    <p key={i} className="text-sm text-destructive">{err}</p>
+                  ))}
+                </div>
+              )}
+
               <p className="text-xs text-muted-foreground mt-6 text-center">
                 A equipe médica entrará em contato com instruções adicionais.
               </p>
