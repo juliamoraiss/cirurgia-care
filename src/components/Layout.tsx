@@ -1,7 +1,8 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
   Stethoscope,
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/BottomNav";
 import { FAB } from "@/components/FAB";
 import { NotificationToggle } from "@/components/NotificationToggle";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface LayoutProps {
   children: ReactNode;
