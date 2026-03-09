@@ -38,14 +38,16 @@ export function Layout({ children, onRefresh }: LayoutProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Default refresh: reload page
+  const queryClient = useQueryClient();
+
+  // Smart refresh: invalidate all queries to refetch data without page reload
   const handleRefresh = useCallback(async () => {
     if (onRefresh) {
       await onRefresh();
     } else {
-      window.location.reload();
+      await queryClient.invalidateQueries();
     }
-  }, [onRefresh]);
+  }, [onRefresh, queryClient]);
 
   const menuItems = [
     {
