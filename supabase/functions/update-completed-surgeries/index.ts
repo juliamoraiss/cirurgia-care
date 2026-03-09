@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
     
     const { data: completedSurgeries, error: updateError } = await supabase
       .from('patients')
-      .update({ status: 'completed' })
-      .eq('status', 'authorized')
+      .update({ status: 'surgery_completed' })
+      .in('status', ['surgery_scheduled', 'authorized', 'pending_scheduling'])
       .not('surgery_date', 'is', null)
       .lt('surgery_date', now)
       .select()
