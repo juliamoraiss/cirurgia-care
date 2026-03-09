@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList, Trash2 } from "lucide-react";
+import { Users, Calendar, CheckCircle, Clock, Activity, FileText, StickyNote, ClipboardList, Trash2, Bell, ChevronDown, ChevronUp, Stethoscope, Upload } from "lucide-react";
 import { CollapsibleCard } from "@/components/CollapsibleCard";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
