@@ -88,12 +88,16 @@ const PublicSchedule = () => {
 
       const result = await res.json();
 
+      // Check for "used" status regardless of HTTP status code
+      if (result.status === "used") {
+        setUsedLinkData(result);
+        setExistingFiles(result.existing_files || []);
+        setState("used");
+        return;
+      }
+
       if (!res.ok) {
-        if (result.status === "used") {
-          setUsedLinkData(result);
-          setExistingFiles(result.existing_files || []);
-          setState("used");
-        } else if (result.status === "expired") {
+        if (result.status === "expired") {
           setState("expired");
         } else {
           setErrorMessage(result.error || "Erro ao carregar horários");
