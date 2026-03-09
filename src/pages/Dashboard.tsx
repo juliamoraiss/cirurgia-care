@@ -412,7 +412,7 @@ const Dashboard = () => {
             })}
               </div>
             }
-          </CollapsibleCard>
+          </CollapsibleCard>}
       </div>
     </TooltipProvider>
   );
