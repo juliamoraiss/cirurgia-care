@@ -566,37 +566,6 @@ const PublicSchedule = () => {
                   </CardContent>
                 </Card>
 
-                {/* Confirm */}
-                {selectedSlot && (
-                  <div className="my-4">
-                    <Button
-                      onClick={confirmSlot}
-                      disabled={state === "confirming"}
-                      className="w-full h-14 text-base rounded-2xl shadow-md gap-2"
-                      size="lg"
-                    >
-                      {state === "confirming" ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          {uploading ? "Enviando exames..." : "Confirmando..."}
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-5 w-5" />
-                          <span>
-                            Confirmar Agendamento
-                            {selectedFiles.length > 0 && (
-                              <span className="block text-xs font-normal opacity-90">
-                                e enviar {selectedFiles.length} exame(s)
-                              </span>
-                            )}
-                          </span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-
                 {/* File upload section - always show for slot selection */}
                 <Card className="mt-4 rounded-2xl shadow-md">
                   <CardHeader className="pb-3">
@@ -683,6 +652,37 @@ const PublicSchedule = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Confirm button - after file upload */}
+                {selectedSlot && (
+                  <div className="mt-4">
+                    <Button
+                      onClick={confirmSlot}
+                      disabled={state === "confirming"}
+                      className="w-full h-14 text-base rounded-2xl shadow-md gap-2"
+                      size="lg"
+                    >
+                      {state === "confirming" ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          {uploading ? "Enviando exames..." : "Confirmando..."}
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-5 w-5" />
+                          <span>
+                            Confirmar Agendamento
+                            {selectedFiles.length > 0 && (
+                              <span className="block text-xs font-normal opacity-90">
+                                e enviar {selectedFiles.length} exame(s)
+                              </span>
+                            )}
+                          </span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </>
