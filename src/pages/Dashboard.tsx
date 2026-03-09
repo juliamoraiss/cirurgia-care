@@ -414,6 +414,7 @@ const Dashboard = () => {
       </CollapsibleCard>
       </div>
     </div>
-    </TooltipProvider>;
+    </TooltipProvider>
+  );
 };
 export default Dashboard;
