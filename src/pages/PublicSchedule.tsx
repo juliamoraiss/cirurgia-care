@@ -134,7 +134,38 @@ const PublicSchedule = () => {
 
       setConfirmedDate(result.scheduled_date);
       setConfirmedHospital(result.hospital);
-      setConfirmedPatientId(result.patient_id || data?.patient_id || null);
+      const patientId = result.patient_id || data?.patient_id || null;
+      setConfirmedPatientId(patientId);
+
+      // Auto-upload attached files if any
+      if (selectedFiles.length > 0 && patientId) {
+        setUploading(true);
+        try {
+          const formData = new FormData();
+          formData.append("token", token);
+          formData.append("patient_id", patientId);
+          selectedFiles.forEach((file, i) => {
+            formData.append(`file_${i}`, file);
+          });
+
+          const uploadRes = await fetch(`${SUPABASE_URL}/functions/v1/public-schedule`, {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY },
+            body: formData,
+          });
+
+          const uploadResultData = await uploadRes.json();
+          setUploadResult({ uploaded: uploadResultData.uploaded || [], errors: uploadResultData.errors || [] });
+          if (uploadResultData.uploaded?.length) {
+            setSelectedFiles([]);
+          }
+        } catch {
+          setUploadResult({ uploaded: [], errors: ["Erro ao enviar arquivos anexados"] });
+        } finally {
+          setUploading(false);
+        }
+      }
+
       setState("success");
     } catch {
       setErrorMessage("Erro de conexão. Tente novamente.");
@@ -548,12 +579,12 @@ const PublicSchedule = () => {
                     {state === "confirming" ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Confirmando...
+                        {uploading ? "Enviando exames..." : "Confirmando..."}
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Confirmar Agendamento
+                        Confirmar Agendamento{selectedFiles.length > 0 ? ` e enviar ${selectedFiles.length} exame(s)` : ""}
                       </>
                     )}
                   </Button>
@@ -617,23 +648,9 @@ const PublicSchedule = () => {
                           </div>
                         ))}
 
-                        <Button
-                          onClick={uploadFiles}
-                          disabled={uploading}
-                          className="w-full rounded-xl"
-                        >
-                          {uploading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Enviando...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
-                            </>
-                          )}
-                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Os arquivos serão enviados automaticamente ao confirmar o agendamento.
+                        </p>
                       </div>
                     )}
 
@@ -843,6 +860,23 @@ const PublicSchedule = () => {
                   </div>
                 )}
               </div>
+
+              {/* Upload result feedback */}
+              {uploadResult && uploadResult.uploaded.length > 0 && (
+                <div className="p-3 bg-success/10 rounded-xl mt-4 w-full">
+                  <p className="text-sm text-success font-medium flex items-center gap-2">
+                    <Paperclip className="h-4 w-4" />
+                    {uploadResult.uploaded.length} exame(s) enviado(s) com sucesso!
+                  </p>
+                </div>
+              )}
+              {uploadResult && uploadResult.errors.length > 0 && (
+                <div className="p-3 bg-destructive/10 rounded-xl mt-2 w-full">
+                  {uploadResult.errors.map((err, i) => (
+                    <p key={i} className="text-sm text-destructive">{err}</p>
+                  ))}
+                </div>
+              )}
 
               <p className="text-xs text-muted-foreground mt-6 text-center">
                 A equipe médica entrará em contato com instruções adicionais.
