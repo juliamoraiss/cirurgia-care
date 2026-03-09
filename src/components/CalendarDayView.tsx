@@ -106,9 +106,6 @@ export function CalendarDayView({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-base font-semibold mb-3">
-        {format(date, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-      </h3>
       {timeSlots.map((slot, i) => (
         <div
           key={i}
