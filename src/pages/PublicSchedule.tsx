@@ -374,7 +374,7 @@ const PublicSchedule = () => {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-8">
-          Sistema seguro de agendamento médico
+          Agendamento seguro e protegido
         </p>
       </div>
     </div>
