@@ -295,26 +295,80 @@ const PublicSchedule = () => {
           </Card>
         )}
 
-        {/* Used */}
-        {state === "used" && (
-          <Card className="rounded-2xl shadow-md border-primary/20">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-7 w-7 text-success" />
-              </div>
-              <p className="text-lg font-semibold text-foreground mb-1">Já Agendado</p>
-              <p className="text-muted-foreground text-center text-sm mb-4">
-                Este link já foi utilizado para agendar sua cirurgia. Em caso de dúvidas, entre em contato pelo WhatsApp <strong className="text-foreground">(61) 99869-5443</strong>.
-              </p>
-              <Button
-                onClick={openWhatsApp}
-                className="bg-success hover:bg-success/90 text-success-foreground"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Falar no WhatsApp
-              </Button>
-            </CardContent>
-          </Card>
+        {/* Used - show patient info and file upload */}
+        {state === "used" && usedLinkData && (
+          <>
+            {/* Surgery details */}
+            <Card className="mb-4 rounded-2xl shadow-md border-success/30">
+              <CardContent className="py-8">
+                <div className="flex flex-col items-center justify-center mb-6">
+                  <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mb-3">
+                    <CheckCircle2 className="h-7 w-7 text-success" />
+                  </div>
+                  <p className="text-lg font-semibold text-foreground mb-1">Cirurgia Agendada</p>
+                  <p className="text-muted-foreground text-center text-sm">
+                    Sua cirurgia foi confirmada com sucesso!
+                  </p>
+                </div>
+
+                <div className="bg-muted rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-foreground">{usedLinkData.patient_name}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Stethoscope className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-foreground capitalize">{usedLinkData.procedure}</span>
+                  </div>
+                  {usedLinkData.hospital && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-foreground">{usedLinkData.hospital}</span>
+                    </div>
+                  )}
+                  {usedLinkData.surgery_date && (
+                    <>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="text-foreground capitalize">{formatFullDate(usedLinkData.surgery_date)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Clock className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="text-foreground">{formatTime(usedLinkData.surgery_date)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-foreground">Dr(a). {usedLinkData.doctor_name}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-6">
+                  <Button
+                    onClick={openWhatsApp}
+                    variant="outline"
+                    className="w-full rounded-xl"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Falar no WhatsApp
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Slot selection */}
