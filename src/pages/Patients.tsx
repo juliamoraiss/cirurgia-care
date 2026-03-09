@@ -137,7 +137,7 @@ const Patients = () => {
     };
   }, []);
 
-  async function fetchPatients() {
+  const fetchPatients = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("patients")
@@ -151,7 +151,11 @@ const Patients = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    await fetchPatients();
+  }, [fetchPatients]);
 
   const handleSort = (column: "name" | "procedure" | "surgery_date" | "created_at") => {
     if (sortColumn === column) {
