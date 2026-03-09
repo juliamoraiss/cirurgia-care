@@ -410,10 +410,11 @@ const Dashboard = () => {
                       </Button>}
                   </div>
             })}
-            </div>}
-      </CollapsibleCard>
+              </div>
+            }
+          </CollapsibleCard>
+        </div>
       </div>
-    </div>
     </TooltipProvider>
   );
 };
