@@ -253,6 +253,7 @@ Deno.serve(async (req) => {
 
       // Build available slots for the next 30 days
       const slots: { date: string; time: string; datetime: string }[] = [];
+      const guideValidityDate = patient.guide_validity_date ? new Date(patient.guide_validity_date + "T23:59:59") : null;
 
       for (let d = 1; d <= 30; d++) {
         const date = new Date(now);
