@@ -523,23 +523,24 @@ const PatientForm = () => {
       expiresAt.setDate(expiresAt.getDate() + 7);
 
       const doctorId = formData.responsible_user_id || user.id;
+      const token = crypto.randomUUID();
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("scheduling_links")
         .insert({
           patient_id: id,
           doctor_id: doctorId,
           expires_at: expiresAt.toISOString(),
-        })
-        .select("token")
-        .single();
+          token,
+        });
 
       if (error) throw error;
 
-      const link = `${window.location.origin}/schedule/${data.token}`;
+      const link = `${window.location.origin}/schedule/${token}`;
       setSchedulingLink(link);
       toast.success("Link de agendamento gerado!");
     } catch (error) {
+      console.error("Erro ao gerar link de agendamento:", error);
       toast.error("Erro ao gerar link de agendamento");
     } finally {
       setGeneratingLink(false);
