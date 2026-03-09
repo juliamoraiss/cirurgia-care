@@ -462,8 +462,11 @@ const Patients = () => {
                           { value: "awaiting_consultation", label: "Aguardando Consulta" },
                           { value: "awaiting_authorization", label: "Aguardando Autorização" },
                           { value: "authorized", label: "Autorizado" },
-                          { value: "completed", label: "Cirurgia Realizada" },
-                          { value: "cancelled", label: "Cirurgia Cancelada" }
+                          { value: "pending_scheduling", label: "Ag. Agendamento" },
+                          { value: "surgery_scheduled", label: "Cirurgia Agendada" },
+                          { value: "surgery_completed", label: "Cirurgia Realizada" },
+                          { value: "completed", label: "Concluído" },
+                          { value: "cancelled", label: "Cancelado" }
                         ].map((status) => (
                           <div key={status.value} className="flex items-center space-x-2">
                             <Checkbox
