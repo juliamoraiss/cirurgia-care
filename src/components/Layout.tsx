@@ -26,14 +26,25 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface LayoutProps {
   children: ReactNode;
+  onRefresh?: () => Promise<void>;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, onRefresh }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { role, loading: roleLoading, isAdmin, isDentist } = useUserRole();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Default refresh: reload page
+  const handleRefresh = useCallback(async () => {
+    if (onRefresh) {
+      await onRefresh();
+    } else {
+      window.location.reload();
+    }
+  }, [onRefresh]);
 
   const menuItems = [
     {
