@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2, CalendarOff, Ban, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +35,7 @@ const Calendar = () => {
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
   const [blockMode, setBlockMode] = useState<"single" | "period">("single");
-  const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability } = useGoogleCalendarAvailability();
+  const { busySlots, fetchAvailability } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
   const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
@@ -81,9 +80,9 @@ const Calendar = () => {
   const getColorForIndex = (index: number) => {
     const colors = [
       "bg-primary/5 border-l-primary",
-      "bg-green-500/10 border-l-green-600",
+      "bg-success/10 border-l-success",
       "bg-purple-500/10 border-l-purple-600",
-      "bg-orange-500/10 border-l-orange-500",
+      "bg-warning/10 border-l-warning",
       "bg-pink-500/10 border-l-pink-500",
       "bg-cyan-500/10 border-l-cyan-600",
     ];
@@ -123,7 +122,6 @@ const Calendar = () => {
     }
   };
 
-  // Abbreviated weekday labels in pt-BR order (Sun → Sat)
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
@@ -165,7 +163,7 @@ const Calendar = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full"
+            className="h-8 w-8 rounded-full active:scale-90 transition-transform"
             onClick={() => setCurrentDate(subMonths(currentDate, 1))}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -176,21 +174,24 @@ const Calendar = () => {
             onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}
           >
             <CalendarIcon className="h-4 w-4 text-primary" />
-            <motion.span
-              key={format(currentDate, "yyyy-MM")}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="capitalize"
-            >
-              {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
-            </motion.span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={format(currentDate, "yyyy-MM")}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="capitalize"
+              >
+                {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+              </motion.span>
+            </AnimatePresence>
           </button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full"
+            className="h-8 w-8 rounded-full active:scale-90 transition-transform"
             onClick={() => setCurrentDate(addMonths(currentDate, 1))}
           >
             <ChevronRight className="h-4 w-4" />
@@ -218,79 +219,93 @@ const Calendar = () => {
               ))}
             </div>
 
-            {/* Day cells */}
-            <motion.div
-              key={format(currentDate, "yyyy-MM")}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="grid grid-cols-7"
-            >
-              {calendarDays.map((day, index) => {
-                const daySurgeries = getSurgeriesForDay(day);
-                const isCurrentMonth = isSameMonth(day, currentDate);
-                const isToday = isSameDay(day, new Date());
-                const isSelected = selectedDay && isSameDay(day, selectedDay);
-                const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
-                const isBlocked = isDateBlocked(day);
-                const isSunday = day.getDay() === 0;
-                const isSaturday = day.getDay() === 6;
+            {/* Day cells — animate whole grid on month change */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={format(currentDate, "yyyy-MM")}
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="grid grid-cols-7"
+              >
+                {calendarDays.map((day, index) => {
+                  const daySurgeries = getSurgeriesForDay(day);
+                  const isCurrentMonth = isSameMonth(day, currentDate);
+                  const isToday = isSameDay(day, new Date());
+                  const isSelected = selectedDay && isSameDay(day, selectedDay);
+                  const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
+                  const isBlocked = isDateBlocked(day);
+                  const isSunday = day.getDay() === 0;
+                  const isSaturday = day.getDay() === 6;
 
-                return (
-                  <motion.button
-                    key={index}
-                    onClick={() => handleDayClick(day)}
-                    whileTap={{ scale: 0.88 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    className={`
-                      relative flex flex-col items-center justify-start pt-1.5 pb-1 h-12
-                      border-b border-r border-border/40 last:border-r-0
-                      transition-colors active:bg-muted/60
-                      ${!isCurrentMonth ? "opacity-30" : ""}
-                      ${isSelected ? "bg-primary/[0.08]" : isBlocked ? "bg-destructive/5" : "bg-card"}
-                    `}
-                  >
-                    {/* Day number */}
-                    <motion.span
-                      animate={isSelected && !isToday ? {
-                        scale: [1, 1.15, 1],
-                        transition: { duration: 0.25 }
-                      } : {}}
+                  return (
+                    <motion.button
+                      key={index}
+                      onClick={() => handleDayClick(day)}
+                      whileTap={{ scale: 0.85 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 25 }}
                       className={`
-                        text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full leading-none
-                        transition-all duration-200
-                        ${isToday ? "bg-primary text-primary-foreground shadow-sm" : ""}
-                        ${isSelected && !isToday ? "ring-2 ring-primary text-primary bg-primary/10" : ""}
-                        ${!isToday && !isSelected && isSunday ? "text-destructive/80" : ""}
-                        ${!isToday && !isSelected && isSaturday ? "text-blue-500/80" : ""}
-                        ${!isToday && !isSelected && !isSunday && !isSaturday && isCurrentMonth ? "text-foreground" : ""}
+                        relative flex flex-col items-center justify-start pt-1.5 pb-1 h-12
+                        border-b border-r border-border/40 last:border-r-0
+                        transition-colors duration-150
+                        ${!isCurrentMonth ? "opacity-30" : ""}
+                        ${isSelected ? "bg-primary/[0.07]" : isBlocked ? "bg-destructive/5" : "bg-card"}
                       `}
                     >
-                      {format(day, "d")}
-                    </motion.span>
+                      {/* Day number with selection ring animation */}
+                      <motion.span
+                        layout
+                        animate={isSelected && !isToday ? {
+                          scale: [1, 1.18, 1],
+                          transition: { duration: 0.28, ease: "easeOut" }
+                        } : { scale: 1 }}
+                        className={`
+                          text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full leading-none
+                          transition-all duration-200
+                          ${isToday ? "bg-primary text-primary-foreground shadow-sm" : ""}
+                          ${isSelected && !isToday ? "ring-2 ring-primary/70 text-primary bg-primary/10" : ""}
+                          ${!isToday && !isSelected && isSunday ? "text-destructive/80" : ""}
+                          ${!isToday && !isSelected && isSaturday ? "text-blue-500/80" : ""}
+                          ${!isToday && !isSelected && !isSunday && !isSaturday && isCurrentMonth ? "text-foreground" : ""}
+                        `}
+                      >
+                        {format(day, "d")}
+                      </motion.span>
 
-                    {/* Indicators row */}
-                    <div className="flex items-center justify-center gap-0.5 mt-0.5 h-2">
-                      {isBlocked ? (
-                        <CalendarOff className="h-2 w-2 text-destructive/60" />
-                      ) : (
-                        <>
-                          {hasAvailability && daySurgeries.length === 0 && (
-                            <span className="w-1 h-1 rounded-full bg-success/70" />
-                          )}
-                          {daySurgeries.length > 0 && daySurgeries.length <= 3 && daySurgeries.map((_, i) => (
-                            <span key={i} className="w-1 h-1 rounded-full bg-primary" />
-                          ))}
-                          {daySurgeries.length > 3 && (
-                            <span className="text-[8px] font-bold text-primary leading-none">{daySurgeries.length}</span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </motion.div>
+                      {/* Indicators row */}
+                      <div className="flex items-center justify-center gap-0.5 mt-0.5 h-2">
+                        {isBlocked ? (
+                          <CalendarOff className="h-2 w-2 text-destructive/60" />
+                        ) : (
+                          <>
+                            {hasAvailability && daySurgeries.length === 0 && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-1 h-1 rounded-full bg-success/70"
+                              />
+                            )}
+                            {daySurgeries.length > 0 && daySurgeries.length <= 3 && daySurgeries.map((_, i) => (
+                              <motion.span
+                                key={i}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: i * 0.04 }}
+                                className="w-1 h-1 rounded-full bg-primary"
+                              />
+                            ))}
+                            {daySurgeries.length > 3 && (
+                              <span className="text-[8px] font-bold text-primary leading-none">{daySurgeries.length}</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
 
             {/* Legend */}
             <div className="flex items-center gap-4 px-4 py-2.5 border-t bg-muted/20">
@@ -311,86 +326,29 @@ const Calendar = () => {
         )}
       </div>
 
-      {/* Day detail section */}
+      {/* Day detail section — animates in/out on day selection */}
       {!loading && (
         <AnimatePresence mode="wait">
-        <div className="mx-4 mb-24">
-          {selectedDay && selectedDayHasAvailability ? (
-            <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
-              {/* Day header with actions */}
-              <div className="flex items-center justify-between px-4 py-3 border-b">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    {format(selectedDay, "EEEE", { locale: ptBR })}
-                  </p>
-                  <p className="text-sm font-bold text-foreground">
-                    {format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {selectedDayBlocked ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 px-3 gap-1.5 text-destructive border-destructive/40 text-xs"
-                      onClick={handleUnblockDay}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Desbloquear
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 px-3 gap-1.5 text-xs"
-                      onClick={handleBlockDay}
-                    >
-                      <Ban className="h-3.5 w-3.5" />
-                      Bloquear
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-3 text-xs text-muted-foreground"
-                    onClick={() => setSelectedDay(null)}
-                  >
-                    Mês
-                  </Button>
-                </div>
-              </div>
-              <div className="p-3">
-                <CalendarDayView
-                  date={selectedDay}
-                  surgeries={surgeries}
-                  availabilitySlots={availabilitySlots}
-                  busySlots={busySlots}
-                  calendarConnected={calendarConnected}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
-              {/* Section header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b">
-                <div>
-                  {selectedDay ? (
-                    <>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                        {format(selectedDay, "EEEE", { locale: ptBR })}
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm font-bold text-foreground capitalize">
-                      {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+          <motion.div
+            key={selectedDay ? format(selectedDay, "yyyy-MM-dd") : `month-${format(currentDate, "yyyy-MM")}`}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="mx-4 mb-24"
+          >
+            {selectedDay && selectedDayHasAvailability ? (
+              <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
+                {/* Day header with actions */}
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                      {format(selectedDay, "EEEE", { locale: ptBR })}
                     </p>
-                  )}
-                </div>
-
-                {selectedDay && (
+                    <p className="text-sm font-bold text-foreground">
+                      {format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2">
                     {selectedDayBlocked ? (
                       <Button
@@ -422,60 +380,134 @@ const Calendar = () => {
                       Mês
                     </Button>
                   </div>
-                )}
+                </div>
+                <div className="p-3">
+                  <CalendarDayView
+                    date={selectedDay}
+                    surgeries={surgeries}
+                    availabilitySlots={availabilitySlots}
+                    busySlots={busySlots}
+                    calendarConnected={calendarConnected}
+                  />
+                </div>
               </div>
-
-              {/* Events list */}
-              <div className="divide-y divide-border/50">
-                {eventsToShow.length > 0 ? (
-                  eventsToShow.map((surgery, index) => {
-                    const surgeryDate = new Date(surgery.surgery_date);
-                    return (
-                      <button
-                        key={surgery.id}
-                        className={`w-full text-left px-4 py-3 flex items-center gap-3 active:bg-muted/40 transition-colors border-l-[3px] ${getColorForIndex(index)}`}
-                        onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-                      >
-                        {/* Time badge */}
-                        <div className="shrink-0 text-center">
-                          <span className="text-sm font-bold text-foreground tabular-nums">
-                            {format(surgeryDate, "HH:mm")}
-                          </span>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="w-px h-8 bg-border/60 shrink-0" />
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{surgery.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize truncate">{surgery.procedure}</p>
-                          {surgery.hospital && (
-                            <p className="text-xs text-muted-foreground/70 truncate">{surgery.hospital}</p>
-                          )}
-                          {!selectedDay && (
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">
-                              {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
-                          )}
-                        </div>
-
-                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="py-10 text-center">
-                    <CalendarIcon className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      {selectedDay ? "Nenhuma cirurgia neste dia" : "Nenhuma cirurgia neste mês"}
-                    </p>
+            ) : (
+              <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
+                {/* Section header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <div>
+                    {selectedDay ? (
+                      <>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                          {format(selectedDay, "EEEE", { locale: ptBR })}
+                        </p>
+                        <p className="text-sm font-bold text-foreground">
+                          {format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-bold text-foreground capitalize">
+                        {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+                      </p>
+                    )}
                   </div>
-                )}
+
+                  {selectedDay && (
+                    <div className="flex items-center gap-2">
+                      {selectedDayBlocked ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 px-3 gap-1.5 text-destructive border-destructive/40 text-xs"
+                          onClick={handleUnblockDay}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Desbloquear
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 px-3 gap-1.5 text-xs"
+                          onClick={handleBlockDay}
+                        >
+                          <Ban className="h-3.5 w-3.5" />
+                          Bloquear
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-3 text-xs text-muted-foreground"
+                        onClick={() => setSelectedDay(null)}
+                      >
+                        Mês
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Events list */}
+                <div className="divide-y divide-border/50">
+                  {eventsToShow.length > 0 ? (
+                    eventsToShow.map((surgery, index) => {
+                      const surgeryDate = new Date(surgery.surgery_date);
+                      return (
+                        <motion.button
+                          key={surgery.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.04, duration: 0.18 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`w-full text-left px-4 py-3 flex items-center gap-3 active:bg-muted/40 transition-colors border-l-[3px] ${getColorForIndex(index)}`}
+                          onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+                        >
+                          {/* Time badge */}
+                          <div className="shrink-0 text-center">
+                            <span className="text-sm font-bold text-foreground tabular-nums">
+                              {format(surgeryDate, "HH:mm")}
+                            </span>
+                          </div>
+
+                          {/* Divider */}
+                          <div className="w-px h-8 bg-border/60 shrink-0" />
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{surgery.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize truncate">{surgery.procedure}</p>
+                            {surgery.hospital && (
+                              <p className="text-xs text-muted-foreground/70 truncate">{surgery.hospital}</p>
+                            )}
+                            {!selectedDay && (
+                              <p className="text-xs text-muted-foreground/70 mt-0.5">
+                                {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
+                              </p>
+                            )}
+                          </div>
+
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                        </motion.button>
+                      );
+                    })
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="py-10 text-center"
+                    >
+                      <CalendarIcon className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        {selectedDay ? "Nenhuma cirurgia neste dia" : "Nenhuma cirurgia neste mês"}
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {/* Block Dialog */}
