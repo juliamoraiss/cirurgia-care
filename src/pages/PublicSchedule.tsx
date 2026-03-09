@@ -188,6 +188,17 @@ const PublicSchedule = () => {
       setUploadResult({ uploaded: result.uploaded || [], errors: result.errors || [] });
       if (result.uploaded?.length) {
         setSelectedFiles([]);
+        // Add newly uploaded files to the existing files list
+        const newFiles: ExistingFile[] = selectedFiles
+          .filter((_, i) => (result.uploaded || []).includes(selectedFiles[i]?.name))
+          .map((file) => ({
+            id: crypto.randomUUID(),
+            file_name: file.name,
+            file_type: file.name.split(".").pop()?.toLowerCase() || "",
+            file_size: file.size,
+            created_at: new Date().toISOString(),
+          }));
+        setExistingFiles(prev => [...newFiles, ...prev]);
       }
     } catch {
       setUploadResult({ uploaded: [], errors: ["Erro de conexão ao enviar arquivos"] });
