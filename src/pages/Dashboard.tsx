@@ -207,9 +207,10 @@ const Dashboard = () => {
   const filteredCompletedPatients = filterByProfessional(completedPatients);
   const filteredPendingPatients = filterByProfessional(pendingPatients);
   
-  // Filter activities based on selected professional
+  // Filter activities based on selected professional (for admin history, exclude patient_created)
   const filteredActivities = (() => {
-    if (!isAdmin || selectedProfessional === "all") return activities;
+    const base = activities.filter(a => a.activity_type !== 'patient_created');
+    if (!isAdmin || selectedProfessional === "all") return base;
     
     // Get patient IDs for the selected professional
     const professionalPatientIds = allPatients
@@ -217,7 +218,7 @@ const Dashboard = () => {
       .map(p => p.id);
     
     // Filter activities that belong to the selected professional's patients
-    return activities.filter(activity => 
+    return base.filter(activity => 
       activity.patient_id === null || professionalPatientIds.includes(activity.patient_id)
     );
   })();
