@@ -23,6 +23,16 @@ interface ScheduleData {
   slots: Slot[];
 }
 
+interface UsedLinkData {
+  status: "used";
+  patient_id: string;
+  patient_name: string;
+  procedure: string;
+  hospital: string | null;
+  surgery_date: string;
+  doctor_name: string;
+}
+
 type PageState = "loading" | "slots" | "confirming" | "success" | "error" | "expired" | "used";
 
 const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"];
@@ -32,6 +42,7 @@ const PublicSchedule = () => {
   const { token } = useParams<{ token: string }>();
   const [state, setState] = useState<PageState>("loading");
   const [data, setData] = useState<ScheduleData | null>(null);
+  const [usedLinkData, setUsedLinkData] = useState<UsedLinkData | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
@@ -67,6 +78,7 @@ const PublicSchedule = () => {
 
       if (!res.ok) {
         if (result.status === "used") {
+          setUsedLinkData(result);
           setState("used");
         } else if (result.status === "expired") {
           setState("expired");
@@ -141,13 +153,14 @@ const PublicSchedule = () => {
   };
 
   const uploadFiles = async () => {
-    if (!selectedFiles.length || !confirmedPatientId || !token) return;
+    const patientId = confirmedPatientId || data?.patient_id || usedLinkData?.patient_id;
+    if (!selectedFiles.length || !patientId || !token) return;
     setUploading(true);
 
     try {
       const formData = new FormData();
       formData.append("token", token);
-      formData.append("patient_id", confirmedPatientId);
+      formData.append("patient_id", patientId);
       selectedFiles.forEach((file, i) => {
         formData.append(`file_${i}`, file);
       });
@@ -282,26 +295,80 @@ const PublicSchedule = () => {
           </Card>
         )}
 
-        {/* Used */}
-        {state === "used" && (
-          <Card className="rounded-2xl shadow-md border-primary/20">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-7 w-7 text-success" />
-              </div>
-              <p className="text-lg font-semibold text-foreground mb-1">Já Agendado</p>
-              <p className="text-muted-foreground text-center text-sm mb-4">
-                Este link já foi utilizado para agendar sua cirurgia. Em caso de dúvidas, entre em contato pelo WhatsApp <strong className="text-foreground">(61) 99869-5443</strong>.
-              </p>
-              <Button
-                onClick={openWhatsApp}
-                className="bg-success hover:bg-success/90 text-success-foreground"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Falar no WhatsApp
-              </Button>
-            </CardContent>
-          </Card>
+        {/* Used - show patient info and file upload */}
+        {state === "used" && usedLinkData && (
+          <>
+            {/* Surgery details */}
+            <Card className="mb-4 rounded-2xl shadow-md border-success/30">
+              <CardContent className="py-8">
+                <div className="flex flex-col items-center justify-center mb-6">
+                  <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mb-3">
+                    <CheckCircle2 className="h-7 w-7 text-success" />
+                  </div>
+                  <p className="text-lg font-semibold text-foreground mb-1">Cirurgia Agendada</p>
+                  <p className="text-muted-foreground text-center text-sm">
+                    Sua cirurgia foi confirmada com sucesso!
+                  </p>
+                </div>
+
+                <div className="bg-muted rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-foreground">{usedLinkData.patient_name}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Stethoscope className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-foreground capitalize">{usedLinkData.procedure}</span>
+                  </div>
+                  {usedLinkData.hospital && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-foreground">{usedLinkData.hospital}</span>
+                    </div>
+                  )}
+                  {usedLinkData.surgery_date && (
+                    <>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="text-foreground capitalize">{formatFullDate(usedLinkData.surgery_date)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Clock className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="text-foreground">{formatTime(usedLinkData.surgery_date)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-foreground">Dr(a). {usedLinkData.doctor_name}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-6">
+                  <Button
+                    onClick={openWhatsApp}
+                    variant="outline"
+                    className="w-full rounded-xl"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Falar no WhatsApp
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Slot selection */}
@@ -429,153 +496,254 @@ const PublicSchedule = () => {
                       </>
                     )}
                   </Button>
-                )}
+                 )}
+
+                {/* File upload section - always show for slot selection */}
+                <Card className="mt-4 rounded-2xl shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2 text-primary">
+                      <Paperclip className="h-4 w-4" />
+                      Anexar Exames
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Envie seus exames pré-operatórios (PDF, JPG, PNG). Máx. 20MB por arquivo.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* Upload area */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Upload className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        Toque para selecionar arquivos
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        PDF, JPG, PNG
+                      </span>
+                    </button>
+
+                    {/* Selected files list */}
+                    {selectedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-foreground truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                            </div>
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0"
+                            >
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </div>
+                        ))}
+
+                        <Button
+                          onClick={uploadFiles}
+                          disabled={uploading}
+                          className="w-full rounded-xl"
+                        >
+                          {uploading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Enviando...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Upload result */}
+                    {uploadResult && (
+                      <div className="space-y-2">
+                        {uploadResult.uploaded.length > 0 && (
+                          <div className="p-3 bg-success/10 rounded-xl">
+                            <p className="text-sm text-success font-medium flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4" />
+                              {uploadResult.uploaded.length} arquivo(s) enviado(s) com sucesso!
+                            </p>
+                          </div>
+                        )}
+                        {uploadResult.errors.length > 0 && (
+                          <div className="p-3 bg-destructive/10 rounded-xl">
+                            {uploadResult.errors.map((err, i) => (
+                              <p key={i} className="text-sm text-destructive">{err}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </>
             )}
           </>
         )}
 
-        {/* Success */}
-        {state === "success" && confirmedDate && (
-          <>
-            <Card className="rounded-2xl shadow-md border-success/30">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-9 w-9 text-success" />
+        {/* File upload section for used links */}
+        {state === "used" && usedLinkData && (
+          <Card className="mt-4 rounded-2xl shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-primary">
+                <Paperclip className="h-4 w-4" />
+                Anexar Exames
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Envie seus exames pré-operatórios (PDF, JPG, PNG). Máx. 20MB por arquivo.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Upload area */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-xl font-bold text-foreground mb-1">Cirurgia Agendada!</p>
-                <p className="text-muted-foreground text-center text-sm mb-6">Seu agendamento foi confirmado com sucesso.</p>
+                <span className="text-sm text-muted-foreground">
+                  Toque para selecionar arquivos
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  PDF, JPG, PNG
+                </span>
+              </button>
 
-                <div className="bg-muted rounded-xl p-4 w-full space-y-2.5">
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Calendar className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="capitalize text-foreground">{formatFullDate(confirmedDate)}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Clock className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-foreground">{formatTime(confirmedDate)}</span>
-                  </div>
-                  {confirmedHospital && (
-                    <div className="flex items-center gap-3 text-sm">
+              {/* Selected files list */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <MapPin className="h-4 w-4 text-primary" />
+                        <FileText className="h-4 w-4 text-primary" />
                       </div>
-                      <span className="text-foreground">{confirmedHospital}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0"
+                      >
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <Button
+                    onClick={uploadFiles}
+                    disabled={uploading}
+                    className="w-full rounded-xl"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Upload result */}
+              {uploadResult && (
+                <div className="space-y-2">
+                  {uploadResult.uploaded.length > 0 && (
+                    <div className="p-3 bg-success/10 rounded-xl">
+                      <p className="text-sm text-success font-medium flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {uploadResult.uploaded.length} arquivo(s) enviado(s) com sucesso!
+                      </p>
+                    </div>
+                  )}
+                  {uploadResult.errors.length > 0 && (
+                    <div className="p-3 bg-destructive/10 rounded-xl">
+                      {uploadResult.errors.map((err, i) => (
+                        <p key={i} className="text-sm text-destructive">{err}</p>
+                      ))}
                     </div>
                   )}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                <p className="text-xs text-muted-foreground mt-6 text-center">
-                  A equipe médica entrará em contato com instruções adicionais.
-                </p>
-              </CardContent>
-            </Card>
+        {/* Success */}
+        {state === "success" && confirmedDate && (
+          <Card className="rounded-2xl shadow-md border-success/30">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-9 w-9 text-success" />
+              </div>
+              <p className="text-xl font-bold text-foreground mb-1">Cirurgia Agendada!</p>
+              <p className="text-muted-foreground text-center text-sm mb-6">Seu agendamento foi confirmado com sucesso.</p>
 
-            {/* File upload section - shown after successful scheduling */}
-            <Card className="mt-4 rounded-2xl shadow-md">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2 text-primary">
-                  <Paperclip className="h-4 w-4" />
-                  Anexar Exames
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Envie seus exames pré-operatórios (PDF, JPG, PNG). Máx. 20MB por arquivo.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Upload area */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Upload className="h-5 w-5 text-primary" />
+              <div className="bg-muted rounded-xl p-4 w-full space-y-2.5">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Calendar className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    Toque para selecionar arquivos
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    PDF, JPG, PNG
-                  </span>
-                </button>
-
-                {/* Selected files list */}
-                {selectedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <FileText className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground truncate">{file.name}</p>
-                          <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                        </div>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0"
-                        >
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </div>
-                    ))}
-
-                    <Button
-                      onClick={uploadFiles}
-                      disabled={uploading}
-                      className="w-full rounded-xl"
-                    >
-                      {uploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
-                        </>
-                      )}
-                    </Button>
+                  <span className="capitalize text-foreground">{formatFullDate(confirmedDate)}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Clock className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-foreground">{formatTime(confirmedDate)}</span>
+                </div>
+                {confirmedHospital && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-foreground">{confirmedHospital}</span>
                   </div>
                 )}
+              </div>
 
-                {/* Upload result */}
-                {uploadResult && (
-                  <div className="space-y-2">
-                    {uploadResult.uploaded.length > 0 && (
-                      <div className="p-3 bg-success/10 rounded-xl">
-                        <p className="text-sm text-success font-medium flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4" />
-                          {uploadResult.uploaded.length} arquivo(s) enviado(s) com sucesso!
-                        </p>
-                      </div>
-                    )}
-                    {uploadResult.errors.length > 0 && (
-                      <div className="p-3 bg-destructive/10 rounded-xl">
-                        {uploadResult.errors.map((err, i) => (
-                          <p key={i} className="text-sm text-destructive">{err}</p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </>
+              <p className="text-xs text-muted-foreground mt-6 text-center">
+                A equipe médica entrará em contato com instruções adicionais.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Footer */}
