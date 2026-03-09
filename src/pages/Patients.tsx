@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface Patient {
   id: string;
