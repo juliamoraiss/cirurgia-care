@@ -676,6 +676,18 @@ const PublicSchedule = () => {
                       {new Date(file.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
+                  <button
+                    onClick={() => deleteFile(file.id)}
+                    disabled={deletingFileId === file.id}
+                    className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0 transition-colors"
+                    title="Excluir arquivo"
+                  >
+                    {deletingFileId === file.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                    )}
+                  </button>
                 </div>
               ))}
             </CardContent>
