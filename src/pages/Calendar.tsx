@@ -35,7 +35,7 @@ const Calendar = () => {
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
   const [blockMode, setBlockMode] = useState<"single" | "period">("single");
-  const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability, loading: busyLoading, lastFetched } = useGoogleCalendarAvailability();
+  const { getBusySlotsForDay, isDayFullyBusy, busySlots, fetchAvailability } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
   const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
@@ -79,12 +79,12 @@ const Calendar = () => {
 
   const getColorForIndex = (index: number) => {
     const colors = [
-      "bg-blue-500/20 border-blue-500 text-blue-900 dark:text-blue-100",
-      "bg-green-500/20 border-green-500 text-green-900 dark:text-green-100",
-      "bg-purple-500/20 border-purple-500 text-purple-900 dark:text-purple-100",
-      "bg-orange-500/20 border-orange-500 text-orange-900 dark:text-orange-100",
-      "bg-pink-500/20 border-pink-500 text-pink-900 dark:text-pink-100",
-      "bg-cyan-500/20 border-cyan-500 text-cyan-900 dark:text-cyan-100",
+      "bg-primary/5 border-l-primary",
+      "bg-green-500/10 border-l-green-600",
+      "bg-purple-500/10 border-l-purple-600",
+      "bg-orange-500/10 border-l-orange-500",
+      "bg-pink-500/10 border-l-pink-500",
+      "bg-cyan-500/10 border-l-cyan-600",
     ];
     return colors[index % colors.length];
   };
@@ -122,251 +122,359 @@ const Calendar = () => {
     }
   };
 
-  const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
+  // Abbreviated weekday labels in pt-BR order (Sun → Sat)
+  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
   const monthSurgeries = surgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
   const eventsToShow = selectedDay ? selectedDaySurgeries : monthSurgeries;
 
-  // Check if selected day has availability config
   const selectedDayHasAvailability = selectedDay
     ? getSlotsForDay(selectedDay.getDay()).length > 0
     : false;
 
+  const selectedDayBlocked = selectedDay ? isDateBlocked(selectedDay) : false;
+
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24 md:pb-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* iOS-style top header */}
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agenda de Cirurgias</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Visualize e gerencie os procedimentos agendados
-          </p>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Agenda de Cirurgias</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Procedimentos agendados</p>
         </div>
         <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full bg-muted/60"
           onClick={() => navigate("/surgery-availability")}
         >
           <Settings2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Disponibilidade</span>
         </Button>
       </div>
 
-      <GoogleCalendarConnect onConnectionChange={setCalendarConnected} />
+      <div className="px-4 pb-2">
+        <GoogleCalendarConnect onConnectionChange={setCalendarConnected} />
+      </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-lg md:text-xl">
-              <CalendarIcon className="h-5 w-5 mr-2" />
-              {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}>
-                Hoje
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+      {/* Calendar card */}
+      <div className="mx-4 rounded-2xl bg-card border shadow-sm overflow-hidden mb-4">
+        {/* Month navigation */}
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <button
+            className="flex items-center gap-1.5 font-semibold text-sm text-foreground"
+            onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}
+          >
+            <CalendarIcon className="h-4 w-4 text-primary" />
+            <span className="capitalize">{format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}</span>
+          </button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-7 w-7 border-2 border-primary border-t-transparent mx-auto" />
+            <p className="mt-3 text-xs text-muted-foreground">Carregando...</p>
           </div>
-        </CardHeader>
+        ) : (
+          <>
+            {/* Week day headers */}
+            <div className="grid grid-cols-7 border-b">
+              {weekDays.map((day, i) => (
+                <div
+                  key={i}
+                  className={`text-center py-2 text-[10px] font-semibold tracking-wide ${
+                    i === 0 ? "text-destructive/70" : i === 6 ? "text-blue-500/70" : "text-muted-foreground"
+                  }`}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
 
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-              <p className="mt-4 text-muted-foreground">Carregando...</p>
+            {/* Day cells */}
+            <div className="grid grid-cols-7">
+              {calendarDays.map((day, index) => {
+                const daySurgeries = getSurgeriesForDay(day);
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isToday = isSameDay(day, new Date());
+                const isSelected = selectedDay && isSameDay(day, selectedDay);
+                const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
+                const isBlocked = isDateBlocked(day);
+                const isSunday = day.getDay() === 0;
+                const isSaturday = day.getDay() === 6;
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleDayClick(day)}
+                    className={`
+                      relative flex flex-col items-center justify-start pt-1.5 pb-1 h-12
+                      border-b border-r border-border/40 last:border-r-0
+                      transition-colors active:bg-muted/60
+                      ${!isCurrentMonth ? "opacity-30" : ""}
+                      ${isSelected ? "bg-primary/8" : isBlocked ? "bg-destructive/5" : "bg-card"}
+                    `}
+                  >
+                    {/* Day number */}
+                    <span
+                      className={`
+                        text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full leading-none
+                        ${isToday ? "bg-primary text-primary-foreground" : ""}
+                        ${isSelected && !isToday ? "ring-2 ring-primary text-primary" : ""}
+                        ${!isToday && !isSelected && isSunday ? "text-destructive/80" : ""}
+                        ${!isToday && !isSelected && isSaturday ? "text-blue-500/80" : ""}
+                        ${!isToday && !isSelected && !isSunday && !isSaturday && isCurrentMonth ? "text-foreground" : ""}
+                      `}
+                    >
+                      {format(day, "d")}
+                    </span>
+
+                    {/* Indicators row */}
+                    <div className="flex items-center justify-center gap-0.5 mt-0.5 h-2">
+                      {isBlocked ? (
+                        <CalendarOff className="h-2 w-2 text-destructive/60" />
+                      ) : (
+                        <>
+                          {hasAvailability && daySurgeries.length === 0 && (
+                            <span className="w-1 h-1 rounded-full bg-green-500/70" />
+                          )}
+                          {daySurgeries.length > 0 && daySurgeries.length <= 3 && daySurgeries.map((_, i) => (
+                            <span key={i} className="w-1 h-1 rounded-full bg-primary" />
+                          ))}
+                          {daySurgeries.length > 3 && (
+                            <span className="text-[8px] font-bold text-primary leading-none">{daySurgeries.length}</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 px-4 py-2.5 border-t bg-muted/20">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="text-[10px] text-muted-foreground">Cirurgia</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500/70" />
+                <span className="text-[10px] text-muted-foreground">Disponível</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CalendarOff className="h-2.5 w-2.5 text-destructive/60" />
+                <span className="text-[10px] text-muted-foreground">Bloqueado</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Day detail section */}
+      {!loading && (
+        <div className="mx-4 mb-24">
+          {selectedDay && selectedDayHasAvailability ? (
+            <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
+              {/* Day header with actions */}
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                    {format(selectedDay, "EEEE", { locale: ptBR })}
+                  </p>
+                  <p className="text-sm font-bold text-foreground">
+                    {format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedDayBlocked ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 px-3 gap-1.5 text-destructive border-destructive/40 text-xs"
+                      onClick={handleUnblockDay}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Desbloquear
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 px-3 gap-1.5 text-xs"
+                      onClick={handleBlockDay}
+                    >
+                      <Ban className="h-3.5 w-3.5" />
+                      Bloquear
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3 text-xs text-muted-foreground"
+                    onClick={() => setSelectedDay(null)}
+                  >
+                    Mês
+                  </Button>
+                </div>
+              </div>
+              <div className="p-3">
+                <CalendarDayView
+                  date={selectedDay}
+                  surgeries={surgeries}
+                  availabilitySlots={availabilitySlots}
+                  busySlots={busySlots}
+                  calendarConnected={calendarConnected}
+                />
+              </div>
             </div>
           ) : (
-            <>
-              {/* Calendar Grid */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-7 gap-1">
-                  {weekDays.map((day, i) => (
-                    <div key={i} className="text-center font-semibold p-2 text-muted-foreground text-xs md:text-sm">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {calendarDays.map((day, index) => {
-                    const daySurgeries = getSurgeriesForDay(day);
-                    const isCurrentMonth = isSameMonth(day, currentDate);
-                    const isToday = isSameDay(day, new Date());
-                    const isSelected = selectedDay && isSameDay(day, selectedDay);
-                    const dayBusySlots = calendarConnected ? getBusySlotsForDay(day) : [];
-                    const isFullyBusy = calendarConnected && isDayFullyBusy(day);
-                    const hasAvailability = getSlotsForDay(day.getDay()).length > 0;
-                    const isBlocked = isDateBlocked(day);
-
-                    return (
-                      <div
-                        key={index}
-                        onClick={() => handleDayClick(day)}
-                        className={`border rounded-xl p-1 min-h-[52px] md:min-h-[72px] flex flex-col items-center cursor-pointer transition-all ${
-                          isCurrentMonth ? "bg-background" : "bg-muted/30 opacity-40"
-                        } ${isToday ? "ring-2 ring-primary" : ""} ${
-                          isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
-                        } ${isBlocked ? "bg-destructive/5" : ""}`}
-                      >
-                        <div className={`flex items-center justify-center w-full text-xs md:text-sm font-semibold ${
-                          isCurrentMonth ? "text-foreground" : "text-muted-foreground"
-                        }`}>
-                          <span className={isToday ? "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs" : "w-6 h-6 flex items-center justify-center"}>
-                            {format(day, "d")}
-                          </span>
-                        </div>
-                        {/* Blocked indicator */}
-                        {isBlocked && (
-                          <div className="mt-0.5 flex items-center justify-center">
-                            <CalendarOff className="h-3 w-3 text-destructive/70" />
-                          </div>
-                        )}
-                        {/* Availability indicator */}
-                        {!isBlocked && hasAvailability && daySurgeries.length === 0 && (
-                          <div className="mt-0.5 flex justify-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500/60 inline-block" />
-                          </div>
-                        )}
-                        {daySurgeries.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-0.5">
-                            {daySurgeries.length <= 3 ? (
-                              daySurgeries.map((_, i) => (
-                                <span key={i} className="w-1.5 h-1.5 rounded-full bg-primary" />
-                              ))
-                            ) : (
-                              <span className="text-[10px] font-semibold text-primary">{daySurgeries.length}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Day View or Events List */}
-              <div className="mt-6 border-t pt-4">
-                {selectedDay && selectedDayHasAvailability ? (
-                  <>
-                    <div className="flex items-center justify-end gap-2 mb-3">
-                      {selectedDay && isDateBlocked(selectedDay) ? (
-                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive" onClick={handleUnblockDay}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Desbloquear
-                        </Button>
-                      ) : (
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBlockDay}>
-                          <Ban className="h-3.5 w-3.5" />
-                          Bloquear
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
-                        Ver todo o mês
-                      </Button>
-                    </div>
-                    <CalendarDayView
-                      date={selectedDay}
-                      surgeries={surgeries}
-                      availabilitySlots={availabilitySlots}
-                      busySlots={busySlots}
-                      calendarConnected={calendarConnected}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                      <h3 className="text-base sm:text-lg font-semibold">
-                        {selectedDay
-                          ? format(selectedDay, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                          : `Cirurgias de ${format(currentDate, "MMMM", { locale: ptBR })}`}
-                      </h3>
-                      {selectedDay && (
-                        <div className="flex items-center gap-2">
-                          {isDateBlocked(selectedDay) ? (
-                            <Button variant="outline" size="sm" className="gap-1.5 text-destructive flex-1 sm:flex-none" onClick={handleUnblockDay}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Desbloquear
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none" onClick={handleBlockDay}>
-                              <Ban className="h-3.5 w-3.5" />
-                              Bloquear
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="sm" className="flex-1 sm:flex-none" onClick={() => setSelectedDay(null)}>
-                            Ver mês
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    {eventsToShow.length > 0 ? (
-                      <div className="space-y-3">
-                        {eventsToShow.map((surgery, index) => {
-                          const surgeryDate = new Date(surgery.surgery_date);
-                          return (
-                            <Card
-                              key={surgery.id}
-                              className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getColorForIndex(index)}`}
-                              onClick={() => navigate(`/patients/${surgery.id}/exams`)}
-                            >
-                              <CardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-base truncate">{surgery.name}</h4>
-                                    <p className="text-sm text-muted-foreground capitalize">{surgery.procedure}</p>
-                                    {surgery.hospital && (
-                                      <p className="text-xs text-muted-foreground mt-1">{surgery.hospital}</p>
-                                    )}
-                                    {!selectedDay && (
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <div className="text-lg font-bold ml-4">
-                                    {format(surgeryDate, "HH:mm")}
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm py-4 text-center">
-                        {selectedDay ? "Nenhuma cirurgia agendada para este dia" : "Nenhuma cirurgia agendada para este mês"}
+            <div className="rounded-2xl bg-card border shadow-sm overflow-hidden">
+              {/* Section header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <div>
+                  {selectedDay ? (
+                    <>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                        {format(selectedDay, "EEEE", { locale: ptBR })}
                       </p>
+                      <p className="text-sm font-bold text-foreground">
+                        {format(selectedDay, "dd 'de' MMMM", { locale: ptBR })}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-bold text-foreground capitalize">
+                      {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+                    </p>
+                  )}
+                </div>
+
+                {selectedDay && (
+                  <div className="flex items-center gap-2">
+                    {selectedDayBlocked ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-3 gap-1.5 text-destructive border-destructive/40 text-xs"
+                        onClick={handleUnblockDay}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Desbloquear
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-3 gap-1.5 text-xs"
+                        onClick={handleBlockDay}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                        Bloquear
+                      </Button>
                     )}
-                  </>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-3 text-xs text-muted-foreground"
+                      onClick={() => setSelectedDay(null)}
+                    >
+                      Mês
+                    </Button>
+                  </div>
                 )}
               </div>
-            </>
+
+              {/* Events list */}
+              <div className="divide-y divide-border/50">
+                {eventsToShow.length > 0 ? (
+                  eventsToShow.map((surgery, index) => {
+                    const surgeryDate = new Date(surgery.surgery_date);
+                    return (
+                      <button
+                        key={surgery.id}
+                        className={`w-full text-left px-4 py-3 flex items-center gap-3 active:bg-muted/40 transition-colors border-l-[3px] ${getColorForIndex(index)}`}
+                        onClick={() => navigate(`/patients/${surgery.id}/exams`)}
+                      >
+                        {/* Time badge */}
+                        <div className="shrink-0 text-center">
+                          <span className="text-sm font-bold text-foreground tabular-nums">
+                            {format(surgeryDate, "HH:mm")}
+                          </span>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="w-px h-8 bg-border/60 shrink-0" />
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{surgery.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize truncate">{surgery.procedure}</p>
+                          {surgery.hospital && (
+                            <p className="text-xs text-muted-foreground/70 truncate">{surgery.hospital}</p>
+                          )}
+                          {!selectedDay && (
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">
+                              {format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}
+                            </p>
+                          )}
+                        </div>
+
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="py-10 text-center">
+                    <CalendarIcon className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      {selectedDay ? "Nenhuma cirurgia neste dia" : "Nenhuma cirurgia neste mês"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       {/* Block Dialog */}
       <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md mx-4 rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Ban className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Ban className="h-4 w-4" />
               Bloquear Agenda
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {selectedDay && `A partir de ${format(selectedDay, "dd/MM/yyyy")}`}
-            </p>
-            <div className="flex gap-2">
+            {selectedDay && (
+              <p className="text-sm text-muted-foreground">
+                A partir de <strong>{format(selectedDay, "dd/MM/yyyy")}</strong>
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={blockMode === "single" ? "default" : "outline"}
                 size="sm"
+                className="h-10"
                 onClick={() => setBlockMode("single")}
               >
                 Apenas este dia
@@ -374,6 +482,7 @@ const Calendar = () => {
               <Button
                 variant={blockMode === "period" ? "default" : "outline"}
                 size="sm"
+                className="h-10"
                 onClick={() => setBlockMode("period")}
               >
                 Período
@@ -381,29 +490,35 @@ const Calendar = () => {
             </div>
             {blockMode === "period" && (
               <div className="space-y-2">
-                <Label>Data final</Label>
+                <Label className="text-sm">Data final</Label>
                 <Input
                   type="date"
                   value={blockEndDate}
                   min={selectedDay ? format(selectedDay, "yyyy-MM-dd") : undefined}
                   onChange={(e) => setBlockEndDate(e.target.value)}
+                  className="h-11"
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label>Motivo (opcional)</Label>
+              <Label className="text-sm">Motivo (opcional)</Label>
               <Input
                 placeholder="Ex: Férias, Congresso..."
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
+                className="h-11"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBlockDialogOpen(false)}>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="outline" className="h-11 flex-1" onClick={() => setBlockDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleConfirmBlock} disabled={blockMode === "period" && !blockEndDate}>
+            <Button
+              className="h-11 flex-1"
+              onClick={handleConfirmBlock}
+              disabled={blockMode === "period" && !blockEndDate}
+            >
               Confirmar Bloqueio
             </Button>
           </DialogFooter>
