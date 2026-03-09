@@ -23,6 +23,14 @@ interface ScheduleData {
   slots: Slot[];
 }
 
+interface ExistingFile {
+  id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number | null;
+  created_at: string;
+}
+
 interface UsedLinkData {
   status: "used";
   patient_id: string;
@@ -31,6 +39,7 @@ interface UsedLinkData {
   hospital: string | null;
   surgery_date: string;
   doctor_name: string;
+  existing_files: ExistingFile[];
 }
 
 type PageState = "loading" | "slots" | "confirming" | "success" | "error" | "expired" | "used";
