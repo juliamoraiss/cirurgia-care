@@ -79,12 +79,12 @@ const Calendar = () => {
 
   const getColorForIndex = (index: number) => {
     const colors = [
-      "bg-blue-500/10 border-l-blue-500",
-      "bg-green-500/10 border-l-green-500",
-      "bg-purple-500/10 border-l-purple-500",
+      "bg-primary/5 border-l-primary",
+      "bg-green-500/10 border-l-green-600",
+      "bg-purple-500/10 border-l-purple-600",
       "bg-orange-500/10 border-l-orange-500",
       "bg-pink-500/10 border-l-pink-500",
-      "bg-cyan-500/10 border-l-cyan-500",
+      "bg-cyan-500/10 border-l-cyan-600",
     ];
     return colors[index % colors.length];
   };
