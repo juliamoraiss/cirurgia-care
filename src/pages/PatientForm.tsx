@@ -536,7 +536,7 @@ const PatientForm = () => {
 
       if (error) throw error;
 
-      const link = `${window.location.origin}/schedule/${token}`;
+      const link = `${window.location.origin}/agendar/${token}`;
       setSchedulingLink(link);
       toast.success("Link de agendamento gerado!");
     } catch (error) {
