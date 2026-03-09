@@ -4,6 +4,9 @@ type PatientStatus =
   | "awaiting_consultation"
   | "awaiting_authorization"
   | "authorized"
+  | "pending_scheduling"
+  | "surgery_scheduled"
+  | "surgery_completed"
   | "completed"
   | "cancelled";
 
@@ -11,26 +14,38 @@ interface StatusBadgeProps {
   status: PatientStatus;
 }
 
-const statusConfig = {
+const statusConfig: Record<PatientStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "pending" }> = {
   awaiting_consultation: {
     label: "Aguardando Consulta",
-    variant: "secondary" as const,
+    variant: "secondary",
   },
   awaiting_authorization: {
     label: "Aguardando Autorização",
-    variant: "warning" as const,
+    variant: "warning",
   },
   authorized: {
     label: "Autorizado",
-    variant: "success" as const,
+    variant: "success",
+  },
+  pending_scheduling: {
+    label: "Ag. Agendamento",
+    variant: "pending",
+  },
+  surgery_scheduled: {
+    label: "Cirurgia Agendada",
+    variant: "success",
+  },
+  surgery_completed: {
+    label: "Cirurgia Realizada",
+    variant: "default",
   },
   completed: {
-    label: "Cirurgia Realizada",
-    variant: "default" as const,
+    label: "Concluído",
+    variant: "default",
   },
   cancelled: {
-    label: "Cirurgia Cancelada",
-    variant: "destructive" as const,
+    label: "Cancelado",
+    variant: "destructive",
   },
 };
 
