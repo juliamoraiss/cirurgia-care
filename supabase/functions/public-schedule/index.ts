@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
     }
 
     // Handle JSON actions (existing logic)
-    const { action, token, slot } = await req.json();
+    const { action, token, slot, file_id } = await req.json();
 
     if (!token || typeof token !== "string") {
       return json({ error: "Token inválido" }, 400);
