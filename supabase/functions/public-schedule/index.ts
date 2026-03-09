@@ -18,6 +18,120 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const contentType = req.headers.get("content-type") || "";
+
+    // Handle multipart file uploads
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const token = formData.get("token") as string;
+      const patientId = formData.get("patient_id") as string;
+
+      if (!token || !patientId) {
+        return json({ error: "Token e patient_id são obrigatórios" }, 400);
+      }
+
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      // Validate token
+      const { data: link, error: linkError } = await supabase
+        .from("scheduling_links")
+        .select("*")
+        .eq("token", token)
+        .single();
+
+      if (linkError || !link) {
+        return json({ error: "Link inválido" }, 404);
+      }
+
+      // Allow uploads even if link is used (patient may upload after confirming)
+      if (new Date(link.expires_at) < new Date()) {
+        return json({ error: "Link expirado" }, 410);
+      }
+
+      if (link.patient_id !== patientId) {
+        return json({ error: "Paciente inválido" }, 403);
+      }
+
+      const uploadedFiles: string[] = [];
+      const errors: string[] = [];
+
+      // Process all file entries
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith("file_") && value instanceof File) {
+          const file = value;
+          
+          // Validate file size (max 20MB)
+          if (file.size > 20 * 1024 * 1024) {
+            errors.push(`${file.name}: arquivo muito grande (máx 20MB)`);
+            continue;
+          }
+
+          // Validate file type
+          const allowedTypes = [
+            "application/pdf",
+            "image/jpeg", "image/jpg", "image/png", "image/webp",
+            "application/dicom",
+          ];
+          
+          const isAllowed = allowedTypes.some(t => file.type.startsWith(t)) || 
+            file.name.match(/\.(pdf|jpg|jpeg|png|webp|dcm)$/i);
+
+          if (!isAllowed) {
+            errors.push(`${file.name}: formato não suportado`);
+            continue;
+          }
+
+          const fileExt = file.name.split(".").pop()?.toLowerCase() || "pdf";
+          const timestamp = Date.now();
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const filePath = `${patientId}/exames-paciente/${timestamp}_${safeName}`;
+
+          const arrayBuffer = await file.arrayBuffer();
+          const { error: uploadError } = await supabase.storage
+            .from("patient-files")
+            .upload(filePath, arrayBuffer, {
+              contentType: file.type,
+              upsert: false,
+            });
+
+          if (uploadError) {
+            console.error(`Upload error for ${file.name}:`, uploadError);
+            errors.push(`${file.name}: erro no upload`);
+            continue;
+          }
+
+          // Record in patient_files table
+          const { error: dbError } = await supabase
+            .from("patient_files")
+            .insert({
+              patient_id: patientId,
+              file_name: file.name,
+              file_path: filePath,
+              file_type: fileExt,
+              file_size: file.size,
+              uploaded_by: link.doctor_id, // attribute to doctor since patient has no auth
+            });
+
+          if (dbError) {
+            console.error(`DB error for ${file.name}:`, dbError);
+          }
+
+          uploadedFiles.push(file.name);
+        }
+      }
+
+      return json({
+        success: true,
+        uploaded: uploadedFiles,
+        errors,
+        message: `${uploadedFiles.length} arquivo(s) enviado(s) com sucesso`,
+      });
+    }
+
+    // Handle JSON actions (existing logic)
     const { action, token, slot } = await req.json();
 
     if (!token || typeof token !== "string") {
@@ -80,6 +194,7 @@ Deno.serve(async (req) => {
       if (!availability || availability.length === 0) {
         return json({
           patient_name: patient.name,
+          patient_id: patient.id,
           procedure: patient.procedure,
           hospital: patient.hospital,
           doctor_name: doctorProfile?.full_name || "Médico",
@@ -174,6 +289,7 @@ Deno.serve(async (req) => {
 
       return json({
         patient_name: patient.name,
+        patient_id: patient.id,
         procedure: patient.procedure,
         hospital: patient.hospital,
         doctor_name: doctorProfile?.full_name || "Médico",
@@ -257,6 +373,7 @@ Deno.serve(async (req) => {
         message: "Cirurgia agendada com sucesso!",
         scheduled_date: scheduledDate.toISOString(),
         hospital: patient.hospital,
+        patient_id: patient.id,
       });
     }
 
