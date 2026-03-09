@@ -496,10 +496,214 @@ const PublicSchedule = () => {
                       </>
                     )}
                   </Button>
-                )}
+                 )}
+
+                {/* File upload section - always show for slot selection */}
+                <Card className="mt-4 rounded-2xl shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2 text-primary">
+                      <Paperclip className="h-4 w-4" />
+                      Anexar Exames
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Envie seus exames pré-operatórios (PDF, JPG, PNG). Máx. 20MB por arquivo.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* Upload area */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Upload className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        Toque para selecionar arquivos
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        PDF, JPG, PNG
+                      </span>
+                    </button>
+
+                    {/* Selected files list */}
+                    {selectedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-foreground truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                            </div>
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0"
+                            >
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </div>
+                        ))}
+
+                        <Button
+                          onClick={uploadFiles}
+                          disabled={uploading}
+                          className="w-full rounded-xl"
+                        >
+                          {uploading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Enviando...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Upload result */}
+                    {uploadResult && (
+                      <div className="space-y-2">
+                        {uploadResult.uploaded.length > 0 && (
+                          <div className="p-3 bg-success/10 rounded-xl">
+                            <p className="text-sm text-success font-medium flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4" />
+                              {uploadResult.uploaded.length} arquivo(s) enviado(s) com sucesso!
+                            </p>
+                          </div>
+                        )}
+                        {uploadResult.errors.length > 0 && (
+                          <div className="p-3 bg-destructive/10 rounded-xl">
+                            {uploadResult.errors.map((err, i) => (
+                              <p key={i} className="text-sm text-destructive">{err}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </>
             )}
           </>
+        )}
+
+        {/* File upload section for used links */}
+        {state === "used" && usedLinkData && (
+          <Card className="mt-4 rounded-2xl shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-primary">
+                <Paperclip className="h-4 w-4" />
+                Anexar Exames
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Envie seus exames pré-operatórios (PDF, JPG, PNG). Máx. 20MB por arquivo.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Upload area */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  Toque para selecionar arquivos
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  PDF, JPG, PNG
+                </span>
+              </button>
+
+              {/* Selected files list */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0"
+                      >
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <Button
+                    onClick={uploadFiles}
+                    disabled={uploading}
+                    className="w-full rounded-xl"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Upload result */}
+              {uploadResult && (
+                <div className="space-y-2">
+                  {uploadResult.uploaded.length > 0 && (
+                    <div className="p-3 bg-success/10 rounded-xl">
+                      <p className="text-sm text-success font-medium flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {uploadResult.uploaded.length} arquivo(s) enviado(s) com sucesso!
+                      </p>
+                    </div>
+                  )}
+                  {uploadResult.errors.length > 0 && (
+                    <div className="p-3 bg-destructive/10 rounded-xl">
+                      {uploadResult.errors.map((err, i) => (
+                        <p key={i} className="text-sm text-destructive">{err}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Success */}
