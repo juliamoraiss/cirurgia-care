@@ -1029,8 +1029,11 @@ const PatientForm = () => {
                           Aguardando Consulta
                         </SelectItem>
                         <SelectItem value="authorized">Autorizado</SelectItem>
-                        <SelectItem value="completed">Cirurgia Realizada</SelectItem>
-                        <SelectItem value="cancelled">Cirurgia Cancelada</SelectItem>
+                        <SelectItem value="pending_scheduling">Aguardando Agendamento</SelectItem>
+                        <SelectItem value="surgery_scheduled">Cirurgia Agendada</SelectItem>
+                        <SelectItem value="surgery_completed">Cirurgia Realizada (Pós-Op)</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
