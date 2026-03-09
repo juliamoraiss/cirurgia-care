@@ -507,67 +507,64 @@ const PublicSchedule = () => {
               </Card>
             ) : (
               <>
-                {/* Date selection */}
+                {/* Date + Time selection */}
                 <Card className="mb-4 rounded-2xl shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2 text-primary">
                       <Calendar className="h-4 w-4" />
-                      Escolha uma data
+                      Escolha uma data e horário
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {availableDates.map((date) => (
-                      <button
-                        key={date}
-                        onClick={() => {
-                          setSelectedDate(date);
-                          setSelectedSlot(null);
-                        }}
-                        disabled={state === "confirming"}
-                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${
-                          selectedDate === date
-                            ? "border-primary bg-primary/5 text-primary font-medium shadow-sm"
-                            : "border-border hover:border-primary/40 hover:bg-accent text-foreground"
-                        }`}
-                      >
-                        <span className="capitalize">{formatDate(date)}</span>
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          {slotsByDate[date].length} {slotsByDate[date].length === 1 ? "horário" : "horários"}
-                        </Badge>
-                      </button>
+                      <div key={date}>
+                        <button
+                          onClick={() => {
+                            setSelectedDate(selectedDate === date ? null : date);
+                            setSelectedSlot(null);
+                          }}
+                          disabled={state === "confirming"}
+                          className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${
+                            selectedDate === date
+                              ? "border-primary bg-primary/5 text-primary font-medium shadow-sm"
+                              : "border-border hover:border-primary/40 hover:bg-accent text-foreground"
+                          }`}
+                        >
+                          <span className="capitalize">{formatDate(date)}</span>
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            {slotsByDate[date].length} {slotsByDate[date].length === 1 ? "horário" : "horários"}
+                          </Badge>
+                        </button>
+
+                        {/* Time slots inline below selected date */}
+                        {selectedDate === date && slotsByDate[date] && (
+                          <div className="mt-2 mb-1 ml-2 p-3 rounded-xl bg-muted/50 border border-border">
+                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              Horários disponíveis
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {slotsByDate[date].map((slot) => (
+                                <button
+                                  key={slot.datetime}
+                                  onClick={() => setSelectedSlot(slot)}
+                                  disabled={state === "confirming"}
+                                  className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                                    selectedSlot?.datetime === slot.datetime
+                                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                                      : "border-border bg-background hover:border-primary/40 text-foreground"
+                                  }`}
+                                >
+                                  {slot.time}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </CardContent>
                 </Card>
-
-                {/* Time selection */}
-                {selectedDate && slotsByDate[selectedDate] && (
-                  <Card className="mb-4 rounded-2xl shadow-md">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2 text-primary">
-                        <Clock className="h-4 w-4" />
-                        Escolha um horário
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-3 gap-2">
-                        {slotsByDate[selectedDate].map((slot) => (
-                          <button
-                            key={slot.datetime}
-                            onClick={() => setSelectedSlot(slot)}
-                            disabled={state === "confirming"}
-                            className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                              selectedSlot?.datetime === slot.datetime
-                                ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                : "border-border hover:border-primary/40 text-foreground"
-                            }`}
-                          >
-                            {slot.time}
-                          </button>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
 
                 {/* Confirm */}
                 {selectedSlot && (
