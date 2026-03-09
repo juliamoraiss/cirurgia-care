@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import GoogleCalendarConnect from "@/components/GoogleCalendarConnect";
 import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailability";
 import { useSurgeryAvailability } from "@/hooks/useSurgeryAvailability";
