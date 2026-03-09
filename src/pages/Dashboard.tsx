@@ -228,57 +228,8 @@ const Dashboard = () => {
     return prof?.full_name || "Não atribuído";
   };
 
-  const handleRefresh = useCallback(async () => {
-    // Re-trigger the useEffect by forcing a state change won't work,
-    // so we inline the fetch logic here
-    const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
-
-    const [patientsRes, activitiesRes, tasksRes] = await Promise.all([
-      supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id"),
-      supabase.from("system_activities").select("*").neq("activity_type", "patient_created").order("created_at", { ascending: false }).limit(10),
-      supabase.from("patient_tasks").select("id", { count: "exact" }).eq("completed", false)
-    ]);
-
-    if (patientsRes.data) {
-      const allPatientsData = patientsRes.data;
-      setAllPatients(allPatientsData);
-      
-      const scheduledData = allPatientsData.filter(p => p.surgery_date && new Date(p.surgery_date) > now && p.status !== "completed" && p.status !== "cancelled");
-      const completedData = allPatientsData.filter(p => p.status === "completed" || (p.surgery_date && new Date(p.surgery_date) <= now && p.status !== "cancelled"));
-      const pendingData = allPatientsData.filter(p => p.status === "awaiting_authorization");
-      
-      const monthlyCount = allPatientsData.filter(p => {
-        if (!p.surgery_date) return false;
-        const surgeryDate = new Date(p.surgery_date);
-        return surgeryDate >= monthStart && surgeryDate <= monthEnd;
-      }).length;
-      
-      const activeCount = allPatientsData.filter(p => !["completed", "cancelled"].includes(p.status || "")).length;
-      
-      setStats({
-        totalPatients: allPatientsData.length,
-        scheduledSurgeries: scheduledData.length,
-        completedSurgeries: completedData.length,
-        pendingAuthorization: pendingData.length
-      });
-      setMonthlySurgeries(monthlyCount);
-      setActivePatients(activeCount);
-      setScheduledPatients(scheduledData);
-      setCompletedPatients(completedData);
-      setPendingPatients(pendingData);
-    }
-
-    if (activitiesRes.data) setActivities(activitiesRes.data);
-    if (tasksRes.count !== null) setPendingTasks(tasksRes.count);
-  }, []);
-
-  if (isMobile) {
-    return (
-      <PullToRefresh onRefresh={handleRefresh} className="h-full">
-        <TooltipProvider>
-          <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
+  return <TooltipProvider>
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
