@@ -34,8 +34,11 @@ const PublicSchedule = () => {
   const [confirmedHospital, setConfirmedHospital] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set clean page title for patients
+    document.title = "Agendamento de Cirurgia";
     if (!token) return;
     fetchSlots();
+    return () => { document.title = "MedSystem"; };
   }, [token]);
 
   const fetchSlots = async () => {
@@ -371,7 +374,7 @@ const PublicSchedule = () => {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-8">
-          Sistema seguro de agendamento médico
+          Agendamento seguro e protegido
         </p>
       </div>
     </div>
