@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, User, Stethoscope, CheckCircle2, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Stethoscope, CheckCircle2, AlertTriangle, Loader2, MessageCircle, Upload, FileText, X, Paperclip } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -16,6 +16,7 @@ interface Slot {
 
 interface ScheduleData {
   patient_name: string;
+  patient_id: string;
   procedure: string;
   hospital: string | null;
   doctor_name: string;
@@ -23,6 +24,9 @@ interface ScheduleData {
 }
 
 type PageState = "loading" | "slots" | "confirming" | "success" | "error" | "expired" | "used";
+
+const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"];
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const PublicSchedule = () => {
   const { token } = useParams<{ token: string }>();
@@ -33,6 +37,13 @@ const PublicSchedule = () => {
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [confirmedDate, setConfirmedDate] = useState<string | null>(null);
   const [confirmedHospital, setConfirmedHospital] = useState<string | null>(null);
+  const [confirmedPatientId, setConfirmedPatientId] = useState<string | null>(null);
+
+  // File upload state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ uploaded: string[]; errors: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = "Agendamento de Cirurgia";
@@ -98,11 +109,73 @@ const PublicSchedule = () => {
 
       setConfirmedDate(result.scheduled_date);
       setConfirmedHospital(result.hospital);
+      setConfirmedPatientId(result.patient_id || data?.patient_id || null);
       setState("success");
     } catch {
       setErrorMessage("Erro de conexão. Tente novamente.");
       setState("error");
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async () => {
+    if (!selectedFiles.length || !confirmedPatientId || !token) return;
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("token", token);
+      formData.append("patient_id", confirmedPatientId);
+      selectedFiles.forEach((file, i) => {
+        formData.append(`file_${i}`, file);
+      });
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/public-schedule`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      setUploadResult({ uploaded: result.uploaded || [], errors: result.errors || [] });
+      if (result.uploaded?.length) {
+        setSelectedFiles([]);
+      }
+    } catch {
+      setUploadResult({ uploaded: [], errors: ["Erro de conexão ao enviar arquivos"] });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const slotsByDate = useMemo(() => {
@@ -364,42 +437,145 @@ const PublicSchedule = () => {
 
         {/* Success */}
         {state === "success" && confirmedDate && (
-          <Card className="rounded-2xl shadow-md border-success/30">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-9 w-9 text-success" />
-              </div>
-              <p className="text-xl font-bold text-foreground mb-1">Cirurgia Agendada!</p>
-              <p className="text-muted-foreground text-center text-sm mb-6">Seu agendamento foi confirmado com sucesso.</p>
+          <>
+            <Card className="rounded-2xl shadow-md border-success/30">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="h-9 w-9 text-success" />
+                </div>
+                <p className="text-xl font-bold text-foreground mb-1">Cirurgia Agendada!</p>
+                <p className="text-muted-foreground text-center text-sm mb-6">Seu agendamento foi confirmado com sucesso.</p>
 
-              <div className="bg-muted rounded-xl p-4 w-full space-y-2.5">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Calendar className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="capitalize text-foreground">{formatFullDate(confirmedDate)}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Clock className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-foreground">{formatTime(confirmedDate)}</span>
-                </div>
-                {confirmedHospital && (
+                <div className="bg-muted rounded-xl p-4 w-full space-y-2.5">
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <MapPin className="h-4 w-4 text-primary" />
+                      <Calendar className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="text-foreground">{confirmedHospital}</span>
+                    <span className="capitalize text-foreground">{formatFullDate(confirmedDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Clock className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-foreground">{formatTime(confirmedDate)}</span>
+                  </div>
+                  {confirmedHospital && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-foreground">{confirmedHospital}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground mt-6 text-center">
+                  A equipe médica entrará em contato com instruções adicionais.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* File upload section - shown after successful scheduling */}
+            <Card className="mt-4 rounded-2xl shadow-md">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2 text-primary">
+                  <Paperclip className="h-4 w-4" />
+                  Anexar Exames
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Envie seus exames pré-operatórios (PDF, JPG, PNG). Máx. 20MB por arquivo.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Upload area */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Upload className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    Toque para selecionar arquivos
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    PDF, JPG, PNG
+                  </span>
+                </button>
+
+                {/* Selected files list */}
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center shrink-0"
+                        >
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <Button
+                      onClick={uploadFiles}
+                      disabled={uploading}
+                      className="w-full rounded-xl"
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Enviar {selectedFiles.length} {selectedFiles.length === 1 ? "arquivo" : "arquivos"}
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
-              </div>
 
-              <p className="text-xs text-muted-foreground mt-6 text-center">
-                A equipe médica entrará em contato com instruções adicionais.
-              </p>
-            </CardContent>
-          </Card>
+                {/* Upload result */}
+                {uploadResult && (
+                  <div className="space-y-2">
+                    {uploadResult.uploaded.length > 0 && (
+                      <div className="p-3 bg-success/10 rounded-xl">
+                        <p className="text-sm text-success font-medium flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {uploadResult.uploaded.length} arquivo(s) enviado(s) com sucesso!
+                        </p>
+                      </div>
+                    )}
+                    {uploadResult.errors.length > 0 && (
+                      <div className="p-3 bg-destructive/10 rounded-xl">
+                        {uploadResult.errors.map((err, i) => (
+                          <p key={i} className="text-sm text-destructive">{err}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Footer */}
