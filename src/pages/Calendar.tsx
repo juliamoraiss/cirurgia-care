@@ -176,7 +176,15 @@ const Calendar = () => {
             onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}
           >
             <CalendarIcon className="h-4 w-4 text-primary" />
-            <span className="capitalize">{format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}</span>
+            <motion.span
+              key={format(currentDate, "yyyy-MM")}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="capitalize"
+            >
+              {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+            </motion.span>
           </button>
 
           <Button
@@ -211,7 +219,13 @@ const Calendar = () => {
             </div>
 
             {/* Day cells */}
-            <div className="grid grid-cols-7">
+            <motion.div
+              key={format(currentDate, "yyyy-MM")}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="grid grid-cols-7"
+            >
               {calendarDays.map((day, index) => {
                 const daySurgeries = getSurgeriesForDay(day);
                 const isCurrentMonth = isSameMonth(day, currentDate);
@@ -223,30 +237,37 @@ const Calendar = () => {
                 const isSaturday = day.getDay() === 6;
 
                 return (
-                  <button
+                  <motion.button
                     key={index}
                     onClick={() => handleDayClick(day)}
+                    whileTap={{ scale: 0.88 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
                     className={`
                       relative flex flex-col items-center justify-start pt-1.5 pb-1 h-12
                       border-b border-r border-border/40 last:border-r-0
                       transition-colors active:bg-muted/60
                       ${!isCurrentMonth ? "opacity-30" : ""}
-                      ${isSelected ? "bg-primary/8" : isBlocked ? "bg-destructive/5" : "bg-card"}
+                      ${isSelected ? "bg-primary/[0.08]" : isBlocked ? "bg-destructive/5" : "bg-card"}
                     `}
                   >
                     {/* Day number */}
-                    <span
+                    <motion.span
+                      animate={isSelected && !isToday ? {
+                        scale: [1, 1.15, 1],
+                        transition: { duration: 0.25 }
+                      } : {}}
                       className={`
                         text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full leading-none
-                        ${isToday ? "bg-primary text-primary-foreground" : ""}
-                        ${isSelected && !isToday ? "ring-2 ring-primary text-primary" : ""}
+                        transition-all duration-200
+                        ${isToday ? "bg-primary text-primary-foreground shadow-sm" : ""}
+                        ${isSelected && !isToday ? "ring-2 ring-primary text-primary bg-primary/10" : ""}
                         ${!isToday && !isSelected && isSunday ? "text-destructive/80" : ""}
                         ${!isToday && !isSelected && isSaturday ? "text-blue-500/80" : ""}
                         ${!isToday && !isSelected && !isSunday && !isSaturday && isCurrentMonth ? "text-foreground" : ""}
                       `}
                     >
                       {format(day, "d")}
-                    </span>
+                    </motion.span>
 
                     {/* Indicators row */}
                     <div className="flex items-center justify-center gap-0.5 mt-0.5 h-2">
@@ -255,7 +276,7 @@ const Calendar = () => {
                       ) : (
                         <>
                           {hasAvailability && daySurgeries.length === 0 && (
-                            <span className="w-1 h-1 rounded-full bg-green-500/70" />
+                            <span className="w-1 h-1 rounded-full bg-success/70" />
                           )}
                           {daySurgeries.length > 0 && daySurgeries.length <= 3 && daySurgeries.map((_, i) => (
                             <span key={i} className="w-1 h-1 rounded-full bg-primary" />
@@ -266,10 +287,10 @@ const Calendar = () => {
                         </>
                       )}
                     </div>
-                  </button>
+                  </motion.button>
                 );
               })}
-            </div>
+            </motion.div>
 
             {/* Legend */}
             <div className="flex items-center gap-4 px-4 py-2.5 border-t bg-muted/20">
@@ -278,7 +299,7 @@ const Calendar = () => {
                 <span className="text-[10px] text-muted-foreground">Cirurgia</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500/70" />
+                <span className="w-2 h-2 rounded-full bg-success/70" />
                 <span className="text-[10px] text-muted-foreground">Disponível</span>
               </div>
               <div className="flex items-center gap-1.5">
