@@ -272,7 +272,13 @@ export function Layout({ children, onRefresh }: LayoutProps) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 pb-20 md:pb-0">
-        {children}
+        {isMobile ? (
+          <PullToRefresh onRefresh={handleRefresh} className="min-h-full">
+            {children}
+          </PullToRefresh>
+        ) : (
+          children
+        )}
       </main>
 
       {/* Mobile Navigation */}
