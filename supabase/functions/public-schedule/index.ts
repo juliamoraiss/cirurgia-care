@@ -267,6 +267,9 @@ Deno.serve(async (req) => {
         for (const slot of daySlots) {
           const dateStr = date.toISOString().split("T")[0];
 
+          // Skip dates after guide validity date
+          if (guideValidityDate && new Date(dateStr) > guideValidityDate) continue;
+
           // Check if date is blocked
           const isBlocked = (scheduleBlocks || []).some(
             (b: any) => dateStr >= b.start_date && dateStr <= b.end_date
