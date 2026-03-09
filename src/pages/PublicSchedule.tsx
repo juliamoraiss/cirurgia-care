@@ -579,12 +579,12 @@ const PublicSchedule = () => {
                     {state === "confirming" ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Confirmando...
+                        {uploading ? "Enviando exames..." : "Confirmando..."}
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Confirmar Agendamento
+                        Confirmar Agendamento{selectedFiles.length > 0 ? ` e enviar ${selectedFiles.length} exame(s)` : ""}
                       </>
                     )}
                   </Button>
