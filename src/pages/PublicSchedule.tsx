@@ -625,6 +625,38 @@ const PublicSchedule = () => {
           </>
         )}
 
+        {/* Existing files section for used links */}
+        {state === "used" && usedLinkData && existingFiles.length > 0 && (
+          <Card className="mt-4 rounded-2xl shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-primary">
+                <FileText className="h-4 w-4" />
+                Exames Enviados
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                {existingFiles.length} {existingFiles.length === 1 ? "arquivo enviado" : "arquivos enviados"}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {existingFiles.map((file) => (
+                <div key={file.id} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
+                  <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{file.file_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {file.file_size ? formatFileSize(file.file_size) : file.file_type?.toUpperCase()}
+                      {" · "}
+                      {new Date(file.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* File upload section for used links */}
         {state === "used" && usedLinkData && (
           <Card className="mt-4 rounded-2xl shadow-md">
