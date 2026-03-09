@@ -84,6 +84,19 @@ Deno.serve(async (req) => {
             continue;
           }
 
+          // Check if file with same name already exists for this patient
+          const { data: existingFile } = await supabase
+            .from("patient_files")
+            .select("id")
+            .eq("patient_id", patientId)
+            .eq("file_name", file.name)
+            .maybeSingle();
+
+          if (existingFile) {
+            errors.push(`${file.name}: arquivo já enviado anteriormente`);
+            continue;
+          }
+
           const fileExt = file.name.split(".").pop()?.toLowerCase() || "pdf";
           const timestamp = Date.now();
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");

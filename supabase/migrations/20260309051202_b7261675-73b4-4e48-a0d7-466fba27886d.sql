@@ -1,0 +1,1 @@
+DELETE FROM patient_files WHERE id = '638388d7-2b82-4a32-99b4-ed1793f7d080';
