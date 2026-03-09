@@ -172,9 +172,9 @@ const Dashboard = () => {
       try {
         const {
           data
-        } = await supabase.from("system_activities").select("*").neq("activity_type", "patient_created").order("created_at", {
+        } = await supabase.from("system_activities").select("*").order("created_at", {
           ascending: false
-        }).limit(10);
+        }).limit(15);
         setActivities(data || []);
       } catch (error) {
         console.error("Error fetching activities:", error);
