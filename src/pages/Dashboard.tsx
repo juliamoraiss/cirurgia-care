@@ -222,6 +222,39 @@ const Dashboard = () => {
     );
   })();
 
+  // Important notifications for professionals (non-admin)
+  const importantTypes = ['patient_created', 'surgery_scheduled', 'surgery_rescheduled', 'file_uploaded', 'status_updated'];
+  const recentNotifications = activities.filter(a => importantTypes.includes(a.activity_type));
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'patient_created': return <Users className="h-4 w-4 text-primary" />;
+      case 'surgery_scheduled': return <Calendar className="h-4 w-4 text-primary" />;
+      case 'surgery_rescheduled': return <Calendar className="h-4 w-4 text-warning" />;
+      case 'file_uploaded': return <Upload className="h-4 w-4 text-primary" />;
+      case 'status_updated': return <CheckCircle className="h-4 w-4 text-primary" />;
+      default: return <Bell className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  const getNotificationLabel = (activity: SystemActivity) => {
+    const metadata = activity.metadata || {};
+    switch (activity.activity_type) {
+      case 'patient_created':
+        return `Novo paciente: ${activity.patient_name || 'Desconhecido'}`;
+      case 'surgery_scheduled':
+        return `Cirurgia agendada: ${activity.patient_name || 'Paciente'}`;
+      case 'surgery_rescheduled':
+        return `Cirurgia reagendada: ${activity.patient_name || 'Paciente'}`;
+      case 'file_uploaded':
+        return `Novo exame anexado: ${activity.patient_name || 'Paciente'} — ${metadata.file_name || ''}`;
+      case 'status_updated':
+        return `Status atualizado: ${activity.patient_name || 'Paciente'}`;
+      default:
+        return activity.description;
+    }
+  };
+
   const getProfessionalName = (id: string) => {
     const prof = professionals.find(p => p.id === id);
     return prof?.full_name || "Não atribuído";
@@ -230,6 +263,53 @@ const Dashboard = () => {
   return (
     <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
+        {/* Notification banner for professionals */}
+        {!isAdmin && recentNotifications.length > 0 && (
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <Bell className="h-5 w-5 text-primary" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {recentNotifications.length}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                {recentNotifications.length} {recentNotifications.length === 1 ? 'atualização recente' : 'atualizações recentes'}
+              </span>
+            </div>
+            {showNotifications ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+            )}
+          </button>
+        )}
+
+        {!isAdmin && showNotifications && recentNotifications.length > 0 && (
+          <Card className="rounded-xl border-primary/20 shadow-sm">
+            <CardContent className="p-3 space-y-1.5">
+              {recentNotifications.map((activity) => (
+                <div
+                  key={activity.id}
+                  onClick={() => activity.patient_id && navigate(`/patients/${activity.patient_id}/exams`)}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 transition-colors ${activity.patient_id ? 'cursor-pointer' : ''}`}
+                >
+                  <div className="shrink-0">{getNotificationIcon(activity.activity_type)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{getNotificationLabel(activity)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: ptBR })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
