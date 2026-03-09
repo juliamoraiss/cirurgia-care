@@ -523,7 +523,10 @@ const PatientForm = () => {
       expiresAt.setDate(expiresAt.getDate() + 7);
 
       const doctorId = formData.responsible_user_id || user.id;
-      const token = crypto.randomUUID();
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const token = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+        .map(b => chars[b % chars.length])
+        .join('');
 
       const { error } = await supabase
         .from("scheduling_links")
