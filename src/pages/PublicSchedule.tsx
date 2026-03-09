@@ -23,6 +23,16 @@ interface ScheduleData {
   slots: Slot[];
 }
 
+interface UsedLinkData {
+  status: "used";
+  patient_id: string;
+  patient_name: string;
+  procedure: string;
+  hospital: string | null;
+  surgery_date: string;
+  doctor_name: string;
+}
+
 type PageState = "loading" | "slots" | "confirming" | "success" | "error" | "expired" | "used";
 
 const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"];
