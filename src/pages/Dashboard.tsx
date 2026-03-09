@@ -276,7 +276,7 @@ const Dashboard = () => {
           isAdmin={isAdmin} 
         />
 
-      <CollapsibleCard
+      {isAdmin && <CollapsibleCard
         icon={Activity}
         title="Histórico de Atividades"
         defaultOpen={false}
@@ -412,7 +412,7 @@ const Dashboard = () => {
             })}
               </div>
             }
-          </CollapsibleCard>
+          </CollapsibleCard>}
       </div>
     </TooltipProvider>
   );
