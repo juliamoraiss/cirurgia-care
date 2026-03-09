@@ -226,7 +226,8 @@ const Dashboard = () => {
     return prof?.full_name || "Não atribuído";
   };
 
-  return <TooltipProvider>
+  return (
+    <TooltipProvider>
       <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
