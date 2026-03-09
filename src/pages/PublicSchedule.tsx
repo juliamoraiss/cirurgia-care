@@ -23,6 +23,14 @@ interface ScheduleData {
   slots: Slot[];
 }
 
+interface ExistingFile {
+  id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number | null;
+  created_at: string;
+}
+
 interface UsedLinkData {
   status: "used";
   patient_id: string;
@@ -31,6 +39,7 @@ interface UsedLinkData {
   hospital: string | null;
   surgery_date: string;
   doctor_name: string;
+  existing_files: ExistingFile[];
 }
 
 type PageState = "loading" | "slots" | "confirming" | "success" | "error" | "expired" | "used";
@@ -54,6 +63,7 @@ const PublicSchedule = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ uploaded: string[]; errors: string[] } | null>(null);
+  const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -79,6 +89,7 @@ const PublicSchedule = () => {
       if (!res.ok) {
         if (result.status === "used") {
           setUsedLinkData(result);
+          setExistingFiles(result.existing_files || []);
           setState("used");
         } else if (result.status === "expired") {
           setState("expired");
@@ -177,6 +188,17 @@ const PublicSchedule = () => {
       setUploadResult({ uploaded: result.uploaded || [], errors: result.errors || [] });
       if (result.uploaded?.length) {
         setSelectedFiles([]);
+        // Add newly uploaded files to the existing files list
+        const newFiles: ExistingFile[] = selectedFiles
+          .filter((_, i) => (result.uploaded || []).includes(selectedFiles[i]?.name))
+          .map((file) => ({
+            id: crypto.randomUUID(),
+            file_name: file.name,
+            file_type: file.name.split(".").pop()?.toLowerCase() || "",
+            file_size: file.size,
+            created_at: new Date().toISOString(),
+          }));
+        setExistingFiles(prev => [...newFiles, ...prev]);
       }
     } catch {
       setUploadResult({ uploaded: [], errors: ["Erro de conexão ao enviar arquivos"] });
@@ -601,6 +623,38 @@ const PublicSchedule = () => {
               </>
             )}
           </>
+        )}
+
+        {/* Existing files section for used links */}
+        {state === "used" && usedLinkData && existingFiles.length > 0 && (
+          <Card className="mt-4 rounded-2xl shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-primary">
+                <FileText className="h-4 w-4" />
+                Exames Enviados
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                {existingFiles.length} {existingFiles.length === 1 ? "arquivo enviado" : "arquivos enviados"}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {existingFiles.map((file) => (
+                <div key={file.id} className="flex items-center gap-3 p-2.5 bg-muted rounded-xl">
+                  <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{file.file_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {file.file_size ? formatFileSize(file.file_size) : file.file_type?.toUpperCase()}
+                      {" · "}
+                      {new Date(file.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         )}
 
         {/* File upload section for used links */}
