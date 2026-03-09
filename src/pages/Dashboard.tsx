@@ -460,6 +460,19 @@ const Dashboard = () => {
             </div>}
       </CollapsibleCard>
       </div>
-    </TooltipProvider>;
+    </div>
+  );
+
+  return (
+    <TooltipProvider>
+      {isMobile ? (
+        <PullToRefresh onRefresh={handleRefresh} className="h-full">
+          {content}
+        </PullToRefresh>
+      ) : (
+        content
+      )}
+    </TooltipProvider>
+  );
 };
 export default Dashboard;
