@@ -153,7 +153,8 @@ const PublicSchedule = () => {
   };
 
   const uploadFiles = async () => {
-    if (!selectedFiles.length || !confirmedPatientId || !token) return;
+    const patientId = confirmedPatientId || data?.patient_id || usedLinkData?.patient_id;
+    if (!selectedFiles.length || !patientId || !token) return;
     setUploading(true);
 
     try {
