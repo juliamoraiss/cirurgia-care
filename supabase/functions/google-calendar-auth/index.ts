@@ -82,6 +82,8 @@ Deno.serve(async (req) => {
     const payload = await req.json().catch(() => ({}));
     const { action, code, redirect_uri } = payload;
 
+    console.log(`[google-calendar-auth] action=${action} userId=${user.id}`);
+
     // Action: get_auth_url - returns the Google OAuth URL
     if (action === "get_auth_url") {
       const params = new URLSearchParams({
@@ -102,6 +104,7 @@ Deno.serve(async (req) => {
 
     // Action: exchange_code - exchange authorization code for tokens
     if (action === "exchange_code") {
+      console.log(`[google-calendar-auth] exchange_code for user=${user.id}, redirect_uri=${redirect_uri}, code_length=${code?.length}`);
       if (!code || !redirect_uri) {
         return new Response(
           JSON.stringify({ error: "Missing code or redirect_uri" }),
@@ -190,6 +193,7 @@ Deno.serve(async (req) => {
         );
       }
 
+      console.log(`[google-calendar-auth] Connection saved successfully for user=${user.id}`);
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
