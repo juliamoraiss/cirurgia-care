@@ -193,6 +193,7 @@ Deno.serve(async (req) => {
         );
       }
 
+      console.log(`[google-calendar-auth] Connection saved successfully for user=${user.id}`);
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
