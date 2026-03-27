@@ -103,7 +103,8 @@ Deno.serve(async (req) => {
     }
 
     // Action: exchange_code - exchange authorization code for tokens
-    console.log(`[google-calendar-auth] exchange_code for user=${user.id}, redirect_uri=${redirect_uri}, code_length=${code?.length}`);
+    if (action === "exchange_code") {
+      console.log(`[google-calendar-auth] exchange_code for user=${user.id}, redirect_uri=${redirect_uri}, code_length=${code?.length}`);
       if (!code || !redirect_uri) {
         return new Response(
           JSON.stringify({ error: "Missing code or redirect_uri" }),
