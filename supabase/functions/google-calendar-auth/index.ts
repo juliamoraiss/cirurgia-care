@@ -82,6 +82,8 @@ Deno.serve(async (req) => {
     const payload = await req.json().catch(() => ({}));
     const { action, code, redirect_uri } = payload;
 
+    console.log(`[google-calendar-auth] action=${action} userId=${user.id}`);
+
     // Action: get_auth_url - returns the Google OAuth URL
     if (action === "get_auth_url") {
       const params = new URLSearchParams({
