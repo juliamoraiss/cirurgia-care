@@ -215,7 +215,10 @@ export function CalendarDayView({
                 )}
               </>
             ) : slot.type === "busy" ? (
-              <span className="text-xs text-muted-foreground italic">Ocupado (Google Calendar)</span>
+              <div>
+                <span className="text-sm font-medium text-foreground">{slot.summary || "Ocupado"}</span>
+                <span className="block text-[10px] text-muted-foreground">Google Calendar</span>
+              </div>
             ) : (
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Disponível</span>
