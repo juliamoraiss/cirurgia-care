@@ -64,6 +64,7 @@ export function CalendarDayView({
         start: new Date(busy.start) < dayStart ? dayStart : new Date(busy.start),
         end: new Date(busy.end) > dayEnd ? dayEnd : new Date(busy.end),
         allDay: busy.allDay,
+        summary: busy.summary,
       }))
       .sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [date, busySlots, calendarConnected]);
