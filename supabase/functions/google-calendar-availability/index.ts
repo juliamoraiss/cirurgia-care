@@ -238,8 +238,10 @@ Deno.serve(async (req) => {
         };
       });
 
-    // Merge overlapping busy slots
-    const merged = mergeBusySlots(busySlots);
+    // Return individual events (no merging) so the UI can show each one
+    const sorted = busySlots.sort(
+      (a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
 
     return new Response(
       JSON.stringify({
