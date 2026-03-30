@@ -101,7 +101,7 @@ const Calendar = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, surgery_date, hospital")
+        .select("id, name, procedure, surgery_date, hospital, responsible_user_id")
         .not("surgery_date", "is", null)
         .order("surgery_date", { ascending: true });
 
