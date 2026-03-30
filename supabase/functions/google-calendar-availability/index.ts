@@ -220,18 +220,21 @@ Deno.serve(async (req) => {
         return true;
       })
       .map((event: any) => {
+        const summary = event.summary || "Sem título";
         // Handle all-day events
         if (event.start?.date) {
           return {
             start: new Date(event.start.date).toISOString(),
             end: new Date(event.end.date).toISOString(),
             allDay: true,
+            summary,
           };
         }
         return {
           start: event.start?.dateTime || event.start?.date,
           end: event.end?.dateTime || event.end?.date,
           allDay: false,
+          summary,
         };
       });
 
