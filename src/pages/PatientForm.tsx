@@ -966,6 +966,7 @@ const PatientForm = () => {
                       <SelectItem value="lobectomia">Lobectomia</SelectItem>
                       <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
                       <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
+                      <SelectItem value="troca de cânula">Troca de Cânula</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.procedure && <p className="text-sm text-destructive">{errors.procedure}</p>}
