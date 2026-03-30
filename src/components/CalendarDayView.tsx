@@ -94,13 +94,11 @@ export function CalendarDayView({
       while (addMinutes(slotStart, duration) <= blockEnd) {
         const slotEnd = addMinutes(slotStart, duration);
 
-        // Check if there's a surgery booked in this slot
         const bookedSurgery = daySurgeries.find(s => {
           const surgeryTime = new Date(s.surgery_date);
           return surgeryTime >= slotStart && surgeryTime < slotEnd;
         });
 
-        // Check Google Calendar conflict
         const isBusy = calendarConnected && busySlots.some(busy => {
           const busyStart = new Date(busy.start);
           const busyEnd = new Date(busy.end);
@@ -118,6 +116,35 @@ export function CalendarDayView({
         slotStart = slotEnd;
       }
     });
+
+    // Add Google Calendar busy slots that fall OUTSIDE configured availability windows
+    if (googleBusyForDay.length > 0) {
+      googleBusyForDay.forEach(busy => {
+        const busyStart = busy.start;
+        const busyEnd = busy.end;
+
+        // Check if this busy slot is already covered by an availability-based slot
+        const alreadyCovered = slots.some(s =>
+          s.type === "busy" && s.time <= busyStart && s.endTime >= busyEnd
+        );
+
+        if (!alreadyCovered) {
+          // Check if it overlaps with any existing slot
+          const overlapsExisting = slots.some(s =>
+            busyStart < s.endTime && busyEnd > s.time
+          );
+
+          if (!overlapsExisting) {
+            slots.push({
+              time: busyStart,
+              endTime: busyEnd,
+              type: "busy",
+              allDay: busy.allDay,
+            });
+          }
+        }
+      });
+    }
 
     return slots.sort((a, b) => a.time.getTime() - b.time.getTime());
   }, [date, dayOfWeek, availabilitySlots, daySurgeries, busySlots, calendarConnected, googleBusyForDay]);
