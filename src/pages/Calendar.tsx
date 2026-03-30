@@ -154,7 +154,10 @@ const Calendar = () => {
       </div>
 
       <div className="px-4 pb-2">
-        <GoogleCalendarConnect onConnectionChange={setCalendarConnected} />
+        <GoogleCalendarConnect onConnectionChange={(connected, doctorId) => {
+          setCalendarConnected(connected);
+          setConnectedDoctorId(doctorId);
+        }} />
       </div>
 
       {/* Calendar card */}
