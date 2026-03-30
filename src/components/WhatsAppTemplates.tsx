@@ -188,6 +188,8 @@ ${googleCalendarLink}`;
         return { short: "Confirmar Paciente", full: "Enviar Confirmação ao Paciente" };
       case "surgery_confirmation_doctor":
         return { short: "Confirmar Médico", full: "Enviar Confirmação ao Médico" };
+      case "cannula_reminder":
+        return { short: "Lembrar Cânula", full: "Enviar Lembrete de Cânula" };
       default:
         return { short: "Cobrar Exame", full: "Enviar Cobrança de Exame" };
     }
