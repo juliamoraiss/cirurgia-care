@@ -80,6 +80,7 @@ export function CalendarDayView({
         endTime: busy.end,
         type: "busy" as const,
         allDay: busy.allDay,
+        summary: busy.summary,
       }));
     }
 
