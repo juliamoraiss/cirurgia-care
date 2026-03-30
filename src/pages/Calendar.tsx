@@ -121,8 +121,12 @@ const Calendar = () => {
   const calendarEnd = endOfWeek(monthEnd, { locale: ptBR });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+  const filteredSurgeries = isAdmin && selectedDoctorId !== "all"
+    ? surgeries.filter(s => s.responsible_user_id === selectedDoctorId)
+    : surgeries;
+
   const getSurgeriesForDay = (day: Date) =>
-    surgeries
+    filteredSurgeries
       .filter((s) => isSameDay(new Date(s.surgery_date), day))
       .sort((a, b) => new Date(a.surgery_date).getTime() - new Date(b.surgery_date).getTime());
 
