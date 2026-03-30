@@ -102,16 +102,16 @@ export function CalendarDayView({
           return surgeryTime >= slotStart && surgeryTime < slotEnd;
         });
 
-        const isBusy = calendarConnected && busySlots.some(busy => {
+        const matchingBusy = calendarConnected ? busySlots.find(busy => {
           const busyStart = new Date(busy.start);
           const busyEnd = new Date(busy.end);
           return slotStart < busyEnd && slotEnd > busyStart;
-        });
+        }) : undefined;
 
         if (bookedSurgery) {
           slots.push({ time: slotStart, endTime: slotEnd, type: "booked", surgery: bookedSurgery, location: avail.location });
-        } else if (isBusy) {
-          slots.push({ time: slotStart, endTime: slotEnd, type: "busy", location: avail.location });
+        } else if (matchingBusy) {
+          slots.push({ time: slotStart, endTime: slotEnd, type: "busy", location: avail.location, summary: matchingBusy.summary });
         } else {
           slots.push({ time: slotStart, endTime: slotEnd, type: "available", location: avail.location });
         }
