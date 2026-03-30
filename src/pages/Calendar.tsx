@@ -91,6 +91,7 @@ const Calendar = () => {
       const firstConnected = Object.keys(doctorConnections)[0];
       if (firstConnected) {
         setConnectedDoctorId(firstConnected);
+        setCalendarConnected(true);
         fetchAvailability(currentDate, firstConnected);
       }
     } else if (!isAdmin && calendarConnected) {
