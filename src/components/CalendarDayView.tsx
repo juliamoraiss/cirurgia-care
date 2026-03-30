@@ -143,6 +143,7 @@ export function CalendarDayView({
               endTime: busyEnd,
               type: "busy",
               allDay: busy.allDay,
+              summary: busy.summary,
             });
           }
         }
