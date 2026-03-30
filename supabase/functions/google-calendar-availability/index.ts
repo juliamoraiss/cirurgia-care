@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
       timeMax: time_max,
       singleEvents: "true",
       orderBy: "startTime",
-      fields: "items(start,end,status,transparency)",
+      fields: "items(start,end,status,transparency,summary)",
     });
 
     const calendarResponse = await fetch(
