@@ -200,12 +200,32 @@ const Calendar = () => {
         </Button>
       </div>
 
-      <div className="px-4 pb-2">
-        <GoogleCalendarConnect onConnectionChange={(connected, doctorId) => {
-          setCalendarConnected(connected);
-          setConnectedDoctorId(doctorId);
-        }} />
-      </div>
+      {/* Admin: Doctor filter | Non-admin: Google Calendar connect */}
+      {isAdmin ? (
+        <div className="px-4 pb-2">
+          <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Filtrar por médico" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os médicos</SelectItem>
+              {professionals.map((prof) => (
+                <SelectItem key={prof.id} value={prof.id}>
+                  {prof.full_name}
+                  {doctorConnections[prof.id] ? " 📅" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <div className="px-4 pb-2">
+          <GoogleCalendarConnect onConnectionChange={(connected, doctorId) => {
+            setCalendarConnected(connected);
+            setConnectedDoctorId(doctorId);
+          }} />
+        </div>
+      )}
 
       {/* Calendar card */}
       <div className="mx-4 rounded-2xl bg-card border shadow-sm overflow-hidden mb-4">
