@@ -183,7 +183,7 @@ const Calendar = () => {
   const eventsToShow = selectedDay ? selectedDaySurgeries : monthSurgeries;
 
   const selectedDayHasAvailability = selectedDay
-    ? getSlotsForDay(selectedDay.getDay()).length > 0
+    ? getSlotsForDay(selectedDay.getDay()).length > 0 || (calendarConnected && getBusySlotsForDay(selectedDay).length > 0)
     : false;
 
   const selectedDayBlocked = selectedDay ? isDateBlocked(selectedDay) : false;
