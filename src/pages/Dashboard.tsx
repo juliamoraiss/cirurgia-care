@@ -235,7 +235,23 @@ const Dashboard = () => {
 
   // Important notifications for professionals (non-admin)
   const importantTypes = ['patient_created', 'surgery_scheduled', 'surgery_rescheduled', 'file_uploaded', 'status_updated'];
-  const recentNotifications = activities.filter(a => importantTypes.includes(a.activity_type));
+  const recentNotifications = activities.filter(a => 
+    importantTypes.includes(a.activity_type) && 
+    (!lastSeenAt || new Date(a.created_at) > new Date(lastSeenAt))
+  );
+
+  const handleToggleNotifications = () => {
+    if (!showNotifications && recentNotifications.length > 0 && user) {
+      // Mark as seen when opening
+      const now = new Date().toISOString();
+      localStorage.setItem(`notifications_last_seen_${user.id}`, now);
+      setShowNotifications(true);
+      // After a short delay to let user read, update lastSeenAt so badge clears on next render
+      setTimeout(() => setLastSeenAt(now), 500);
+    } else {
+      setShowNotifications(!showNotifications);
+    }
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
