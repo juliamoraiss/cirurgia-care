@@ -31,6 +31,7 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [connectedDoctorId, setConnectedDoctorId] = useState<string | undefined>();
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
