@@ -46,9 +46,9 @@ const Calendar = () => {
 
   useEffect(() => {
     if (calendarConnected) {
-      fetchAvailability(currentDate);
+      fetchAvailability(currentDate, connectedDoctorId);
     }
-  }, [calendarConnected, currentDate, fetchAvailability]);
+  }, [calendarConnected, currentDate, fetchAvailability, connectedDoctorId]);
 
   async function loadSurgeries() {
     try {
