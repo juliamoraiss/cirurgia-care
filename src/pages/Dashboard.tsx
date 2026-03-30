@@ -15,6 +15,7 @@ import { PendingPatients } from "@/components/PendingPatients";
 import { SurgeriesCard } from "@/components/SurgeriesCard";
 import { QuickIndicators } from "@/components/QuickIndicators";
 import { OncologyPatientsCard } from "@/components/OncologyPatientsCard";
+import { CannulaPatientsCard } from "@/components/CannulaPatientsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { capitalizeFirst } from "@/lib/utils";
@@ -354,6 +355,12 @@ const Dashboard = () => {
 
         {/* Oncology Patients Section */}
         <OncologyPatientsCard 
+          selectedProfessional={selectedProfessional} 
+          isAdmin={isAdmin} 
+        />
+
+        {/* Cannula Patients Section */}
+        <CannulaPatientsCard 
           selectedProfessional={selectedProfessional} 
           isAdmin={isAdmin} 
         />
