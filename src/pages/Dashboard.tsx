@@ -73,6 +73,15 @@ const Dashboard = () => {
   const [pendingTasks, setPendingTasks] = useState(0);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
+
+  // Load last seen timestamp on mount
+  useEffect(() => {
+    if (user) {
+      const stored = localStorage.getItem(`notifications_last_seen_${user.id}`);
+      setLastSeenAt(stored);
+    }
+  }, [user]);
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
