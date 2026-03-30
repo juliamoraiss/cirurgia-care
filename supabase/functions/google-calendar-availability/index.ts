@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
     const user = { id: userId };
 
     const { time_min, time_max, target_user_id } = await req.json();
+    console.log(`[availability] userId=${userId}, target_user_id=${target_user_id || 'self'}, time_min=${time_min}, time_max=${time_max}`);
 
     if (!time_min || !time_max) {
       return new Response(
