@@ -269,7 +269,7 @@ const Patients = () => {
                       <div>
                         <h3 className="text-sm font-semibold text-muted-foreground mb-2">Procedimento</h3>
                         <div className="flex flex-wrap gap-2">
-                          {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
+{["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia", "troca de cânula"].map((procedure) => (
                             <button
                               key={procedure}
                               type="button"
