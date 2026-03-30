@@ -345,6 +345,8 @@ const Calendar = () => {
                   const isBlocked = isDateBlocked(day);
                   const isSunday = day.getDay() === 0;
                   const isSaturday = day.getDay() === 6;
+                  const dayBusySlots = getBusySlotsForDay(day);
+                  const hasBusySlots = dayBusySlots.length > 0;
 
                   return (
                     <motion.button
