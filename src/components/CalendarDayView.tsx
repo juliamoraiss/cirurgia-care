@@ -31,6 +31,7 @@ interface TimeSlot {
   surgery?: Surgery;
   location?: string | null;
   allDay?: boolean;
+  summary?: string;
 }
 
 export function CalendarDayView({
@@ -63,6 +64,7 @@ export function CalendarDayView({
         start: new Date(busy.start) < dayStart ? dayStart : new Date(busy.start),
         end: new Date(busy.end) > dayEnd ? dayEnd : new Date(busy.end),
         allDay: busy.allDay,
+        summary: busy.summary,
       }))
       .sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [date, busySlots, calendarConnected]);
@@ -78,6 +80,7 @@ export function CalendarDayView({
         endTime: busy.end,
         type: "busy" as const,
         allDay: busy.allDay,
+        summary: busy.summary,
       }));
     }
 
@@ -99,16 +102,16 @@ export function CalendarDayView({
           return surgeryTime >= slotStart && surgeryTime < slotEnd;
         });
 
-        const isBusy = calendarConnected && busySlots.some(busy => {
+        const matchingBusy = calendarConnected ? busySlots.find(busy => {
           const busyStart = new Date(busy.start);
           const busyEnd = new Date(busy.end);
           return slotStart < busyEnd && slotEnd > busyStart;
-        });
+        }) : undefined;
 
         if (bookedSurgery) {
           slots.push({ time: slotStart, endTime: slotEnd, type: "booked", surgery: bookedSurgery, location: avail.location });
-        } else if (isBusy) {
-          slots.push({ time: slotStart, endTime: slotEnd, type: "busy", location: avail.location });
+        } else if (matchingBusy) {
+          slots.push({ time: slotStart, endTime: slotEnd, type: "busy", location: avail.location, summary: matchingBusy.summary });
         } else {
           slots.push({ time: slotStart, endTime: slotEnd, type: "available", location: avail.location });
         }
@@ -140,6 +143,7 @@ export function CalendarDayView({
               endTime: busyEnd,
               type: "busy",
               allDay: busy.allDay,
+              summary: busy.summary,
             });
           }
         }
@@ -191,7 +195,7 @@ export function CalendarDayView({
 
           {/* Divider */}
           <div className={`w-1 self-stretch rounded-full ${
-            slot.type === "booked" ? "bg-primary" : slot.type === "busy" ? "bg-muted-foreground/30" : "bg-border"
+            slot.type === "booked" ? "bg-primary" : slot.type === "busy" ? "bg-amber-500" : "bg-border"
           }`} />
 
           {/* Content */}
@@ -211,7 +215,10 @@ export function CalendarDayView({
                 )}
               </>
             ) : slot.type === "busy" ? (
-              <span className="text-xs text-muted-foreground italic">Ocupado (Google Calendar)</span>
+              <div>
+                <span className="text-sm font-medium text-foreground">{slot.summary || "Ocupado"}</span>
+                <span className="block text-[10px] text-muted-foreground">Google Calendar</span>
+              </div>
             ) : (
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Disponível</span>

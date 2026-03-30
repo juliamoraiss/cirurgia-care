@@ -6,6 +6,7 @@ export interface BusySlot {
   start: string;
   end: string;
   allDay?: boolean;
+  summary?: string;
 }
 
 interface AvailabilityData {

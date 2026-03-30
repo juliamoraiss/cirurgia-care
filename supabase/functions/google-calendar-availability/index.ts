@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
       timeMax: time_max,
       singleEvents: "true",
       orderBy: "startTime",
-      fields: "items(start,end,status,transparency)",
+      fields: "items(start,end,status,transparency,summary)",
     });
 
     const calendarResponse = await fetch(
@@ -220,27 +220,32 @@ Deno.serve(async (req) => {
         return true;
       })
       .map((event: any) => {
+        const summary = event.summary || "Sem título";
         // Handle all-day events
         if (event.start?.date) {
           return {
             start: new Date(event.start.date).toISOString(),
             end: new Date(event.end.date).toISOString(),
             allDay: true,
+            summary,
           };
         }
         return {
           start: event.start?.dateTime || event.start?.date,
           end: event.end?.dateTime || event.end?.date,
           allDay: false,
+          summary,
         };
       });
 
-    // Merge overlapping busy slots
-    const merged = mergeBusySlots(busySlots);
+    // Return individual events (no merging) so the UI can show each one
+    const sorted = busySlots.sort(
+      (a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
 
     return new Response(
       JSON.stringify({
-        busy_slots: merged,
+        busy_slots: sorted,
         timezone: connection.calendar_timezone,
         fetched_at: new Date().toISOString(),
       }),
