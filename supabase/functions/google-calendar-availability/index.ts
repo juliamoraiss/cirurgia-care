@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        busy_slots: merged,
+        busy_slots: sorted,
         timezone: connection.calendar_timezone,
         fetched_at: new Date().toISOString(),
       }),
