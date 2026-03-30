@@ -388,7 +388,14 @@ const Calendar = () => {
                           <CalendarOff className="h-2 w-2 text-destructive/60" />
                         ) : (
                           <>
-                            {hasAvailability && daySurgeries.length === 0 && (
+                            {hasBusySlots && daySurgeries.length === 0 && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-1 h-1 rounded-full bg-amber-500"
+                              />
+                            )}
+                            {hasAvailability && daySurgeries.length === 0 && !hasBusySlots && (
                               <motion.span
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
@@ -404,6 +411,13 @@ const Calendar = () => {
                                 className="w-1 h-1 rounded-full bg-primary"
                               />
                             ))}
+                            {daySurgeries.length > 0 && hasBusySlots && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-1 h-1 rounded-full bg-amber-500"
+                              />
+                            )}
                             {daySurgeries.length > 3 && (
                               <span className="text-[8px] font-bold text-primary leading-none">{daySurgeries.length}</span>
                             )}
