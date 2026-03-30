@@ -30,6 +30,7 @@ interface TimeSlot {
   type: "available" | "booked" | "busy";
   surgery?: Surgery;
   location?: string | null;
+  allDay?: boolean;
 }
 
 export function CalendarDayView({
