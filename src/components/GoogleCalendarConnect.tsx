@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Calendar, Check, Loader2, Unlink } from "lucide-react";
 
 interface GoogleCalendarConnectProps {
-  onConnectionChange?: (connected: boolean) => void;
+  onConnectionChange?: (connected: boolean, connectedUserId?: string) => void;
 }
 
 const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProps) => {
