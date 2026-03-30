@@ -86,6 +86,18 @@ Caso ainda não tenha feito, tem previsão de quando pretende realizar?
 Obrigada pela atenção.`;
   }
 
+  function getCannulaReminderMessage() {
+    return `Olá, ${firstName}! Tudo bem?
+
+Aqui é a equipe do Dr. André Alves. Estamos entrando em contato porque já se passaram 3 meses desde a sua última troca de cânula.
+
+É muito importante manter o acompanhamento em dia para garantir o bom funcionamento e evitar complicações.
+
+Gostaríamos de agendar a sua próxima troca. Podemos verificar a melhor data para ${treatment}?
+
+Aguardamos seu retorno! 😊`;
+  }
+
   function getSurgeryConfirmationPatientMessage() {
     if (!patient.surgery_date) return "";
 
