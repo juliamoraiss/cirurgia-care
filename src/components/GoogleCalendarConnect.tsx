@@ -25,7 +25,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
 
       const isConnected = !error && !!data?.connected;
       setConnected(isConnected);
-      onConnectionChange?.(isConnected);
+      onConnectionChange?.(isConnected, data?.connected_user_id || undefined);
       return isConnected;
     } catch {
       setConnected(false);
