@@ -137,11 +137,13 @@ Deno.serve(async (req) => {
       .single();
 
     if (connError || !connection) {
+      console.log(`[availability] No connection found for queryUserId=${queryUserId}, error=${connError?.message}`);
       return new Response(
         JSON.stringify({ error: "Google Calendar not connected", connected: false }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    console.log(`[availability] Connection found, token_expires_at=${connection.token_expires_at}`);
 
     let accessToken = connection.access_token;
 
