@@ -207,7 +207,7 @@ const Calendar = () => {
 
       {/* Admin: Doctor filter | Non-admin: Google Calendar connect */}
       {isAdmin ? (
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 space-y-2">
           <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
             <SelectTrigger className="h-10">
               <SelectValue placeholder="Filtrar por médico" />
@@ -216,12 +216,43 @@ const Calendar = () => {
               <SelectItem value="all">Todos os médicos</SelectItem>
               {professionals.map((prof) => (
                 <SelectItem key={prof.id} value={prof.id}>
-                  {prof.full_name}
-                  {doctorConnections[prof.id] ? " 📅" : ""}
+                  <span className="flex items-center gap-2">
+                    {prof.full_name}
+                    {doctorConnections[prof.id] && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded-full">
+                        <CalendarIcon className="h-2.5 w-2.5" />
+                        Google
+                      </span>
+                    )}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          {/* Connection status chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {professionals.map((prof) => (
+              <button
+                key={prof.id}
+                onClick={() => setSelectedDoctorId(prof.id)}
+                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border transition-colors ${
+                  selectedDoctorId === prof.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : doctorConnections[prof.id]
+                      ? "bg-green-500/10 text-green-700 border-green-500/30 dark:text-green-400"
+                      : "bg-muted text-muted-foreground border-border"
+                }`}
+              >
+                {doctorConnections[prof.id] ? (
+                  <CalendarIcon className="h-3 w-3" />
+                ) : (
+                  <CalendarOff className="h-3 w-3 opacity-50" />
+                )}
+                {prof.full_name.split(" ")[0]}
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="px-4 pb-2">
