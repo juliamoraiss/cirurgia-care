@@ -25,6 +25,7 @@ interface Surgery {
   procedure: string;
   surgery_date: string;
   hospital: string | null;
+  responsible_user_id?: string;
 }
 
 const Calendar = () => {
