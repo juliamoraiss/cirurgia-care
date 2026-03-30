@@ -195,7 +195,7 @@ export function CalendarDayView({
 
           {/* Divider */}
           <div className={`w-1 self-stretch rounded-full ${
-            slot.type === "booked" ? "bg-primary" : slot.type === "busy" ? "bg-muted-foreground/30" : "bg-border"
+            slot.type === "booked" ? "bg-primary" : slot.type === "busy" ? "bg-amber-500" : "bg-border"
           }`} />
 
           {/* Content */}
