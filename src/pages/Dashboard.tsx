@@ -73,6 +73,15 @@ const Dashboard = () => {
   const [pendingTasks, setPendingTasks] = useState(0);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
+
+  // Load last seen timestamp on mount
+  useEffect(() => {
+    if (user) {
+      const stored = localStorage.getItem(`notifications_last_seen_${user.id}`);
+      setLastSeenAt(stored);
+    }
+  }, [user]);
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
@@ -226,7 +235,23 @@ const Dashboard = () => {
 
   // Important notifications for professionals (non-admin)
   const importantTypes = ['patient_created', 'surgery_scheduled', 'surgery_rescheduled', 'file_uploaded', 'status_updated'];
-  const recentNotifications = activities.filter(a => importantTypes.includes(a.activity_type));
+  const recentNotifications = activities.filter(a => 
+    importantTypes.includes(a.activity_type) && 
+    (!lastSeenAt || new Date(a.created_at) > new Date(lastSeenAt))
+  );
+
+  const handleToggleNotifications = () => {
+    if (!showNotifications && recentNotifications.length > 0 && user) {
+      // Mark as seen when opening
+      const now = new Date().toISOString();
+      localStorage.setItem(`notifications_last_seen_${user.id}`, now);
+      setShowNotifications(true);
+      // After a short delay to let user read, update lastSeenAt so badge clears on next render
+      setTimeout(() => setLastSeenAt(now), 500);
+    } else {
+      setShowNotifications(!showNotifications);
+    }
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -268,7 +293,7 @@ const Dashboard = () => {
         {/* Notification banner for professionals */}
         {!isAdmin && recentNotifications.length > 0 && (
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={handleToggleNotifications}
             className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
           >
             <div className="flex items-center gap-2.5">
