@@ -158,7 +158,9 @@ ${googleCalendarLink}`;
           ? getSurgeryConfirmationPatientMessage()
           : type === "surgery_confirmation_doctor"
             ? getSurgeryConfirmationDoctorMessage()
-            : getExamFollowupMessage();
+            : type === "cannula_reminder"
+              ? getCannulaReminderMessage()
+              : getExamFollowupMessage();
 
   const targetPhone = type === "surgery_confirmation_doctor" ? doctorPhoneNumber : phoneNumber;
 
