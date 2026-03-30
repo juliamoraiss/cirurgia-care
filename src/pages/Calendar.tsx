@@ -178,7 +178,7 @@ const Calendar = () => {
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
-  const monthSurgeries = surgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
+  const monthSurgeries = filteredSurgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
   const eventsToShow = selectedDay ? selectedDaySurgeries : monthSurgeries;
 
   const selectedDayHasAvailability = selectedDay
