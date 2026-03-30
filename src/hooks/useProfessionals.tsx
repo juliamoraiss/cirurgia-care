@@ -31,10 +31,10 @@ export function useProfessionals() {
 
           if (profilesError) throw profilesError;
 
-          // Filter to only include doctors and dentists (not admins who are only admins)
+          // Filter to only include doctors and dentists (exclude admin-only users)
           const professionalsData = (profiles || []).filter((p) => {
-            const userRole = roleUsers.find((r) => r.user_id === p.id);
-            return userRole?.role === "doctor" || userRole?.role === "dentist" || userRole?.role === "admin";
+            const userRoles = roleUsers.filter((r) => r.user_id === p.id);
+            return userRoles.some((r) => r.role === "doctor" || r.role === "dentist");
           });
 
           setProfessionals(professionalsData);
