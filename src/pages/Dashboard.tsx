@@ -359,6 +359,12 @@ const Dashboard = () => {
           isAdmin={isAdmin} 
         />
 
+        {/* Cannula Patients Section */}
+        <CannulaPatientsCard 
+          selectedProfessional={selectedProfessional} 
+          isAdmin={isAdmin} 
+        />
+
       {isAdmin && <CollapsibleCard
         icon={Activity}
         title="Histórico de Atividades"
