@@ -29,12 +29,15 @@ interface Surgery {
 
 const Calendar = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
+  const { professionals } = useProfessionals();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [connectedDoctorId, setConnectedDoctorId] = useState<string | undefined>();
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all");
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
@@ -43,15 +46,56 @@ const Calendar = () => {
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
   const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
+  // For admins: check Google Calendar connections for doctors
+  const [doctorConnections, setDoctorConnections] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (isAdmin) {
+      // Check which doctors have Google Calendar connected
+      const checkConnections = async () => {
+        const { data } = await supabase
+          .from("google_calendar_connections")
+          .select("user_id");
+        if (data) {
+          const connections: Record<string, boolean> = {};
+          data.forEach(c => { connections[c.user_id] = true; });
+          setDoctorConnections(connections);
+          
+          // Auto-connect if any doctor has connection
+          if (data.length > 0) {
+            setCalendarConnected(true);
+            // If only one doctor connected, auto-select
+            if (data.length === 1) {
+              setConnectedDoctorId(data[0].user_id);
+              setSelectedDoctorId(data[0].user_id);
+            }
+          }
+        }
+      };
+      checkConnections();
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     loadSurgeries();
   }, []);
 
   useEffect(() => {
-    if (calendarConnected) {
+    if (isAdmin && selectedDoctorId !== "all" && doctorConnections[selectedDoctorId]) {
+      setConnectedDoctorId(selectedDoctorId);
+      setCalendarConnected(true);
+      fetchAvailability(currentDate, selectedDoctorId);
+    } else if (isAdmin && selectedDoctorId === "all") {
+      // When "all" is selected, try to fetch for the first connected doctor
+      const firstConnected = Object.keys(doctorConnections)[0];
+      if (firstConnected) {
+        setConnectedDoctorId(firstConnected);
+        fetchAvailability(currentDate, firstConnected);
+      }
+    } else if (!isAdmin && calendarConnected) {
       fetchAvailability(currentDate, connectedDoctorId);
     }
-  }, [calendarConnected, currentDate, fetchAvailability, connectedDoctorId]);
+  }, [calendarConnected, currentDate, fetchAvailability, connectedDoctorId, isAdmin, selectedDoctorId, doctorConnections]);
 
   async function loadSurgeries() {
     try {
