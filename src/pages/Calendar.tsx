@@ -431,10 +431,14 @@ const Calendar = () => {
             </AnimatePresence>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 px-4 py-2.5 border-t bg-muted/20">
+            <div className="flex items-center gap-3 px-4 py-2.5 border-t bg-muted/20 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-primary" />
                 <span className="text-[10px] text-muted-foreground">Cirurgia</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-[10px] text-muted-foreground">Ocupado</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-success/70" />
