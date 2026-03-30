@@ -43,7 +43,7 @@ const Calendar = () => {
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
   const [blockMode, setBlockMode] = useState<"single" | "period">("single");
-  const { busySlots, fetchAvailability } = useGoogleCalendarAvailability();
+  const { busySlots, fetchAvailability, getBusySlotsForDay } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
   const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
