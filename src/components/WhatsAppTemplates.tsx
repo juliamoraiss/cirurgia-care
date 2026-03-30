@@ -15,7 +15,7 @@ interface Patient {
 
 interface WhatsAppTemplatesProps {
   patient: Patient;
-  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor";
+  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor" | "cannula_reminder";
   examName?: string;
   doctorPhone?: string;
 }
