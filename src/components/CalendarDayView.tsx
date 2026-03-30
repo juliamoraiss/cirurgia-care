@@ -31,6 +31,7 @@ interface TimeSlot {
   surgery?: Surgery;
   location?: string | null;
   allDay?: boolean;
+  summary?: string;
 }
 
 export function CalendarDayView({
