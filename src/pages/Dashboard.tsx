@@ -293,7 +293,7 @@ const Dashboard = () => {
         {/* Notification banner for professionals */}
         {!isAdmin && recentNotifications.length > 0 && (
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={handleToggleNotifications}
             className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
           >
             <div className="flex items-center gap-2.5">
