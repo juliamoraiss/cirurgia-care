@@ -121,6 +121,7 @@ const Tasks = () => {
       post_op_30_days: "Acompanhamento 30 Dias",
       surgery_confirmation_patient: "Confirmação ao Paciente",
       surgery_confirmation_doctor: "Confirmação ao Médico",
+      cannula_reminder: "Troca de Cânula",
       custom: "Personalizado",
     };
     return labels[type] || type;
@@ -134,6 +135,7 @@ const Tasks = () => {
       post_op_30_days: "bg-amber-500",
       surgery_confirmation_patient: "bg-teal-500",
       surgery_confirmation_doctor: "bg-indigo-500",
+      cannula_reminder: "bg-rose-500",
       custom: "bg-gray-500",
     };
     return colors[type] || "bg-gray-500";
