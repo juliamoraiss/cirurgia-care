@@ -121,6 +121,7 @@ const Tasks = () => {
       post_op_30_days: "Acompanhamento 30 Dias",
       surgery_confirmation_patient: "Confirmação ao Paciente",
       surgery_confirmation_doctor: "Confirmação ao Médico",
+      cannula_reminder: "Troca de Cânula",
       custom: "Personalizado",
     };
     return labels[type] || type;
@@ -134,6 +135,7 @@ const Tasks = () => {
       post_op_30_days: "bg-amber-500",
       surgery_confirmation_patient: "bg-teal-500",
       surgery_confirmation_doctor: "bg-indigo-500",
+      cannula_reminder: "bg-rose-500",
       custom: "bg-gray-500",
     };
     return colors[type] || "bg-gray-500";
@@ -207,7 +209,7 @@ const Tasks = () => {
                     <span>{format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                   </div>
                 )}
-                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup") && (
+                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup" || task.task_type === "cannula_reminder") && (
                   <WhatsAppTemplates
                     patient={{
                       name: task.patient.name,
@@ -224,7 +226,9 @@ const Tasks = () => {
                           ? "post_op" 
                           : task.task_type === "post_op_30_days"
                             ? "post_op_30_days"
-                            : "exam_followup"
+                            : task.task_type === "cannula_reminder"
+                              ? "cannula_reminder"
+                              : "exam_followup"
                     }
                   />
                 )}

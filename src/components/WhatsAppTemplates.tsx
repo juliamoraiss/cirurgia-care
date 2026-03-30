@@ -15,7 +15,7 @@ interface Patient {
 
 interface WhatsAppTemplatesProps {
   patient: Patient;
-  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor";
+  type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor" | "cannula_reminder";
   examName?: string;
   doctorPhone?: string;
 }
@@ -86,6 +86,18 @@ Caso ainda não tenha feito, tem previsão de quando pretende realizar?
 Obrigada pela atenção.`;
   }
 
+  function getCannulaReminderMessage() {
+    return `Olá, ${firstName}! Tudo bem?
+
+Aqui é a equipe do Dr. André Alves. Estamos entrando em contato porque já se passaram 3 meses desde a sua última troca de cânula.
+
+É muito importante manter o acompanhamento em dia para garantir o bom funcionamento e evitar complicações.
+
+Gostaríamos de agendar a sua próxima troca. Podemos verificar a melhor data para ${treatment}?
+
+Aguardamos seu retorno! 😊`;
+  }
+
   function getSurgeryConfirmationPatientMessage() {
     if (!patient.surgery_date) return "";
 
@@ -146,7 +158,9 @@ ${googleCalendarLink}`;
           ? getSurgeryConfirmationPatientMessage()
           : type === "surgery_confirmation_doctor"
             ? getSurgeryConfirmationDoctorMessage()
-            : getExamFollowupMessage();
+            : type === "cannula_reminder"
+              ? getCannulaReminderMessage()
+              : getExamFollowupMessage();
 
   const targetPhone = type === "surgery_confirmation_doctor" ? doctorPhoneNumber : phoneNumber;
 
@@ -174,6 +188,8 @@ ${googleCalendarLink}`;
         return { short: "Confirmar Paciente", full: "Enviar Confirmação ao Paciente" };
       case "surgery_confirmation_doctor":
         return { short: "Confirmar Médico", full: "Enviar Confirmação ao Médico" };
+      case "cannula_reminder":
+        return { short: "Lembrar Cânula", full: "Enviar Lembrete de Cânula" };
       default:
         return { short: "Cobrar Exame", full: "Enviar Cobrança de Exame" };
     }
