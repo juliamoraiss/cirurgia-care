@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Settings2, CalendarOff, Ban, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -15,6 +16,8 @@ import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailabi
 import { useSurgeryAvailability } from "@/hooks/useSurgeryAvailability";
 import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
 import { CalendarDayView } from "@/components/CalendarDayView";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useProfessionals } from "@/hooks/useProfessionals";
 
 interface Surgery {
   id: string;
@@ -22,16 +25,20 @@ interface Surgery {
   procedure: string;
   surgery_date: string;
   hospital: string | null;
+  responsible_user_id?: string;
 }
 
 const Calendar = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
+  const { professionals } = useProfessionals();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [connectedDoctorId, setConnectedDoctorId] = useState<string | undefined>();
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all");
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
@@ -40,21 +47,62 @@ const Calendar = () => {
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
   const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
+  // For admins: check Google Calendar connections for doctors
+  const [doctorConnections, setDoctorConnections] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (isAdmin) {
+      // Check which doctors have Google Calendar connected
+      const checkConnections = async () => {
+        const { data } = await supabase
+          .from("google_calendar_connections")
+          .select("user_id");
+        if (data) {
+          const connections: Record<string, boolean> = {};
+          data.forEach(c => { connections[c.user_id] = true; });
+          setDoctorConnections(connections);
+          
+          // Auto-connect if any doctor has connection
+          if (data.length > 0) {
+            setCalendarConnected(true);
+            // If only one doctor connected, auto-select
+            if (data.length === 1) {
+              setConnectedDoctorId(data[0].user_id);
+              setSelectedDoctorId(data[0].user_id);
+            }
+          }
+        }
+      };
+      checkConnections();
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     loadSurgeries();
   }, []);
 
   useEffect(() => {
-    if (calendarConnected) {
+    if (isAdmin && selectedDoctorId !== "all" && doctorConnections[selectedDoctorId]) {
+      setConnectedDoctorId(selectedDoctorId);
+      setCalendarConnected(true);
+      fetchAvailability(currentDate, selectedDoctorId);
+    } else if (isAdmin && selectedDoctorId === "all") {
+      // When "all" is selected, try to fetch for the first connected doctor
+      const firstConnected = Object.keys(doctorConnections)[0];
+      if (firstConnected) {
+        setConnectedDoctorId(firstConnected);
+        fetchAvailability(currentDate, firstConnected);
+      }
+    } else if (!isAdmin && calendarConnected) {
       fetchAvailability(currentDate, connectedDoctorId);
     }
-  }, [calendarConnected, currentDate, fetchAvailability, connectedDoctorId]);
+  }, [calendarConnected, currentDate, fetchAvailability, connectedDoctorId, isAdmin, selectedDoctorId, doctorConnections]);
 
   async function loadSurgeries() {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, surgery_date, hospital")
+        .select("id, name, procedure, surgery_date, hospital, responsible_user_id")
         .not("surgery_date", "is", null)
         .order("surgery_date", { ascending: true });
 
@@ -73,8 +121,12 @@ const Calendar = () => {
   const calendarEnd = endOfWeek(monthEnd, { locale: ptBR });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+  const filteredSurgeries = isAdmin && selectedDoctorId !== "all"
+    ? surgeries.filter(s => s.responsible_user_id === selectedDoctorId)
+    : surgeries;
+
   const getSurgeriesForDay = (day: Date) =>
-    surgeries
+    filteredSurgeries
       .filter((s) => isSameDay(new Date(s.surgery_date), day))
       .sort((a, b) => new Date(a.surgery_date).getTime() - new Date(b.surgery_date).getTime());
 
@@ -126,7 +178,7 @@ const Calendar = () => {
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   const selectedDaySurgeries = selectedDay ? getSurgeriesForDay(selectedDay) : [];
-  const monthSurgeries = surgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
+  const monthSurgeries = filteredSurgeries.filter(s => isSameMonth(new Date(s.surgery_date), currentDate));
   const eventsToShow = selectedDay ? selectedDaySurgeries : monthSurgeries;
 
   const selectedDayHasAvailability = selectedDay
@@ -153,12 +205,32 @@ const Calendar = () => {
         </Button>
       </div>
 
-      <div className="px-4 pb-2">
-        <GoogleCalendarConnect onConnectionChange={(connected, doctorId) => {
-          setCalendarConnected(connected);
-          setConnectedDoctorId(doctorId);
-        }} />
-      </div>
+      {/* Admin: Doctor filter | Non-admin: Google Calendar connect */}
+      {isAdmin ? (
+        <div className="px-4 pb-2">
+          <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Filtrar por médico" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os médicos</SelectItem>
+              {professionals.map((prof) => (
+                <SelectItem key={prof.id} value={prof.id}>
+                  {prof.full_name}
+                  {doctorConnections[prof.id] ? " 📅" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <div className="px-4 pb-2">
+          <GoogleCalendarConnect onConnectionChange={(connected, doctorId) => {
+            setCalendarConnected(connected);
+            setConnectedDoctorId(doctorId);
+          }} />
+        </div>
+      )}
 
       {/* Calendar card */}
       <div className="mx-4 rounded-2xl bg-card border shadow-sm overflow-hidden mb-4">
