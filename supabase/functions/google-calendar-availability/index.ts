@@ -210,8 +210,7 @@ Deno.serve(async (req) => {
     }
 
     const calendarData = await calendarResponse.json();
-
-    // Extract only busy slots - no event details
+    console.log(`[availability] Google returned ${(calendarData.items || []).length} events`);
     const busySlots: BusySlot[] = (calendarData.items || [])
       .filter((event: any) => {
         // Skip cancelled events
