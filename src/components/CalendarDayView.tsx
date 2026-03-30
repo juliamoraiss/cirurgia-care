@@ -30,6 +30,7 @@ interface TimeSlot {
   type: "available" | "booked" | "busy";
   surgery?: Surgery;
   location?: string | null;
+  allDay?: boolean;
 }
 
 export function CalendarDayView({
@@ -44,10 +45,41 @@ export function CalendarDayView({
 
   const daySurgeries = surgeries.filter(s => isSameDay(new Date(s.surgery_date), date));
 
+  // Build busy-only slots from Google Calendar for this day
+  const googleBusyForDay = useMemo(() => {
+    if (!calendarConnected) return [];
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return busySlots
+      .filter(busy => {
+        const busyStart = new Date(busy.start);
+        const busyEnd = new Date(busy.end);
+        return busyStart < dayEnd && busyEnd > dayStart;
+      })
+      .map(busy => ({
+        start: new Date(busy.start) < dayStart ? dayStart : new Date(busy.start),
+        end: new Date(busy.end) > dayEnd ? dayEnd : new Date(busy.end),
+        allDay: busy.allDay,
+      }))
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+  }, [date, busySlots, calendarConnected]);
+
   const timeSlots = useMemo(() => {
     const dayAvailability = availabilitySlots.filter(a => a.day_of_week === dayOfWeek);
 
-    if (dayAvailability.length === 0) return [];
+    // If no availability configured, show Google Calendar busy slots as standalone
+    if (dayAvailability.length === 0) {
+      if (googleBusyForDay.length === 0) return [];
+      return googleBusyForDay.map(busy => ({
+        time: busy.start,
+        endTime: busy.end,
+        type: "busy" as const,
+        allDay: busy.allDay,
+      }));
+    }
 
     const slots: TimeSlot[] = [];
 
@@ -88,9 +120,9 @@ export function CalendarDayView({
     });
 
     return slots.sort((a, b) => a.time.getTime() - b.time.getTime());
-  }, [date, dayOfWeek, availabilitySlots, daySurgeries, busySlots, calendarConnected]);
+  }, [date, dayOfWeek, availabilitySlots, daySurgeries, busySlots, calendarConnected, googleBusyForDay]);
 
-  if (timeSlots.length === 0) {
+  if (timeSlots.length === 0 && daySurgeries.length === 0) {
     return (
       <div className="py-8 text-center">
         <Clock className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
@@ -120,8 +152,14 @@ export function CalendarDayView({
         >
           {/* Time column */}
           <div className="w-16 text-center shrink-0">
-            <span className="text-sm font-bold">{format(slot.time, "HH:mm")}</span>
-            <span className="block text-[10px] text-muted-foreground">{format(slot.endTime, "HH:mm")}</span>
+            {slot.allDay ? (
+              <span className="text-xs font-medium text-muted-foreground">Dia inteiro</span>
+            ) : (
+              <>
+                <span className="text-sm font-bold">{format(slot.time, "HH:mm")}</span>
+                <span className="block text-[10px] text-muted-foreground">{format(slot.endTime, "HH:mm")}</span>
+              </>
+            )}
           </div>
 
           {/* Divider */}

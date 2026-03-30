@@ -43,7 +43,7 @@ const Calendar = () => {
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
   const [blockMode, setBlockMode] = useState<"single" | "period">("single");
-  const { busySlots, fetchAvailability } = useGoogleCalendarAvailability();
+  const { busySlots, fetchAvailability, getBusySlotsForDay } = useGoogleCalendarAvailability();
   const { slots: availabilitySlots, getSlotsForDay } = useSurgeryAvailability();
   const { isDateBlocked, blocks, addBlock, deleteBlock } = useScheduleBlocks();
 
@@ -345,6 +345,8 @@ const Calendar = () => {
                   const isBlocked = isDateBlocked(day);
                   const isSunday = day.getDay() === 0;
                   const isSaturday = day.getDay() === 6;
+                  const dayBusySlots = getBusySlotsForDay(day);
+                  const hasBusySlots = dayBusySlots.length > 0;
 
                   return (
                     <motion.button
@@ -386,7 +388,14 @@ const Calendar = () => {
                           <CalendarOff className="h-2 w-2 text-destructive/60" />
                         ) : (
                           <>
-                            {hasAvailability && daySurgeries.length === 0 && (
+                            {hasBusySlots && daySurgeries.length === 0 && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-1 h-1 rounded-full bg-amber-500"
+                              />
+                            )}
+                            {hasAvailability && daySurgeries.length === 0 && !hasBusySlots && (
                               <motion.span
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
@@ -402,6 +411,13 @@ const Calendar = () => {
                                 className="w-1 h-1 rounded-full bg-primary"
                               />
                             ))}
+                            {daySurgeries.length > 0 && hasBusySlots && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-1 h-1 rounded-full bg-amber-500"
+                              />
+                            )}
                             {daySurgeries.length > 3 && (
                               <span className="text-[8px] font-bold text-primary leading-none">{daySurgeries.length}</span>
                             )}
@@ -415,10 +431,14 @@ const Calendar = () => {
             </AnimatePresence>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 px-4 py-2.5 border-t bg-muted/20">
+            <div className="flex items-center gap-3 px-4 py-2.5 border-t bg-muted/20 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-primary" />
                 <span className="text-[10px] text-muted-foreground">Cirurgia</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-[10px] text-muted-foreground">Ocupado</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-success/70" />
