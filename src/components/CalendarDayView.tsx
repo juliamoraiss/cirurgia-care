@@ -152,8 +152,14 @@ export function CalendarDayView({
         >
           {/* Time column */}
           <div className="w-16 text-center shrink-0">
-            <span className="text-sm font-bold">{format(slot.time, "HH:mm")}</span>
-            <span className="block text-[10px] text-muted-foreground">{format(slot.endTime, "HH:mm")}</span>
+            {slot.allDay ? (
+              <span className="text-xs font-medium text-muted-foreground">Dia inteiro</span>
+            ) : (
+              <>
+                <span className="text-sm font-bold">{format(slot.time, "HH:mm")}</span>
+                <span className="block text-[10px] text-muted-foreground">{format(slot.endTime, "HH:mm")}</span>
+              </>
+            )}
           </div>
 
           {/* Divider */}
