@@ -207,7 +207,7 @@ const Tasks = () => {
                     <span>{format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                   </div>
                 )}
-                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup") && (
+                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup" || task.task_type === "cannula_reminder") && (
                   <WhatsAppTemplates
                     patient={{
                       name: task.patient.name,
@@ -224,7 +224,9 @@ const Tasks = () => {
                           ? "post_op" 
                           : task.task_type === "post_op_30_days"
                             ? "post_op_30_days"
-                            : "exam_followup"
+                            : task.task_type === "cannula_reminder"
+                              ? "cannula_reminder"
+                              : "exam_followup"
                     }
                   />
                 )}
