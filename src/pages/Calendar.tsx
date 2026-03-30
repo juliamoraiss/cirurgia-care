@@ -31,6 +31,7 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [connectedDoctorId, setConnectedDoctorId] = useState<string | undefined>();
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
@@ -45,9 +46,9 @@ const Calendar = () => {
 
   useEffect(() => {
     if (calendarConnected) {
-      fetchAvailability(currentDate);
+      fetchAvailability(currentDate, connectedDoctorId);
     }
-  }, [calendarConnected, currentDate, fetchAvailability]);
+  }, [calendarConnected, currentDate, fetchAvailability, connectedDoctorId]);
 
   async function loadSurgeries() {
     try {
@@ -153,7 +154,10 @@ const Calendar = () => {
       </div>
 
       <div className="px-4 pb-2">
-        <GoogleCalendarConnect onConnectionChange={setCalendarConnected} />
+        <GoogleCalendarConnect onConnectionChange={(connected, doctorId) => {
+          setCalendarConnected(connected);
+          setConnectedDoctorId(doctorId);
+        }} />
       </div>
 
       {/* Calendar card */}

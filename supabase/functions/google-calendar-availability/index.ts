@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
     const user = { id: userId };
 
     const { time_min, time_max, target_user_id } = await req.json();
+    console.log(`[availability] userId=${userId}, target_user_id=${target_user_id || 'self'}, time_min=${time_min}, time_max=${time_max}`);
 
     if (!time_min || !time_max) {
       return new Response(
@@ -136,11 +137,13 @@ Deno.serve(async (req) => {
       .single();
 
     if (connError || !connection) {
+      console.log(`[availability] No connection found for queryUserId=${queryUserId}, error=${connError?.message}`);
       return new Response(
         JSON.stringify({ error: "Google Calendar not connected", connected: false }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    console.log(`[availability] Connection found, token_expires_at=${connection.token_expires_at}`);
 
     let accessToken = connection.access_token;
 
@@ -207,8 +210,7 @@ Deno.serve(async (req) => {
     }
 
     const calendarData = await calendarResponse.json();
-
-    // Extract only busy slots - no event details
+    console.log(`[availability] Google returned ${(calendarData.items || []).length} events`);
     const busySlots: BusySlot[] = (calendarData.items || [])
       .filter((event: any) => {
         // Skip cancelled events

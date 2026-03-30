@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const user = { id: userId };
 
     const payload = await req.json().catch(() => ({}));
-    const { action, code, redirect_uri } = payload;
+    const { action, code, redirect_uri, target_user_id } = payload;
 
     console.log(`[google-calendar-auth] action=${action} userId=${user.id}`);
 
@@ -238,14 +238,33 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
+      // Allow admins to check other users' connection status
+      const queryUserId = target_user_id || user.id;
+
       const { data } = await supabaseService
         .from("google_calendar_connections")
-        .select("connected_at, calendar_timezone")
-        .eq("user_id", user.id)
+        .select("connected_at, calendar_timezone, user_id")
+        .eq("user_id", queryUserId)
         .maybeSingle();
 
+      // If no target specified and no connection for current user, check if ANY connection exists (for admins)
+      if (!data && !target_user_id) {
+        const { data: anyConnection } = await supabaseService
+          .from("google_calendar_connections")
+          .select("connected_at, calendar_timezone, user_id")
+          .limit(1)
+          .maybeSingle();
+
+        if (anyConnection) {
+          return new Response(
+            JSON.stringify({ connected: true, connection: anyConnection, connected_user_id: anyConnection.user_id }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       return new Response(
-        JSON.stringify({ connected: !!data, connection: data }),
+        JSON.stringify({ connected: !!data, connection: data, connected_user_id: data?.user_id || null }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
