@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const user = { id: userId };
 
     const payload = await req.json().catch(() => ({}));
-    const { action, code, redirect_uri } = payload;
+    const { action, code, redirect_uri, target_user_id } = payload;
 
     console.log(`[google-calendar-auth] action=${action} userId=${user.id}`);
 
