@@ -904,7 +904,7 @@ const PublicSchedule = () => {
       </div>
 
       <ChatWidget
-        doctorName={scheduleData ? scheduleData.doctor_name : usedData ? usedData.doctor_name : undefined}
+        doctorName={data ? data.doctor_name : usedLinkData ? usedLinkData.doctor_name : undefined}
       />
     </div>
   );
