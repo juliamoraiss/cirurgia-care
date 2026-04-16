@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_leads: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          name: string | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          name?: string | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          name?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
       google_calendar_connections: {
         Row: {
           access_token: string
