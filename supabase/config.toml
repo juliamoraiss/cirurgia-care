@@ -18,5 +18,3 @@ verify_jwt = false
 [functions.google-calendar-availability]
 verify_jwt = false
 
-[functions.public-schedule]
-verify_jwt = false
