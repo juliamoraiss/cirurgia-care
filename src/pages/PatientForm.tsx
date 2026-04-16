@@ -99,9 +99,6 @@ const PatientForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
   const [googleCalendarEventId, setGoogleCalendarEventId] = useState<string | null>(null);
-  const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
-  const [generatingLink, setGeneratingLink] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
@@ -524,50 +521,6 @@ const PatientForm = () => {
     }
   };
 
-  const generateSchedulingLink = async () => {
-    if (!id || !user) return;
-    setGeneratingLink(true);
-    try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-
-      const doctorId = formData.responsible_user_id || user.id;
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      const token = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-        .map(b => chars[b % chars.length])
-        .join('');
-
-      const { error } = await supabase
-        .from("scheduling_links")
-        .insert({
-          patient_id: id,
-          doctor_id: doctorId,
-          expires_at: expiresAt.toISOString(),
-          token,
-        });
-
-      if (error) throw error;
-
-      const link = `${window.location.origin}/agendar/${token}`;
-      setSchedulingLink(link);
-      toast.success("Link de agendamento gerado!");
-    } catch (error) {
-      console.error("Erro ao gerar link de agendamento:", error);
-      toast.error("Erro ao gerar link de agendamento");
-    } finally {
-      setGeneratingLink(false);
-    }
-  };
-
-  const copySchedulingLink = async () => {
-    if (!schedulingLink) return;
-    try {
-      await navigator.clipboard.writeText(schedulingLink);
-      setLinkCopied(true);
-      toast.success("Link copiado!");
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch {
-      toast.error("Erro ao copiar link");
     }
   };
 
@@ -1206,50 +1159,6 @@ const PatientForm = () => {
                   </Button>
                 )}
 
-                {/* Scheduling link for eligible patients */}
-                {isEditMode && id && !formData.surgery_date && 
-                  (formData.status === "pending_scheduling" || formData.status === "authorized") && (
-                  <div className="space-y-3 rounded-lg border border-primary/20 bg-primary-light p-4">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Link2 className="h-4 w-4" />
-                      Link de Agendamento para o Paciente
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Gere um link para o paciente escolher o horário da cirurgia. O link expira em 7 dias.
-                    </p>
-                    {!schedulingLink ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={generateSchedulingLink}
-                        disabled={generatingLink}
-                      >
-                        <Link2 className="h-4 w-4 mr-2" />
-                        {generatingLink ? "Gerando..." : "Gerar Link de Agendamento"}
-                      </Button>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            readOnly
-                            value={schedulingLink}
-                            className="flex-1 text-xs bg-background border rounded-md px-3 py-2 text-muted-foreground"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={copySchedulingLink}
-                          >
-                            {linkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
