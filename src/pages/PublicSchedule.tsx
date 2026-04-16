@@ -902,6 +902,10 @@ const PublicSchedule = () => {
           Agendamento seguro e protegido
         </p>
       </div>
+
+      <ChatWidget
+        doctorName={scheduleData ? scheduleData.doctor_name : usedData ? usedData.doctor_name : undefined}
+      />
     </div>
   );
 };
