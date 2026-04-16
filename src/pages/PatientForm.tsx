@@ -521,8 +521,6 @@ const PatientForm = () => {
     }
   };
 
-    }
-  };
 
   const handleDeletePatient = async () => {
     if (!id || !user) return;
