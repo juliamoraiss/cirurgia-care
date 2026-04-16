@@ -3,8 +3,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 
+function RedirectSchedule() {
+  const { token } = useParams<{ token: string }>();
+  return <Navigate to={`/agendar/${token}`} replace />;
+}
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Layout } from "./components/Layout";
@@ -21,7 +25,7 @@ import Tasks from "./pages/Tasks";
 import PaidTraffic from "./pages/PaidTraffic";
 import SurgeryAvailability from "./pages/SurgeryAvailability";
 import NotFound from "./pages/NotFound";
-
+import PublicSchedule from "./pages/PublicSchedule";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +147,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/agendar/:token" element={<PublicSchedule />} />
+      <Route path="/schedule/:token" element={<RedirectSchedule />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
