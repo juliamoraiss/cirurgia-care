@@ -155,6 +155,16 @@ export async function ensureHospitalRegistered(
     .maybeSingle();
 
   if (insErr) {
+    const msg = (insErr as any).message || "";
+
+    // Trigger server-side bloqueou por duplicidade ou similaridade
+    // Mensagens: HOSPITAL_DUPLICATE: ... "Nome" ...  /  HOSPITAL_SIMILAR: ... "Nome" ...
+    const dupMatch = msg.match(/HOSPITAL_(?:DUPLICATE|SIMILAR):[^"]*"([^"]+)"/);
+    if (dupMatch) {
+      return dupMatch[1];
+    }
+
+    // Conflito de unicidade clássico
     if ((insErr as any).code === "23505") {
       const { data: again } = await supabase
         .from("hospitals")
