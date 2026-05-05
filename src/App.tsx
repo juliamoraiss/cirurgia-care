@@ -82,20 +82,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (location.pathname !== "/share-cirurgia") {
     const incomingShare = readShareIntentFromSearch(location.search);
     if (hasShareIntent(incomingShare)) {
-      const query = buildShareIntentQuery(incomingShare);
-      return <Navigate to={`/share-cirurgia${query ? `?${query}` : ""}`} replace />;
+      return <Navigate to={`/share-cirurgia?${buildShareIntentQuery(incomingShare)}`} replace />;
     }
-
-    try {
-      const pending = sessionStorage.getItem("pending_share_surgery");
-      if (pending) {
-        const data = JSON.parse(pending);
-        const query = buildShareIntentQuery(data);
-        sessionStorage.removeItem("pending_share_surgery");
-        return <Navigate to={`/share-cirurgia${query ? `?${query}` : ""}`} replace />;
-      }
-    } catch {
-      /* ignore */
+    const pending = peekPendingShareIntent();
+    if (pending) {
+      return <Navigate to={buildShareRedirectPath(pending)} replace />;
     }
   }
 
