@@ -104,7 +104,8 @@ export default function ShareCirurgia() {
       const ex: ExtractedData = data.data;
       setExtracted(ex);
       setPatientName(ex.patient_name || "");
-      setProcedure(ex.procedure || "");
+      // Default procedure for WhatsApp imports is Rinoplastia
+      setProcedure(ex.procedure || "Rinoplastia");
       setHospital(ex.hospital || "");
       setSurgeryDate(toLocalDateTimeInput(ex.surgery_datetime));
 
