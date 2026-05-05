@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { hasShareIntent, readShareIntentFromSearch } from "@/lib/shareIntent";
 
 // Preserve Google OAuth code BEFORE Supabase client can consume it
 (() => {
@@ -20,13 +21,10 @@ import "./index.css";
 // when the user is logged out the auth redirect would otherwise drop them.
 (() => {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const text = params.get("text");
-    const title = params.get("title");
-    const url = params.get("url");
-    if (text || title || url) {
-      const payload = JSON.stringify({ text: text ?? "", title: title ?? "", url: url ?? "", at: Date.now() });
-      sessionStorage.setItem("pending_share_surgery", payload);
+    const payload = readShareIntentFromSearch(window.location.search);
+    if (hasShareIntent(payload)) {
+      const serialized = JSON.stringify({ ...payload, at: Date.now() });
+      sessionStorage.setItem("pending_share_surgery", serialized);
     }
   } catch {
     /* ignore */
