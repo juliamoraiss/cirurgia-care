@@ -1,14 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, AlertCircle, User, Building2 } from "lucide-react";
+import { Clock, AlertCircle, User, Building2, CalendarClock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StandardCard, CardInfo } from "@/components/StandardCard";
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleCard } from "@/components/CollapsibleCard";
+import { differenceInCalendarDays } from "date-fns";
 interface Patient {
   id: string;
   name: string;
   procedure: string;
   insurance: string | null;
+  created_at?: string;
 }
 interface PendingPatientsProps {
   patients: Patient[];
@@ -73,7 +75,17 @@ export function PendingPatients({
               value: patient.insurance
             });
           }
-          return <StandardCard key={patient.id} title={patient.name} subtitle={patient.procedure} infos={infos} statusIcon={<AlertCircle className="h-4 w-4 text-warning" />} badge={<Badge variant="warning" className="text-[10px] px-1.5 py-0">Aguardando</Badge>} actionLabel="Ver detalhes" onAction={() => navigate(`/patients/${patient.id}/exams`)} onClick={() => navigate(`/patients/${patient.id}/exams`)} />;
+          const waitingDays = patient.created_at
+            ? Math.max(0, differenceInCalendarDays(new Date(), new Date(patient.created_at)))
+            : null;
+          if (waitingDays !== null) {
+            infos.push({
+              icon: CalendarClock,
+              label: "Aguardando há",
+              value: waitingDays === 0 ? "hoje" : `${waitingDays} ${waitingDays === 1 ? "dia" : "dias"}`
+            });
+          }
+          return <StandardCard key={patient.id} title={patient.name} subtitle={patient.procedure} infos={infos} statusIcon={<AlertCircle className="h-4 w-4 text-warning" />} badge={<Badge variant="warning" className="text-[10px] px-1.5 py-0">{waitingDays !== null && waitingDays > 0 ? `${waitingDays}d` : "Aguardando"}</Badge>} actionLabel="Ver detalhes" onAction={() => navigate(`/patients/${patient.id}/exams`)} onClick={() => navigate(`/patients/${patient.id}/exams`)} />;
         })}
         </div>
     </CollapsibleCard>;
