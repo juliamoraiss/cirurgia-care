@@ -30,7 +30,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getShareIntentRawText, readShareIntentFromSearch } from "@/lib/shareIntent";
+import {
+  clearPendingShareIntent,
+  getShareIntentRawText,
+  hasShareIntent,
+  peekPendingShareIntent,
+  readShareIntentFromSearch,
+} from "@/lib/shareIntent";
 
 type Confidence = "high" | "medium" | "low" | "none";
 
@@ -98,7 +104,12 @@ export default function ShareCirurgia() {
   const { isAdmin } = useUserRole();
   const { professionals } = useProfessionals();
 
-  const sharedPayload = readShareIntentFromSearch(`?${searchParams.toString()}`);
+  // Lê o payload da query; se vier vazio (iOS PWA pode dropar a query),
+  // cai para o que ficou salvo em sessionStorage.
+  const sharedFromUrl = readShareIntentFromSearch(`?${searchParams.toString()}`);
+  const sharedPayload = hasShareIntent(sharedFromUrl)
+    ? sharedFromUrl
+    : peekPendingShareIntent() ?? sharedFromUrl;
   const sharedText = getShareIntentRawText(sharedPayload);
 
   const [rawText, setRawText] = useState(sharedText);
@@ -116,11 +127,12 @@ export default function ShareCirurgia() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
-  // Auto-parse if text was shared
+  // Auto-parse if text was shared, e limpa o storage assim que consumimos.
   useEffect(() => {
     if (sharedText && sharedText.trim().length > 5) {
       handleParse(sharedText);
     }
+    clearPendingShareIntent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
