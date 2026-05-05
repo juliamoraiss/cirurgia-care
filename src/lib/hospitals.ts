@@ -113,3 +113,60 @@ export function findSimilarHospital(
   }
   return null;
 }
+
+/**
+ * Garante que o hospital esteja cadastrado na tabela `hospitals`.
+ * - Normaliza o nome (Title Case + trim)
+ * - Se já houver um existente parecido, usa o nome canônico
+ * - Caso contrário, insere no banco (idempotente: ignora conflito de unicidade)
+ *
+ * Retorna o nome final a ser persistido no paciente.
+ */
+export async function ensureHospitalRegistered(
+  rawName: string,
+  createdBy?: string,
+): Promise<string> {
+  const formatted = formatHospitalName(rawName);
+  if (!formatted) return "";
+
+  // Carrega hospitais existentes para checar duplicidade aproximada
+  const { data: existing, error: loadErr } = await supabase
+    .from("hospitals")
+    .select("name");
+  if (loadErr) {
+    console.warn("[ensureHospitalRegistered] load failed", loadErr);
+    return formatted;
+  }
+  const names = (existing ?? []).map((h: { name: string }) => h.name);
+
+  // Match exato (case/acento-insensitive)
+  const exact = names.find((n) => normalizeHospital(n) === normalizeHospital(formatted));
+  if (exact) return exact;
+
+  // Match aproximado (typo)
+  const similar = findSimilarHospital(formatted, names);
+  if (similar) return similar;
+
+  // Insere; em caso de conflito de unicidade, refaz o lookup
+  const { data: inserted, error: insErr } = await supabase
+    .from("hospitals")
+    .insert({ name: formatted, name_normalized: "", created_by: createdBy ?? null })
+    .select("name")
+    .maybeSingle();
+
+  if (insErr) {
+    if ((insErr as any).code === "23505") {
+      const { data: again } = await supabase
+        .from("hospitals")
+        .select("name");
+      const found = (again ?? [])
+        .map((h: { name: string }) => h.name)
+        .find((n) => normalizeHospital(n) === normalizeHospital(formatted));
+      return found ?? formatted;
+    }
+    console.warn("[ensureHospitalRegistered] insert failed", insErr);
+    return formatted;
+  }
+
+  return inserted?.name ?? formatted;
+}
