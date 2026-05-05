@@ -172,7 +172,11 @@ const Dashboard = () => {
         setAllPatients(allPatientsData || []);
         setScheduledPatients(scheduledData);
         setCompletedPatients(completedData);
-        setPendingPatients((pendingData || []).filter(p => !/troca de c[âa]nula/i.test(p.procedure || "")));
+        setPendingPatients(
+          (pendingData || [])
+            .filter(p => !/troca de c[âa]nula/i.test(p.procedure || ""))
+            .sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
+        );
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       } finally {
