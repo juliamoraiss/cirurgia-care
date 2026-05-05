@@ -258,7 +258,7 @@ const PatientExams = () => {
                     
                     const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${formatCalendarDate(surgeryDate)}/${formatCalendarDate(endDate)}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
                     
-                    window.open(googleCalendarLink, '_blank');
+                    safeWindowOpen(googleCalendarLink, '_blank');
                   }}
                 >
                   <Calendar className="h-3.5 w-3.5 mr-1" />
