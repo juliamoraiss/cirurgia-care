@@ -46,6 +46,33 @@ interface PatientMatch {
   id: string;
   name: string;
   procedure: string;
+  surgery_date: string | null;
+  status: string | null;
+  score: number; // 0..1 similarity
+}
+
+function normalize(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nameSimilarity(a: string, b: string): number {
+  const ta = new Set(normalize(a).split(" ").filter((t) => t.length >= 2));
+  const tb = new Set(normalize(b).split(" ").filter((t) => t.length >= 2));
+  if (ta.size === 0 || tb.size === 0) return 0;
+  let inter = 0;
+  ta.forEach((t) => { if (tb.has(t)) inter++; });
+  // Jaccard-ish but biased to smaller set so "Maria Silva" matches "Maria Silva Souza" strongly
+  const minSize = Math.min(ta.size, tb.size);
+  const containment = inter / minSize;
+  const union = ta.size + tb.size - inter;
+  const jaccard = inter / union;
+  return Math.max(containment * 0.9, jaccard);
 }
 
 function toLocalDateTimeInput(iso: string | null): string {
