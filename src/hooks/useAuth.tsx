@@ -14,6 +14,7 @@ interface AuthContextType {
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, userType: "medico" | "dentista") => Promise<void>;
   getPostAuthRedirectPath: () => string;
+  recheckApproval: (userId: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
