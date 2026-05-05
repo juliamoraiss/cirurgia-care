@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,13 +12,10 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { AlertCircle, Check, ChevronsUpDown } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  HOSPITAL_OPTIONS,
-  findSimilarHospital,
-  normalizeHospital,
-} from "@/lib/hospitals";
+import { findSimilarHospital, normalizeHospital } from "@/lib/hospitals";
+import { toast } from "sonner";
 
 interface HospitalFieldProps {
   value: string;
@@ -28,11 +25,6 @@ interface HospitalFieldProps {
   error?: string;
 }
 
-/**
- * Campo de Hospital com autocomplete (combobox) + verificação anti-duplicado.
- * Carrega hospitais já cadastrados em `patients` e mistura com a lista canônica.
- * Permite digitar um nome novo se nenhum item for selecionado.
- */
 export function HospitalField({
   value,
   onChange,
@@ -40,53 +32,87 @@ export function HospitalField({
   required = false,
   error,
 }: HospitalFieldProps) {
-  const [extra, setExtra] = useState<string[]>([]);
+  const { user } = useAuth();
+  const [hospitals, setHospitals] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  async function loadHospitals() {
+    const { data, error } = await supabase
+      .from("hospitals")
+      .select("name")
+      .order("name");
+    if (error) {
+      console.warn("[HospitalField] load failed", error);
+      return;
+    }
+    setHospitals((data ?? []).map((h) => h.name));
+  }
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("hospital")
-        .not("hospital", "is", null)
-        .limit(2000);
-      if (!active || !data) return;
-      const set = new Set<string>();
-      for (const row of data as { hospital: string | null }[]) {
-        if (row.hospital && row.hospital.trim()) set.add(row.hospital.trim());
-      }
-      setExtra(Array.from(set));
-    })();
-    return () => {
-      active = false;
-    };
+    loadHospitals();
   }, []);
 
-  const allHospitals = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const h of HOSPITAL_OPTIONS) seen.set(normalizeHospital(h), h);
-    for (const h of extra) {
-      const key = normalizeHospital(h);
-      if (!seen.has(key)) seen.set(key, h);
-    }
-    return Array.from(seen.values()).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [extra]);
-
-  const isInList = allHospitals.some(
+  const isInList = hospitals.some(
     (h) => normalizeHospital(h) === normalizeHospital(value),
   );
 
   const suggestion = useMemo(() => {
     if (!value || isInList) return null;
-    return findSimilarHospital(value, allHospitals);
-  }, [value, isInList, allHospitals]);
+    return findSimilarHospital(value, hospitals);
+  }, [value, isInList, hospitals]);
 
   const trimmedSearch = search.trim();
   const showCreateOption =
     trimmedSearch.length > 0 &&
-    !allHospitals.some((h) => normalizeHospital(h) === normalizeHospital(trimmedSearch));
+    !hospitals.some((h) => normalizeHospital(h) === normalizeHospital(trimmedSearch));
+
+  async function handleCreate(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed || !user) return;
+    // Antes de criar, checa se há um existente parecido — pede confirmação implícita usando o existente.
+    const similar = findSimilarHospital(trimmed, hospitals);
+    if (similar) {
+      onChange(similar);
+      toast.info(`Usando hospital existente "${similar}" para evitar duplicidade.`);
+      setSearch("");
+      setOpen(false);
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from("hospitals")
+        .insert({ name: trimmed, name_normalized: "", created_by: user.id })
+        .select("name")
+        .single();
+      if (error) {
+        // Conflito de nome único: refaz a leitura e seleciona o existente
+        if ((error as any).code === "23505") {
+          await loadHospitals();
+          onChange(trimmed);
+        } else {
+          throw error;
+        }
+      } else if (data) {
+        setHospitals((prev) =>
+          prev.some((h) => normalizeHospital(h) === normalizeHospital(data.name))
+            ? prev
+            : [...prev, data.name].sort((a, b) => a.localeCompare(b, "pt-BR")),
+        );
+        onChange(data.name);
+        toast.success(`Hospital "${data.name}" cadastrado.`);
+      }
+      setSearch("");
+      setOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Não foi possível cadastrar o hospital.");
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <div className="space-y-1.5">
@@ -134,7 +160,7 @@ export function HospitalField({
             <CommandList>
               <CommandEmpty>Nenhum hospital encontrado.</CommandEmpty>
               <CommandGroup heading="Hospitais cadastrados">
-                {allHospitals.map((h) => (
+                {hospitals.map((h) => (
                   <CommandItem
                     key={h}
                     value={h}
@@ -160,13 +186,15 @@ export function HospitalField({
                 <CommandGroup heading="Novo">
                   <CommandItem
                     value={`__create__${trimmedSearch}`}
-                    onSelect={() => {
-                      onChange(trimmedSearch);
-                      setSearch("");
-                      setOpen(false);
-                    }}
+                    disabled={creating}
+                    onSelect={() => handleCreate(trimmedSearch)}
                   >
-                    + Usar "{trimmedSearch}" como novo hospital
+                    {creating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <span className="mr-2">+</span>
+                    )}
+                    Cadastrar "{trimmedSearch}" como novo hospital
                   </CommandItem>
                 </CommandGroup>
               )}
