@@ -15,6 +15,24 @@ import "./index.css";
   }
 })();
 
+// Capture WhatsApp/iOS share intent BEFORE any auth redirect happens.
+// On iOS PWAs the app may open at "/" (start_url) with share params, and
+// when the user is logged out the auth redirect would otherwise drop them.
+(() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const text = params.get("text");
+    const title = params.get("title");
+    const url = params.get("url");
+    if (text || title || url) {
+      const payload = JSON.stringify({ text: text ?? "", title: title ?? "", url: url ?? "", at: Date.now() });
+      sessionStorage.setItem("pending_share_surgery", payload);
+    }
+  } catch {
+    /* ignore */
+  }
+})();
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
