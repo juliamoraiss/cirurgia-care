@@ -239,7 +239,28 @@ Deno.serve(async (req) => {
       );
 
       // Allow admins to check other users' connection status
-      const queryUserId = target_user_id || user.id;
+      let queryUserId = user.id;
+      let isAdmin = false;
+      if (target_user_id && target_user_id !== user.id) {
+        const { data: adminCheck } = await supabaseService.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        if (!adminCheck) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        isAdmin = true;
+        queryUserId = target_user_id;
+      } else {
+        const { data: adminCheck } = await supabaseService.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        isAdmin = !!adminCheck;
+      }
 
       const { data } = await supabaseService
         .from("google_calendar_connections")
@@ -247,8 +268,8 @@ Deno.serve(async (req) => {
         .eq("user_id", queryUserId)
         .maybeSingle();
 
-      // If no target specified and no connection for current user, check if ANY connection exists (for admins)
-      if (!data && !target_user_id) {
+      // If no target specified and no connection for current user, check if ANY connection exists (admins only)
+      if (!data && !target_user_id && isAdmin) {
         const { data: anyConnection } = await supabaseService
           .from("google_calendar_connections")
           .select("connected_at, calendar_timezone, user_id")
