@@ -40,7 +40,9 @@ const Auth = () => {
   });
   const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
 
-  // Redirect if already logged in and approved
+  // Redirect if already logged in and approved.
+  // Going to "/" is enough — HomeOrShareCapture forwards to /share-cirurgia
+  // when a pending WhatsApp/iOS share intent exists in sessionStorage.
   if (!loading && user && isApproved) {
     return <Navigate to="/" replace />;
   }
