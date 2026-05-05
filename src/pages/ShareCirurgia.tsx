@@ -30,7 +30,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getShareIntentRawText, readShareIntentFromSearch } from "@/lib/shareIntent";
+import {
+  clearPendingShareIntent,
+  getShareIntentRawText,
+  hasShareIntent,
+  peekPendingShareIntent,
+  readShareIntentFromSearch,
+} from "@/lib/shareIntent";
 
 type Confidence = "high" | "medium" | "low" | "none";
 
