@@ -42,7 +42,11 @@ const Auth = () => {
 
   // Redirect if already logged in and approved
   if (!loading && user && isApproved) {
-    return <Navigate to="/" replace />;
+    const hasPendingShare = (() => {
+      try { return !!sessionStorage.getItem("pending_share_surgery"); } catch { return false; }
+    })();
+    return <Navigate to={hasPendingShare ? "/" : "/"} replace />;
+    // Note: HomeOrShareCapture on "/" will detect pending_share_surgery and forward to /share-cirurgia
   }
   
   // Redirect to pending approval if logged in but not approved
