@@ -355,7 +355,7 @@ export default function ShareCirurgia() {
           {
             body: {
               action: calAction,
-              patient_name: patientName.trim(),
+              patient_name: toTitleCaseName(patientName),
               procedure: procedure.trim(),
               hospital: hospital.trim() || null,
               surgery_date: utcSurgery,
