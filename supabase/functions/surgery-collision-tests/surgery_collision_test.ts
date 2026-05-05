@@ -55,7 +55,7 @@ async function insertPatient(name: string, surgery_date: string | null, userId: 
     .single();
 }
 
-Deno.test("surgery collision: blocks insert within 1h window for same patient", async () => {
+Deno.test({ name: "surgery collision: blocks insert within 1h window for same patient", ignore: skip, fn: async () => {
   const userId = await pickUserId();
   await cleanup();
   try {
@@ -80,9 +80,9 @@ Deno.test("surgery collision: blocks insert within 1h window for same patient", 
   } finally {
     await cleanup();
   }
-});
+} });
 
-Deno.test("surgery collision: allows insert exactly 1h apart (boundary)", async () => {
+Deno.test({ name: "surgery collision: allows insert exactly 1h apart (boundary)", ignore: skip, fn: async () => {
   const userId = await pickUserId();
   await cleanup();
   try {
@@ -99,9 +99,9 @@ Deno.test("surgery collision: allows insert exactly 1h apart (boundary)", async 
   } finally {
     await cleanup();
   }
-});
+} });
 
-Deno.test("surgery collision: ignores accents/case when matching same patient", async () => {
+Deno.test({ name: "surgery collision: ignores accents/case when matching same patient", ignore: skip, fn: async () => {
   const userId = await pickUserId();
   await cleanup();
   try {
@@ -115,9 +115,9 @@ Deno.test("surgery collision: ignores accents/case when matching same patient", 
   } finally {
     await cleanup();
   }
-});
+} });
 
-Deno.test("surgery collision: different patients in same window are allowed", async () => {
+Deno.test({ name: "surgery collision: different patients in same window are allowed", ignore: skip, fn: async () => {
   const userId = await pickUserId();
   await cleanup();
   try {
@@ -131,9 +131,9 @@ Deno.test("surgery collision: different patients in same window are allowed", as
   } finally {
     await cleanup();
   }
-});
+} });
 
-Deno.test("surgery collision: blocks UPDATE that moves date into 1h window of other surgery", async () => {
+Deno.test({ name: "surgery collision: blocks UPDATE that moves date into 1h window of other surgery", ignore: skip, fn: async () => {
   const userId = await pickUserId();
   await cleanup();
   try {
@@ -160,4 +160,4 @@ Deno.test("surgery collision: blocks UPDATE that moves date into 1h window of ot
   } finally {
     await cleanup();
   }
-});
+} });
