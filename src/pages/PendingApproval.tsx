@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const PendingApproval = () => {
-  const { user, loading, isApproved, signOut } = useAuth();
+  const { user, loading, isApproved, signOut, getPostAuthRedirectPath } = useAuth();
   const [checking, setChecking] = useState(false);
 
   // If not logged in, redirect to auth
@@ -18,7 +18,7 @@ const PendingApproval = () => {
 
   // If approved, redirect to home
   if (!loading && user && isApproved) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={getPostAuthRedirectPath()} replace />;
   }
 
   const handleCheckStatus = async () => {
@@ -30,7 +30,7 @@ const PendingApproval = () => {
       if (data === true) {
         toast.success("Sua conta foi aprovada! Redirecionando...");
         // Force page reload to update auth state
-        window.location.href = "/";
+        window.location.href = getPostAuthRedirectPath();
       } else {
         toast.info("Sua conta ainda está aguardando aprovação.");
       }
