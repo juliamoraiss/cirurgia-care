@@ -152,7 +152,7 @@ export default function ShareCirurgia() {
     }
   }
 
-  async function handleConfirm() {
+  function handleOpenPreview() {
     if (!user) return;
     if (!patientName.trim() || !procedure.trim() || !surgeryDate) {
       toast.error("Preencha nome do paciente, procedimento e data/hora");
@@ -164,12 +164,35 @@ export default function ShareCirurgia() {
       return;
     }
 
+    // Validations
+    const warnings: string[] = [];
+    const surgery = new Date(surgeryDate);
+    if (isNaN(surgery.getTime())) {
+      toast.error("Data/hora inválida");
+      return;
+    }
+    if (surgery.getTime() < Date.now()) {
+      warnings.push("A data da cirurgia está no passado.");
+    }
+    const hour = surgery.getHours();
+    if (hour < 6 || hour >= 23) {
+      warnings.push("Horário fora do expediente típico (06h–23h). Confira se está correto.");
+    }
+    if (selectedPatientId === "new" && matches.length > 0) {
+      warnings.push("Existem pacientes com nome similar. Confirme que deseja criar um novo paciente.");
+    }
+    setValidationWarnings(warnings);
+    setPreviewOpen(true);
+  }
+
+  async function handleConfirmSave() {
+    if (!user) return;
+    const finalResponsibleId = isAdmin ? responsibleUserId : user.id;
     setSaving(true);
     try {
       const utcSurgery = new Date(surgeryDate).toISOString();
 
       if (selectedPatientId && selectedPatientId !== "new") {
-        // Update existing patient — set surgery_date (triggers handle the rest)
         const { error } = await supabase
           .from("patients")
           .update({
@@ -182,7 +205,6 @@ export default function ShareCirurgia() {
         toast.success("Cirurgia agendada para paciente existente!");
         navigate(`/patients/${selectedPatientId}`);
       } else {
-        // Create new patient with surgery scheduled
         const { data, error } = await supabase
           .from("patients")
           .insert([{
@@ -206,8 +228,18 @@ export default function ShareCirurgia() {
       toast.error(err.message || "Erro ao salvar");
     } finally {
       setSaving(false);
+      setPreviewOpen(false);
     }
   }
+
+  const doctorLabel = (() => {
+    const id = isAdmin ? responsibleUserId : user?.id;
+    const p = professionals.find((x) => x.id === id);
+    return p?.full_name || "—";
+  })();
+
+  const isExistingPatient = selectedPatientId && selectedPatientId !== "new";
+
 
   const conf = extracted?.confidence;
 
