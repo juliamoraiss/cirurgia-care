@@ -19,6 +19,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 type Confidence = "high" | "medium" | "low" | "none";
@@ -74,6 +84,8 @@ export default function ShareCirurgia() {
   const [matches, setMatches] = useState<PatientMatch[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | "new">("new");
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
   // Auto-parse if text was shared
   useEffect(() => {
@@ -104,7 +116,8 @@ export default function ShareCirurgia() {
       const ex: ExtractedData = data.data;
       setExtracted(ex);
       setPatientName(ex.patient_name || "");
-      setProcedure(ex.procedure || "");
+      // Default procedure for WhatsApp imports is Rinoplastia
+      setProcedure(ex.procedure || "Rinoplastia");
       setHospital(ex.hospital || "");
       setSurgeryDate(toLocalDateTimeInput(ex.surgery_datetime));
 
@@ -139,7 +152,7 @@ export default function ShareCirurgia() {
     }
   }
 
-  async function handleConfirm() {
+  function handleOpenPreview() {
     if (!user) return;
     if (!patientName.trim() || !procedure.trim() || !surgeryDate) {
       toast.error("Preencha nome do paciente, procedimento e data/hora");
@@ -151,12 +164,35 @@ export default function ShareCirurgia() {
       return;
     }
 
+    // Validations
+    const warnings: string[] = [];
+    const surgery = new Date(surgeryDate);
+    if (isNaN(surgery.getTime())) {
+      toast.error("Data/hora inválida");
+      return;
+    }
+    if (surgery.getTime() < Date.now()) {
+      warnings.push("A data da cirurgia está no passado.");
+    }
+    const hour = surgery.getHours();
+    if (hour < 6 || hour >= 23) {
+      warnings.push("Horário fora do expediente típico (06h–23h). Confira se está correto.");
+    }
+    if (selectedPatientId === "new" && matches.length > 0) {
+      warnings.push("Existem pacientes com nome similar. Confirme que deseja criar um novo paciente.");
+    }
+    setValidationWarnings(warnings);
+    setPreviewOpen(true);
+  }
+
+  async function handleConfirmSave() {
+    if (!user) return;
+    const finalResponsibleId = isAdmin ? responsibleUserId : user.id;
     setSaving(true);
     try {
       const utcSurgery = new Date(surgeryDate).toISOString();
 
       if (selectedPatientId && selectedPatientId !== "new") {
-        // Update existing patient — set surgery_date (triggers handle the rest)
         const { error } = await supabase
           .from("patients")
           .update({
@@ -169,7 +205,6 @@ export default function ShareCirurgia() {
         toast.success("Cirurgia agendada para paciente existente!");
         navigate(`/patients/${selectedPatientId}`);
       } else {
-        // Create new patient with surgery scheduled
         const { data, error } = await supabase
           .from("patients")
           .insert([{
@@ -193,8 +228,18 @@ export default function ShareCirurgia() {
       toast.error(err.message || "Erro ao salvar");
     } finally {
       setSaving(false);
+      setPreviewOpen(false);
     }
   }
+
+  const doctorLabel = (() => {
+    const id = isAdmin ? responsibleUserId : user?.id;
+    const p = professionals.find((x) => x.id === id);
+    return p?.full_name || "—";
+  })();
+
+  const isExistingPatient = selectedPatientId && selectedPatientId !== "new";
+
 
   const conf = extracted?.confidence;
 
@@ -341,13 +386,76 @@ export default function ShareCirurgia() {
               <Button variant="outline" onClick={() => navigate(-1)} className="flex-1">
                 Cancelar
               </Button>
-              <Button onClick={handleConfirm} disabled={saving} className="flex-1">
-                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Confirmar e agendar
+              <Button onClick={handleOpenPreview} disabled={saving} className="flex-1">
+                Revisar e agendar
               </Button>
             </div>
           </Card>
         )}
+
+        <AlertDialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar agendamento</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-md border p-3 space-y-1.5">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Paciente</span>
+                      <span className="font-medium text-right">
+                        {patientName} {isExistingPatient ? "(existente)" : "(novo)"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Procedimento</span>
+                      <span className="font-medium text-right">{procedure}</span>
+                    </div>
+                    {hospital && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Hospital</span>
+                        <span className="font-medium text-right">{hospital}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Data e hora</span>
+                      <span className="font-medium text-right">
+                        {surgeryDate ? new Date(surgeryDate).toLocaleString("pt-BR", {
+                          dateStyle: "full",
+                          timeStyle: "short",
+                        }) : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Médico</span>
+                      <span className="font-medium text-right">{doctorLabel}</span>
+                    </div>
+                  </div>
+
+                  {validationWarnings.length > 0 && (
+                    <div className="rounded-md border border-warning/40 bg-warning/10 p-3 space-y-1">
+                      {validationWarnings.map((w, i) => (
+                        <div key={i} className="flex gap-2">
+                          <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                          <span>{w}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={saving}>Voltar e editar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleConfirmSave(); }}
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Confirmar agendamento
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
