@@ -48,6 +48,7 @@ import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientFormSteps } from "@/components/PatientFormSteps";
 import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
 import { ProfessionalSelect } from "@/components/ProfessionalSelect";
+import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
 import InputMask from "react-input-mask";
 
 // Validation schema with enhanced security
@@ -108,10 +109,15 @@ const PatientForm = () => {
     return encodeURIComponent(message);
   };
 
-  // Auto-assign the current user as responsible for new patients if not admin
+  // Auto-assign responsible para novos pacientes:
+  // - Não admin: o próprio usuário
+  // - Admin: Dr. André Morais Alves como padrão
   useEffect(() => {
-    if (!isEditMode && !isAdmin && user) {
-      setFormData(prev => ({ ...prev, responsible_user_id: user.id }));
+    if (isEditMode || !user) return;
+    if (!isAdmin) {
+      setFormData(prev => prev.responsible_user_id ? prev : { ...prev, responsible_user_id: user.id });
+    } else {
+      setFormData(prev => prev.responsible_user_id ? prev : { ...prev, responsible_user_id: DEFAULT_RESPONSIBLE_DOCTOR_ID });
     }
   }, [isEditMode, isAdmin, user]);
 
