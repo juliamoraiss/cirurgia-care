@@ -11,6 +11,7 @@ interface AuthContextType {
   isApproved: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, userType: "medico" | "dentista") => Promise<void>;
+  getPostAuthRedirectPath: () => string;
   signOut: () => Promise<void>;
 }
 
@@ -23,6 +24,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isApproved, setIsApproved] = useState(false);
   const initializedRef = useRef(false);
   const navigate = useNavigate();
+
+  const getPostAuthRedirectPath = () => {
+    try {
+      const pending = sessionStorage.getItem("pending_share_surgery");
+      if (!pending) return "/";
+
+      const data = JSON.parse(pending) as { text?: string; title?: string; url?: string };
+      const sp = new URLSearchParams();
+      if (data.text) sp.set("text", data.text);
+      if (data.title) sp.set("title", data.title);
+      if (data.url) sp.set("url", data.url);
+
+      const query = sp.toString();
+      return query ? `/share-cirurgia?${query}` : "/share-cirurgia";
+    } catch {
+      return "/";
+    }
+  };
 
   const checkApprovalStatus = async (userId: string) => {
     const { data, error } = await supabase
@@ -119,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       toast.success("Login realizado com sucesso!");
-      navigate("/");
+      navigate(getPostAuthRedirectPath());
     } catch (error: any) {
       toast.error("Erro ao fazer login. Verifique suas credenciais.");
       throw error;
@@ -178,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isApproved, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isApproved, signIn, signUp, getPostAuthRedirectPath, signOut }}>
       {children}
     </AuthContext.Provider>
   );
