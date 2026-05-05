@@ -191,8 +191,17 @@ export default function ShareCirurgia() {
     setSaving(true);
     try {
       const utcSurgery = new Date(surgeryDate).toISOString();
+      let savedPatientId: string;
+      let existingEventId: string | null = null;
 
       if (selectedPatientId && selectedPatientId !== "new") {
+        const { data: existing } = await supabase
+          .from("patients")
+          .select("google_calendar_event_id")
+          .eq("id", selectedPatientId)
+          .maybeSingle();
+        existingEventId = (existing as any)?.google_calendar_event_id ?? null;
+
         const { error } = await supabase
           .from("patients")
           .update({
@@ -202,8 +211,8 @@ export default function ShareCirurgia() {
           })
           .eq("id", selectedPatientId);
         if (error) throw error;
+        savedPatientId = selectedPatientId;
         toast.success("Cirurgia agendada para paciente existente!");
-        navigate(`/patients/${selectedPatientId}`);
       } else {
         const { data, error } = await supabase
           .from("patients")
@@ -220,9 +229,51 @@ export default function ShareCirurgia() {
           .select()
           .single();
         if (error) throw error;
+        savedPatientId = data.id;
         toast.success("Paciente criado e cirurgia agendada!");
-        navigate(`/patients/${data.id}`);
       }
+
+      // Sync to Google Calendar of the responsible doctor
+      try {
+        const calAction = existingEventId ? "update" : "create";
+        console.log("[ShareCirurgia] Syncing to Google Calendar", {
+          calAction,
+          patient_id: savedPatientId,
+          target_user_id: finalResponsibleId,
+        });
+        const { data: calResult, error: calError } = await supabase.functions.invoke(
+          "google-calendar-create-event",
+          {
+            body: {
+              action: calAction,
+              patient_name: patientName.trim(),
+              procedure: procedure.trim(),
+              hospital: hospital.trim() || null,
+              surgery_date: utcSurgery,
+              notes: "Importado via WhatsApp",
+              patient_id: savedPatientId,
+              target_user_id: finalResponsibleId,
+              existing_event_id: existingEventId,
+            },
+          }
+        );
+        const calRes = calResult as { success?: boolean; connected?: boolean; error?: string } | null;
+        if (calError) {
+          console.warn("[ShareCirurgia] Google Calendar invoke error:", calError.message);
+          toast.warning("Cirurgia salva, mas falhou ao enviar para o Google Agenda.");
+        } else if (calRes?.success) {
+          toast.success(calAction === "update" ? "Evento atualizado no Google Agenda" : "Evento criado no Google Agenda");
+        } else if (calRes?.connected === false) {
+          toast.warning("Cirurgia salva, mas o médico não está com Google Agenda conectado.");
+        } else if (calRes?.error) {
+          toast.warning(`Cirurgia salva, mas Google Agenda falhou: ${calRes.error}`);
+        }
+      } catch (calErr: any) {
+        console.warn("[ShareCirurgia] Google Calendar sync exception", calErr);
+        toast.warning("Cirurgia salva, mas houve erro ao sincronizar com o Google Agenda.");
+      }
+
+      navigate(`/patients/${savedPatientId}`);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Erro ao salvar");
