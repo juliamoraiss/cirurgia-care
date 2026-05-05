@@ -302,6 +302,10 @@ export default function ShareCirurgia() {
     setSaving(true);
     try {
       const utcSurgery = new Date(surgeryDate).toISOString();
+      // Garante o cadastro do hospital no banco antes de prosseguir
+      const hospitalFinal = hospital
+        ? await ensureHospitalRegistered(hospital, user.id)
+        : "";
       let savedPatientId: string;
       let existingEventId: string | null = null;
 
