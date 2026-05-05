@@ -22,11 +22,12 @@ const signUpSchema = z.object({
 });
 
 const Auth = () => {
-  const { signIn, signUp, user, loading, isApproved } = useAuth();
+  const { signIn, signUp, user, loading, isApproved, getPostAuthRedirectPath } = useAuth();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
-  const redirectPath = new URLSearchParams(location.search).get("redirect") || "/";
+  const redirectFromQuery = new URLSearchParams(location.search).get("redirect");
+  const redirectPath = redirectFromQuery || getPostAuthRedirectPath();
   
   // Login form state
   const [username, setUsername] = useState("");
