@@ -121,7 +121,7 @@ export default function ShareCirurgia() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { professionals } = useProfessionals();
 
   // Lê o payload da query; se vier vazio (iOS PWA pode dropar a query),
