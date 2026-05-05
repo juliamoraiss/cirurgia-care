@@ -21,9 +21,9 @@ interface WhatsAppTemplatesProps {
 }
 
 export function WhatsAppTemplates({ patient, type, examName, doctorPhone }: WhatsAppTemplatesProps) {
-  const firstName = patient.name.split(" ")[0];
+  const firstName = (patient.name || "").split(" ")[0] || "";
   const treatment = patient.gender === "masculino" ? "o senhor" : patient.gender === "feminino" ? "a senhora" : "você";
-  const phoneNumber = patient.phone.replace(/\D/g, "");
+  const phoneNumber = (patient.phone || "").replace(/\D/g, "");
   const doctorPhoneNumber = doctorPhone?.replace(/\D/g, "") || "61999999999";
 
   function getPreOpMessage() {
