@@ -46,6 +46,33 @@ interface PatientMatch {
   id: string;
   name: string;
   procedure: string;
+  surgery_date: string | null;
+  status: string | null;
+  score: number; // 0..1 similarity
+}
+
+function normalize(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nameSimilarity(a: string, b: string): number {
+  const ta = new Set(normalize(a).split(" ").filter((t) => t.length >= 2));
+  const tb = new Set(normalize(b).split(" ").filter((t) => t.length >= 2));
+  if (ta.size === 0 || tb.size === 0) return 0;
+  let inter = 0;
+  ta.forEach((t) => { if (tb.has(t)) inter++; });
+  // Jaccard-ish but biased to smaller set so "Maria Silva" matches "Maria Silva Souza" strongly
+  const minSize = Math.min(ta.size, tb.size);
+  const containment = inter / minSize;
+  const union = ta.size + tb.size - inter;
+  const jaccard = inter / union;
+  return Math.max(containment * 0.9, jaccard);
 }
 
 function toLocalDateTimeInput(iso: string | null): string {
@@ -130,16 +157,44 @@ export default function ShareCirurgia() {
         if (match) setResponsibleUserId(match.id);
       }
 
-      // Search for existing patient by name
+      // Search for existing patient using fuzzy matching across name tokens
       if (ex.patient_name) {
-        const { data: existing } = await supabase
-          .from("patients")
-          .select("id, name, procedure")
-          .ilike("name", `%${ex.patient_name}%`)
-          .limit(5);
-        if (existing && existing.length > 0) {
-          setMatches(existing);
-          setSelectedPatientId(existing[0].id);
+        const tokens = normalize(ex.patient_name).split(" ").filter((t) => t.length >= 3);
+        if (tokens.length > 0) {
+          // Build OR query — match any significant token via ilike
+          const orFilter = tokens.map((t) => `name.ilike.%${t}%`).join(",");
+          const { data: candidates } = await supabase
+            .from("patients")
+            .select("id, name, procedure, surgery_date, status")
+            .or(orFilter)
+            .limit(25);
+
+          if (candidates && candidates.length > 0) {
+            const ranked: PatientMatch[] = candidates
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                procedure: c.procedure,
+                surgery_date: c.surgery_date,
+                status: c.status as string | null,
+                score: nameSimilarity(ex.patient_name!, c.name),
+              }))
+              .filter((m) => m.score >= 0.5)
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 5);
+
+            if (ranked.length > 0) {
+              setMatches(ranked);
+              // Auto-select existing patient only if very confident
+              if (ranked[0].score >= 0.85) {
+                setSelectedPatientId(ranked[0].id);
+                setPatientName(ranked[0].name);
+              } else {
+                // Ambiguous — keep "new" pre-selected so user makes the call
+                setSelectedPatientId("new");
+              }
+            }
+          }
         }
       }
 
@@ -179,7 +234,23 @@ export default function ShareCirurgia() {
       warnings.push("Horário fora do expediente típico (06h–23h). Confira se está correto.");
     }
     if (selectedPatientId === "new" && matches.length > 0) {
-      warnings.push("Existem pacientes com nome similar. Confirme que deseja criar um novo paciente.");
+      const top = matches[0];
+      if (top.score >= 0.85) {
+        warnings.push(`Existe um paciente muito parecido ("${top.name}"). Tem certeza que deseja criar um novo cadastro?`);
+      } else {
+        warnings.push("Existem pacientes com nome similar. Confirme que deseja criar um novo paciente.");
+      }
+    }
+    if (selectedPatientId !== "new") {
+      const sel = matches.find((m) => m.id === selectedPatientId);
+      if (sel?.surgery_date) {
+        const existing = new Date(sel.surgery_date).getTime();
+        if (Math.abs(existing - surgery.getTime()) < 60_000) {
+          warnings.push("Este paciente já tem cirurgia exatamente nesta data/hora. Verifique se não é duplicidade.");
+        } else {
+          warnings.push(`Substituirá a cirurgia atual (${new Date(sel.surgery_date).toLocaleString("pt-BR")}).`);
+        }
+      }
     }
     setValidationWarnings(warnings);
     setPreviewOpen(true);
@@ -356,17 +427,37 @@ export default function ShareCirurgia() {
                 }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {matches.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name} — {m.procedure}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new">+ Criar novo: {patientName}</SelectItem>
+                    {matches.map((m) => {
+                      const conf = m.score >= 0.85 ? "alta" : m.score >= 0.7 ? "média" : "baixa";
+                      const dateStr = m.surgery_date
+                        ? new Date(m.surgery_date).toLocaleDateString("pt-BR")
+                        : null;
+                      return (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name} — {m.procedure}
+                          {dateStr ? ` · cirurgia ${dateStr}` : ""}
+                          {` · semelhança ${conf}`}
+                        </SelectItem>
+                      );
+                    })}
+                    <SelectItem value="new">+ Criar novo paciente: {patientName}</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Encontramos pacientes com nome parecido. Selecione um existente ou crie novo.
-                </p>
+                {(() => {
+                  const sel = matches.find((m) => m.id === selectedPatientId);
+                  if (sel && sel.surgery_date) {
+                    return (
+                      <p className="text-xs text-warning">
+                        ⚠ Este paciente já tem cirurgia em {new Date(sel.surgery_date).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}. Confirmar substituirá a data atual.
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      Selecione um paciente existente para evitar duplicidade ou crie um novo.
+                    </p>
+                  );
+                })()}
               </div>
             )}
 
