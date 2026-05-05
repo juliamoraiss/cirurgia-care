@@ -326,7 +326,7 @@ export default function ShareCirurgia() {
         const { data, error } = await supabase
           .from("patients")
           .insert([{
-            name: patientName.trim(),
+            name: toTitleCaseName(patientName),
             procedure: procedure.trim(),
             hospital: hospital.trim() || null,
             surgery_date: utcSurgery,
