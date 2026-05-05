@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.public-schedule]
 verify_jwt = false
+
+[functions.parse-surgery-message]
+verify_jwt = false
