@@ -84,6 +84,8 @@ export default function ShareCirurgia() {
   const [matches, setMatches] = useState<PatientMatch[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | "new">("new");
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
   // Auto-parse if text was shared
   useEffect(() => {
