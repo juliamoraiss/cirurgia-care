@@ -40,13 +40,11 @@ const Auth = () => {
   });
   const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
 
-  // Redirect if already logged in and approved
+  // Redirect if already logged in and approved.
+  // Going to "/" is enough — HomeOrShareCapture forwards to /share-cirurgia
+  // when a pending WhatsApp/iOS share intent exists in sessionStorage.
   if (!loading && user && isApproved) {
-    const hasPendingShare = (() => {
-      try { return !!sessionStorage.getItem("pending_share_surgery"); } catch { return false; }
-    })();
-    return <Navigate to={hasPendingShare ? "/" : "/"} replace />;
-    // Note: HomeOrShareCapture on "/" will detect pending_share_surgery and forward to /share-cirurgia
+    return <Navigate to="/" replace />;
   }
   
   // Redirect to pending approval if logged in but not approved
