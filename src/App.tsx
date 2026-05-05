@@ -56,8 +56,10 @@ import ShareCirurgia from "./pages/ShareCirurgia";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isApproved, approvalChecked } = useAuth();
+  const { user, loading, isApproved, approvalChecked, recheckApproval } = useAuth();
   const location = useLocation();
+  const [extraCheckPending, setExtraCheckPending] = React.useState(false);
+  const extraCheckTriedRef = React.useRef<string | null>(null);
 
   // Persist any incoming share intent IMMEDIATELY so transient auth redirects
   // (auth flicker, /pending-approval bounce, iOS PWA query-strip) don't lose it.
@@ -75,7 +77,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [location.search]);
 
-  if (loading || (user && !approvalChecked)) {
+  // Detecta share intent (na URL OU no sessionStorage). Em rotas de share,
+  // damos uma 2ª chance ao approval check antes de redirecionar para
+  // /pending-approval — isso elimina o flash de "Aguardando Aprovação" que
+  // acontece em mobile quando o app cacheado (PWA/SW antigo) renderiza com
+  // isApproved=false antes do RPC responder.
+  const isShareRoute =
+    location.pathname === "/share-cirurgia" ||
+    hasShareIntent(readShareIntentFromSearch(location.search)) ||
+    !!peekPendingShareIntent();
+
+  React.useEffect(() => {
+    if (
+      user &&
+      approvalChecked &&
+      !isApproved &&
+      isShareRoute &&
+      extraCheckTriedRef.current !== user.id
+    ) {
+      extraCheckTriedRef.current = user.id;
+      setExtraCheckPending(true);
+      void recheckApproval(user.id).finally(() => setExtraCheckPending(false));
+    }
+  }, [user, approvalChecked, isApproved, isShareRoute, recheckApproval]);
+
+  if (loading || (user && !approvalChecked) || extraCheckPending) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
