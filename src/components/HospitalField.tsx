@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/command";
 import { AlertCircle, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { findSimilarHospital, normalizeHospital } from "@/lib/hospitals";
+import { findSimilarHospital, formatHospitalName, normalizeHospital } from "@/lib/hospitals";
 import { toast } from "sonner";
 
 interface HospitalFieldProps {
