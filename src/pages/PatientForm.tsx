@@ -69,7 +69,7 @@ const patientSchema = z.object({
 const PatientForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { isAdmin, isDentist, isDoctor } = useUserRole();
+  const { isAdmin, isDentist, isDoctor, loading: roleLoading } = useUserRole();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!id);
@@ -115,13 +115,13 @@ const PatientForm = () => {
   // - Não admin: o próprio usuário
   // - Admin: Dr. André Morais Alves como padrão
   useEffect(() => {
-    if (isEditMode || !user) return;
+    if (isEditMode || !user || roleLoading) return;
     if (!isAdmin) {
       setFormData(prev => prev.responsible_user_id ? prev : { ...prev, responsible_user_id: user.id });
     } else {
       setFormData(prev => prev.responsible_user_id ? prev : { ...prev, responsible_user_id: DEFAULT_RESPONSIBLE_DOCTOR_ID });
     }
-  }, [isEditMode, isAdmin, user]);
+  }, [isEditMode, isAdmin, user, roleLoading]);
 
   useEffect(() => {
     if (id) {

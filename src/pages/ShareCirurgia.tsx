@@ -121,7 +121,7 @@ export default function ShareCirurgia() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { professionals } = useProfessionals();
 
   // Lê o payload da query; se vier vazio (iOS PWA pode dropar a query),
@@ -158,13 +158,13 @@ export default function ShareCirurgia() {
 
   // Auto-set responsible: non-admin = self; admin = Dr. André Morais Alves por padrão
   useEffect(() => {
+    if (roleLoading) return;
     if (!isAdmin && user) {
       setResponsibleUserId(user.id);
     } else if (isAdmin && !responsibleUserId) {
-      const defaultDoc = professionals.find((p) => p.id === DEFAULT_DOCTOR_ID);
-      if (defaultDoc) setResponsibleUserId(DEFAULT_DOCTOR_ID);
+      setResponsibleUserId(DEFAULT_DOCTOR_ID);
     }
-  }, [isAdmin, user, professionals, responsibleUserId]);
+  }, [isAdmin, user, responsibleUserId, roleLoading]);
 
   async function handleParse(text: string) {
     if (!text.trim()) {
