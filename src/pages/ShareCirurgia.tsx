@@ -100,17 +100,6 @@ function toTitleCaseName(input: string): string {
     .join(" ");
 }
 
-const HOSPITAL_OPTIONS = [
-  "Hospital Brasília",
-  "Hospital Anchieta",
-  "Hospital Prontonorte",
-  "Hospital Santa Lúcia Norte",
-  "Hospital Mantevida",
-  "Hospital Ceuta",
-  "Hospital Alvorada",
-  "Hospital DF Star",
-];
-
 
 function toLocalDateTimeInput(iso: string | null): string {
   if (!iso) return "";
