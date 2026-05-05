@@ -63,7 +63,7 @@ export function HospitalField({
     return findSimilarHospital(value, hospitals);
   }, [value, isInList, hospitals]);
 
-  const trimmedSearch = search.trim();
+  const trimmedSearch = formatHospitalName(search);
   const showCreateOption =
     trimmedSearch.length > 0 &&
     !hospitals.some((h) => normalizeHospital(h) === normalizeHospital(trimmedSearch));
