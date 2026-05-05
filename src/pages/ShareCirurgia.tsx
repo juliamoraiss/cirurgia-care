@@ -386,13 +386,76 @@ export default function ShareCirurgia() {
               <Button variant="outline" onClick={() => navigate(-1)} className="flex-1">
                 Cancelar
               </Button>
-              <Button onClick={handleConfirm} disabled={saving} className="flex-1">
-                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Confirmar e agendar
+              <Button onClick={handleOpenPreview} disabled={saving} className="flex-1">
+                Revisar e agendar
               </Button>
             </div>
           </Card>
         )}
+
+        <AlertDialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar agendamento</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-md border p-3 space-y-1.5">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Paciente</span>
+                      <span className="font-medium text-right">
+                        {patientName} {isExistingPatient ? "(existente)" : "(novo)"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Procedimento</span>
+                      <span className="font-medium text-right">{procedure}</span>
+                    </div>
+                    {hospital && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Hospital</span>
+                        <span className="font-medium text-right">{hospital}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Data e hora</span>
+                      <span className="font-medium text-right">
+                        {surgeryDate ? new Date(surgeryDate).toLocaleString("pt-BR", {
+                          dateStyle: "full",
+                          timeStyle: "short",
+                        }) : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Médico</span>
+                      <span className="font-medium text-right">{doctorLabel}</span>
+                    </div>
+                  </div>
+
+                  {validationWarnings.length > 0 && (
+                    <div className="rounded-md border border-warning/40 bg-warning/10 p-3 space-y-1">
+                      {validationWarnings.map((w, i) => (
+                        <div key={i} className="flex gap-2">
+                          <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                          <span>{w}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={saving}>Voltar e editar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleConfirmSave(); }}
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Confirmar agendamento
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
