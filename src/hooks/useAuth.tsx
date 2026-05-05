@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { buildShareRedirectPath, peekPendingShareIntent } from "@/lib/shareIntent";
 
 interface AuthContextType {
   user: User | null;
