@@ -27,21 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   const getPostAuthRedirectPath = () => {
-    try {
-      const pending = sessionStorage.getItem("pending_share_surgery");
-      if (!pending) return "/";
-
-      const data = JSON.parse(pending) as { text?: string; title?: string; url?: string };
-      const sp = new URLSearchParams();
-      if (data.text) sp.set("text", data.text);
-      if (data.title) sp.set("title", data.title);
-      if (data.url) sp.set("url", data.url);
-
-      const query = sp.toString();
-      return query ? `/share-cirurgia?${query}` : "/share-cirurgia";
-    } catch {
-      return "/";
-    }
+    const pending = peekPendingShareIntent();
+    return pending ? buildShareRedirectPath(pending) : "/";
   };
 
   const checkApprovalStatus = async (userId: string) => {
