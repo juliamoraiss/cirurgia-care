@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
+import { buildShareIntentQuery, hasShareIntent, readShareIntentFromSearch } from "@/lib/shareIntent";
 
 function RedirectSchedule() {
   const { token } = useParams<{ token: string }>();
@@ -16,20 +17,18 @@ function RedirectSchedule() {
 // limpa por redirect de auth no iOS PWA).
 function HomeOrShareCapture({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  if (params.get("text") || params.get("title") || params.get("url")) {
-    return <Navigate to={`/share-cirurgia${location.search}`} replace />;
+  const incomingShare = readShareIntentFromSearch(location.search);
+  if (hasShareIntent(incomingShare)) {
+    const query = buildShareIntentQuery(incomingShare);
+    return <Navigate to={`/share-cirurgia${query ? `?${query}` : ""}`} replace />;
   }
   try {
     const pending = sessionStorage.getItem("pending_share_surgery");
     if (pending) {
       const data = JSON.parse(pending);
-      const sp = new URLSearchParams();
-      if (data.text) sp.set("text", data.text);
-      if (data.title) sp.set("title", data.title);
-      if (data.url) sp.set("url", data.url);
+      const query = buildShareIntentQuery(data);
       sessionStorage.removeItem("pending_share_surgery");
-      return <Navigate to={`/share-cirurgia?${sp.toString()}`} replace />;
+      return <Navigate to={`/share-cirurgia${query ? `?${query}` : ""}`} replace />;
     }
   } catch {
     /* ignore */
