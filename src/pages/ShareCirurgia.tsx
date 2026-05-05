@@ -234,7 +234,23 @@ export default function ShareCirurgia() {
       warnings.push("Horário fora do expediente típico (06h–23h). Confira se está correto.");
     }
     if (selectedPatientId === "new" && matches.length > 0) {
-      warnings.push("Existem pacientes com nome similar. Confirme que deseja criar um novo paciente.");
+      const top = matches[0];
+      if (top.score >= 0.85) {
+        warnings.push(`Existe um paciente muito parecido ("${top.name}"). Tem certeza que deseja criar um novo cadastro?`);
+      } else {
+        warnings.push("Existem pacientes com nome similar. Confirme que deseja criar um novo paciente.");
+      }
+    }
+    if (selectedPatientId !== "new") {
+      const sel = matches.find((m) => m.id === selectedPatientId);
+      if (sel?.surgery_date) {
+        const existing = new Date(sel.surgery_date).getTime();
+        if (Math.abs(existing - surgery.getTime()) < 60_000) {
+          warnings.push("Este paciente já tem cirurgia exatamente nesta data/hora. Verifique se não é duplicidade.");
+        } else {
+          warnings.push(`Substituirá a cirurgia atual (${new Date(sel.surgery_date).toLocaleString("pt-BR")}).`);
+        }
+      }
     }
     setValidationWarnings(warnings);
     setPreviewOpen(true);
