@@ -172,7 +172,7 @@ const Dashboard = () => {
         setAllPatients(allPatientsData || []);
         setScheduledPatients(scheduledData);
         setCompletedPatients(completedData);
-        setPendingPatients(pendingData || []);
+        setPendingPatients((pendingData || []).filter(p => !/troca de c[âa]nula/i.test(p.procedure || "")));
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       } finally {
