@@ -27,7 +27,13 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const redirectFromQuery = new URLSearchParams(location.search).get("redirect");
-  const redirectPath = redirectFromQuery || getPostAuthRedirectPath();
+  const shareRedirect = getPostAuthRedirectPath();
+  // Sempre que houver um share pendente, ele tem prioridade sobre o redirect da query
+  // (no iOS PWA o redirect costuma vir como "/" porque o app abre em start_url).
+  const hasPendingShare = shareRedirect.startsWith("/share-cirurgia");
+  const redirectPath = hasPendingShare
+    ? shareRedirect
+    : (redirectFromQuery && redirectFromQuery !== "/" ? redirectFromQuery : shareRedirect);
   
   // Login form state
   const [username, setUsername] = useState("");
