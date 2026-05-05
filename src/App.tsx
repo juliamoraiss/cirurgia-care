@@ -4,7 +4,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
-import { buildShareIntentQuery, hasShareIntent, readShareIntentFromSearch } from "@/lib/shareIntent";
+import {
+  buildShareIntentQuery,
+  buildShareRedirectPath,
+  hasShareIntent,
+  peekPendingShareIntent,
+  readShareIntentFromSearch,
+} from "@/lib/shareIntent";
 
 function RedirectSchedule() {
   const { token } = useParams<{ token: string }>();
@@ -14,24 +20,17 @@ function RedirectSchedule() {
 // Captura compartilhamentos vindos do iOS Shortcut / share_target
 // que caem em "/" com ?text=, ?title= ou ?url= e leva para /share-cirurgia.
 // Também consome um intent salvo em sessionStorage (caso a URL tenha sido
-// limpa por redirect de auth no iOS PWA).
+// limpa por redirect de auth no iOS PWA). NÃO limpa o storage aqui — quem
+// limpa é a própria página /share-cirurgia depois de ler o payload.
 function HomeOrShareCapture({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const incomingShare = readShareIntentFromSearch(location.search);
   if (hasShareIntent(incomingShare)) {
-    const query = buildShareIntentQuery(incomingShare);
-    return <Navigate to={`/share-cirurgia${query ? `?${query}` : ""}`} replace />;
+    return <Navigate to={`/share-cirurgia?${buildShareIntentQuery(incomingShare)}`} replace />;
   }
-  try {
-    const pending = sessionStorage.getItem("pending_share_surgery");
-    if (pending) {
-      const data = JSON.parse(pending);
-      const query = buildShareIntentQuery(data);
-      sessionStorage.removeItem("pending_share_surgery");
-      return <Navigate to={`/share-cirurgia${query ? `?${query}` : ""}`} replace />;
-    }
-  } catch {
-    /* ignore */
+  const pending = peekPendingShareIntent();
+  if (pending) {
+    return <Navigate to={buildShareRedirectPath(pending)} replace />;
   }
   return <>{children}</>;
 }
