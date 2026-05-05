@@ -24,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
+  const [approvalChecked, setApprovalChecked] = useState(false);
   const initializedRef = useRef(false);
   const approvalRequestRef = useRef(0);
   const navigate = useNavigate();
@@ -43,12 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const approved = !error && data === true;
       if (requestId === approvalRequestRef.current) {
         setIsApproved(approved);
+        setApprovalChecked(true);
       }
 
       return approved;
     } catch {
       if (requestId === approvalRequestRef.current) {
         setIsApproved(false);
+        setApprovalChecked(true);
       }
       return false;
     }
@@ -64,11 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setSession(session);
         setUser(session?.user ?? null);
-        // Marca loading IMEDIATAMENTE (sync) para evitar uma janela em que
-        // user está setado mas isApproved ainda é o valor antigo (false),
-        // o que faria o ProtectedRoute redirecionar para /pending-approval.
+        // Marca loading IMEDIATAMENTE (sync) e invalida o approvalChecked
+        // para evitar uma janela em que user está setado mas isApproved ainda
+        // é o valor antigo (false), o que faria o ProtectedRoute redirecionar
+        // para /pending-approval.
         if (session?.user) {
           setLoading(true);
+          setApprovalChecked(false);
         }
 
         void (async () => {
@@ -77,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             approvalRequestRef.current += 1;
             setIsApproved(false);
+            setApprovalChecked(true);
           }
 
           if (isMounted && initializedRef.current) {
@@ -92,11 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         await checkApprovalStatus(session.user.id);
       } else {
         setIsApproved(false);
+        setApprovalChecked(true);
       }
 
       initializedRef.current = true;
