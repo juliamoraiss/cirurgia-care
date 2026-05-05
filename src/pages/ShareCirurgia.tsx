@@ -82,6 +82,24 @@ function nameSimilarity(a: string, b: string): number {
   return Math.max(containment * 0.9, jaccard);
 }
 
+const LOWER_PARTICLES = new Set(["de", "da", "do", "das", "dos", "e", "di", "del", "della", "van", "von", "la", "le"]);
+
+function toTitleCaseName(input: string): string {
+  if (!input) return "";
+  return input
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((word, idx) => {
+      const lower = word.toLowerCase();
+      if (idx > 0 && LOWER_PARTICLES.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
+const DEFAULT_DOCTOR_ID = "4537559e-87e3-4656-8cf0-aa109714b6a8";
+
 function toLocalDateTimeInput(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -136,10 +154,15 @@ export default function ShareCirurgia() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-set responsible to self for non-admins
+  // Auto-set responsible: non-admin = self; admin = Dr. André Morais Alves por padrão
   useEffect(() => {
-    if (!isAdmin && user) setResponsibleUserId(user.id);
-  }, [isAdmin, user]);
+    if (!isAdmin && user) {
+      setResponsibleUserId(user.id);
+    } else if (isAdmin && !responsibleUserId) {
+      const defaultDoc = professionals.find((p) => p.id === DEFAULT_DOCTOR_ID);
+      if (defaultDoc) setResponsibleUserId(DEFAULT_DOCTOR_ID);
+    }
+  }, [isAdmin, user, professionals, responsibleUserId]);
 
   async function handleParse(text: string) {
     if (!text.trim()) {
@@ -155,8 +178,9 @@ export default function ShareCirurgia() {
       if (!data?.success) throw new Error(data?.error || "Erro ao analisar");
 
       const ex: ExtractedData = data.data;
+      if (ex.patient_name) ex.patient_name = toTitleCaseName(ex.patient_name);
       setExtracted(ex);
-      setPatientName(ex.patient_name || "");
+      setPatientName(toTitleCaseName(ex.patient_name || ""));
       // Default procedure for WhatsApp imports is Rinoplastia
       setProcedure(ex.procedure || "Rinoplastia");
       setHospital(ex.hospital || "");
@@ -302,7 +326,7 @@ export default function ShareCirurgia() {
         const { data, error } = await supabase
           .from("patients")
           .insert([{
-            name: patientName.trim(),
+            name: toTitleCaseName(patientName),
             procedure: procedure.trim(),
             hospital: hospital.trim() || null,
             surgery_date: utcSurgery,
@@ -331,7 +355,7 @@ export default function ShareCirurgia() {
           {
             body: {
               action: calAction,
-              patient_name: patientName.trim(),
+              patient_name: toTitleCaseName(patientName),
               procedure: procedure.trim(),
               hospital: hospital.trim() || null,
               surgery_date: utcSurgery,
