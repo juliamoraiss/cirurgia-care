@@ -14,9 +14,13 @@ if (!SERVICE_KEY) {
   console.warn("[collision_test] No service role key in env — skipping integration tests.");
 }
 
-const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+const admin = SERVICE_KEY
+  ? createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : (null as any);
+
+const skip = !SERVICE_KEY;
 
 async function pickUserId(): Promise<string> {
   const { data, error } = await admin
