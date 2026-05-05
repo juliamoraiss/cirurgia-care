@@ -52,7 +52,7 @@ import SurgeryAvailability from "./pages/SurgeryAvailability";
 import NotFound from "./pages/NotFound";
 import PublicSchedule from "./pages/PublicSchedule";
 import ShareCirurgia from "./pages/ShareCirurgia";
-import AtalhoIOS from "./pages/AtalhoIOS";
+
 
 const queryClient = new QueryClient();
 
@@ -241,14 +241,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/atalho-ios"
-        element={
-          <ProtectedRoute>
-            <AtalhoIOS />
-          </ProtectedRoute>
-        }
-      />
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
