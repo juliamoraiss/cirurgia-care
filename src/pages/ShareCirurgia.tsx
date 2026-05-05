@@ -109,7 +109,7 @@ const HOSPITAL_OPTIONS = [
   "Hospital DF Star",
 ];
 
-const DEFAULT_DOCTOR_ID = "4537559e-87e3-4656-8cf0-aa109714b6a8";
+import { DEFAULT_RESPONSIBLE_DOCTOR_ID as DEFAULT_DOCTOR_ID } from "@/lib/defaults";
 
 function toLocalDateTimeInput(iso: string | null): string {
   if (!iso) return "";
