@@ -71,6 +71,30 @@ export type Database = {
         }
         Relationships: []
       }
+      hospitals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          name_normalized: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          name_normalized: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          name_normalized?: string
+        }
+        Relationships: []
+      }
       oncology_timeline: {
         Row: {
           created_at: string
