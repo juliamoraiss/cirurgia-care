@@ -38,6 +38,7 @@ import {
   readShareIntentFromSearch,
 } from "@/lib/shareIntent";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID as DEFAULT_DOCTOR_ID } from "@/lib/defaults";
+import { HospitalField } from "@/components/HospitalField";
 
 type Confidence = "high" | "medium" | "low" | "none";
 
