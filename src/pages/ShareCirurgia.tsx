@@ -98,6 +98,17 @@ function toTitleCaseName(input: string): string {
     .join(" ");
 }
 
+const HOSPITAL_OPTIONS = [
+  "Hospital Brasília",
+  "Hospital Anchieta",
+  "Hospital Prontonorte",
+  "Hospital Santa Lúcia Norte",
+  "Hospital Mantevida",
+  "Hospital Ceuta",
+  "Hospital Alvorada",
+  "Hospital DF Star",
+];
+
 const DEFAULT_DOCTOR_ID = "4537559e-87e3-4656-8cf0-aa109714b6a8";
 
 function toLocalDateTimeInput(iso: string | null): string {
