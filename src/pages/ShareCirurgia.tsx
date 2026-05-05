@@ -147,25 +147,12 @@ export default function ShareCirurgia() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
-  // Auto-parse: se veio texto via share, usa direto; caso contrário,
-  // tenta ler da área de transferência (fluxo iOS Shortcut: copia → abre PWA).
+  // Auto-parse if text was shared, e limpa o storage assim que consumimos.
   useEffect(() => {
-    (async () => {
-      if (sharedText && sharedText.trim().length > 5) {
-        handleParse(sharedText);
-      } else if (navigator.clipboard?.readText) {
-        try {
-          const clip = await navigator.clipboard.readText();
-          if (clip && clip.trim().length > 5) {
-            setRawText(clip);
-            handleParse(clip);
-          }
-        } catch {
-          /* permissão negada / não disponível — ignora silenciosamente */
-        }
-      }
-      clearPendingShareIntent();
-    })();
+    if (sharedText && sharedText.trim().length > 5) {
+      handleParse(sharedText);
+    }
+    clearPendingShareIntent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

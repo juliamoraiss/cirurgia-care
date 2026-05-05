@@ -53,7 +53,6 @@ import NotFound from "./pages/NotFound";
 import PublicSchedule from "./pages/PublicSchedule";
 import ShareCirurgia from "./pages/ShareCirurgia";
 
-
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -241,7 +240,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
