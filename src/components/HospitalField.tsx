@@ -88,7 +88,20 @@ export function HospitalField({
         .select("name")
         .single();
       if (error) {
-        // Conflito de nome único: refaz a leitura e seleciona o existente
+        const msg = (error as any).message || "";
+        // Servidor bloqueou: extrai o nome existente sugerido pelo trigger
+        const dup = msg.match(/HOSPITAL_(?:DUPLICATE|SIMILAR):[^"]*"([^"]+)"/);
+        if (dup) {
+          await loadHospitals();
+          onChange(dup[1]);
+          toast.warning(
+            `Já existe um hospital parecido: "${dup[1]}". Usando o existente para evitar duplicidade.`,
+          );
+          setSearch("");
+          setOpen(false);
+          return;
+        }
+        // Conflito de nome único clássico
         if ((error as any).code === "23505") {
           await loadHospitals();
           onChange(trimmed);
