@@ -14,6 +14,7 @@ interface AuthContextType {
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, userType: "medico" | "dentista") => Promise<void>;
   getPostAuthRedirectPath: () => string;
+  recheckApproval: (userId: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
@@ -214,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isApproved, approvalChecked, signIn, signUp, getPostAuthRedirectPath, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isApproved, approvalChecked, signIn, signUp, getPostAuthRedirectPath, recheckApproval: checkApprovalStatus, signOut }}>
       {children}
     </AuthContext.Provider>
   );
