@@ -69,20 +69,22 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Validate file type
-          const allowedTypes = [
-            "application/pdf",
-            "image/jpeg", "image/jpg", "image/png", "image/webp",
-            "application/dicom",
-          ];
-          
-          const isAllowed = allowedTypes.some(t => file.type.startsWith(t)) || 
-            file.name.match(/\.(pdf|jpg|jpeg|png|webp|dcm)$/i);
-
-          if (!isAllowed) {
+          // Validate file type by extension AND derive a safe MIME type server-side
+          // (do not trust client-provided Content-Type to prevent stored XSS via MIME spoofing)
+          const extMatch = file.name.toLowerCase().match(/\.(pdf|jpg|jpeg|png|webp|dcm)$/i);
+          if (!extMatch) {
             errors.push(`${file.name}: formato não suportado`);
             continue;
           }
+          const extToMime: Record<string, string> = {
+            pdf: "application/pdf",
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            png: "image/png",
+            webp: "image/webp",
+            dcm: "application/dicom",
+          };
+          const safeContentType = extToMime[extMatch[1].toLowerCase()] || "application/octet-stream";
 
           // Check if file with same name already exists for this patient
           const { data: existingFile } = await supabase
@@ -106,7 +108,7 @@ Deno.serve(async (req) => {
           const { error: uploadError } = await supabase.storage
             .from("patient-files")
             .upload(filePath, arrayBuffer, {
-              contentType: file.type,
+              contentType: safeContentType,
               upsert: false,
             });
 

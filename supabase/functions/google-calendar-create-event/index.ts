@@ -90,30 +90,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    const userId = authenticateRequest(req);
-    if (!userId) {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify user exists
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const authHeader = req.headers.get("Authorization")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const verifyResponse = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?select=id&id=eq.${encodeURIComponent(userId)}&limit=1`,
-      { headers: { apikey: supabaseAnonKey, Authorization: authHeader } }
-    );
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isServiceRole = bearer === serviceRoleKey;
 
-    if (verifyResponse.status === 401 || verifyResponse.status === 403) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let userId: string;
+    if (isServiceRole) {
+      // Trusted server-to-server call (e.g. from public-schedule edge function)
+      userId = "__service_role__";
+    } else {
+      const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData, error: userError } = await supabaseAuthClient.auth.getUser();
+      if (userError || !userData?.user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      userId = userData.user.id;
     }
+
 
     const body = await req.json();
     const {
@@ -135,20 +144,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Only admins can act on another user's calendar
+    // Only admins (or trusted service role) can act on another user's calendar
     let calendarUserId = userId;
     if (target_user_id && target_user_id !== userId) {
-      const { data: isAdmin } = await supabaseService.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-      if (!isAdmin) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (!isServiceRole) {
+        const { data: isAdmin } = await supabaseService.rpc("has_role", {
+          _user_id: userId,
+          _role: "admin",
+        });
+        if (!isAdmin) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
       calendarUserId = target_user_id;
+    } else if (isServiceRole && !target_user_id) {
+      return new Response(
+        JSON.stringify({ error: "target_user_id required for service role calls" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Get Google Calendar connection
