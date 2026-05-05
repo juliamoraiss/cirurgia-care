@@ -934,7 +934,7 @@ const PatientForm = () => {
                 />
 
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gênero</Label>
+                  <Label htmlFor="gender">Gênero (opcional)</Label>
                   <Select
                     value={formData.gender}
                     onValueChange={(value) => handleChange("gender", value)}
