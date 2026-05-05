@@ -26,6 +26,7 @@ import PaidTraffic from "./pages/PaidTraffic";
 import SurgeryAvailability from "./pages/SurgeryAvailability";
 import NotFound from "./pages/NotFound";
 import PublicSchedule from "./pages/PublicSchedule";
+import ShareCirurgia from "./pages/ShareCirurgia";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,14 @@ function AppRoutes() {
       />
       <Route path="/agendar/:token" element={<PublicSchedule />} />
       <Route path="/schedule/:token" element={<RedirectSchedule />} />
+      <Route
+        path="/share-cirurgia"
+        element={
+          <ProtectedRoute>
+            <ShareCirurgia />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
