@@ -150,6 +150,24 @@ export function CalendarDayView({
       });
     }
 
+    // Inclui cirurgias que ficaram FORA dos slots de disponibilidade configurados,
+    // para que sempre apareçam na visão do dia.
+    daySurgeries.forEach(s => {
+      const surgeryStart = new Date(s.surgery_date);
+      const alreadyShown = slots.some(
+        slot => slot.type === "booked" && slot.surgery?.id === s.id,
+      );
+      if (!alreadyShown) {
+        const surgeryEnd = addMinutes(surgeryStart, 120);
+        slots.push({
+          time: surgeryStart,
+          endTime: surgeryEnd,
+          type: "booked",
+          surgery: s,
+        });
+      }
+    });
+
     return slots.sort((a, b) => a.time.getTime() - b.time.getTime());
   }, [date, dayOfWeek, availabilitySlots, daySurgeries, busySlots, calendarConnected, googleBusyForDay]);
 
