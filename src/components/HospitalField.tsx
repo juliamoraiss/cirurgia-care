@@ -69,7 +69,7 @@ export function HospitalField({
     !hospitals.some((h) => normalizeHospital(h) === normalizeHospital(trimmedSearch));
 
   async function handleCreate(name: string) {
-    const trimmed = name.trim();
+    const trimmed = formatHospitalName(name);
     if (!trimmed || !user) return;
     // Antes de criar, checa se há um existente parecido — pede confirmação implícita usando o existente.
     const similar = findSimilarHospital(trimmed, hospitals);
