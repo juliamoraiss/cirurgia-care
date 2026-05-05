@@ -241,14 +241,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/atalho-ios"
-        element={
-          <ProtectedRoute>
-            <AtalhoIOS />
-          </ProtectedRoute>
-        }
-      />
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
