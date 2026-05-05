@@ -674,13 +674,18 @@ const PatientForm = () => {
         }
       }
       
+      // Garante que o hospital esteja cadastrado no banco antes de associar ao paciente
+      const hospitalFinal = validatedData.hospital
+        ? await ensureHospitalRegistered(validatedData.hospital, user?.id)
+        : "";
+
       const patientData = {
         name: validatedData.name,
         phone: validatedData.phone || null,
         birth_date: validatedData.birth_date || null,
         gender: validatedData.gender || null,
         procedure: validatedData.procedure,
-        hospital: validatedData.hospital || null,
+        hospital: hospitalFinal || null,
         insurance: validatedData.insurance || null,
         status: validatedData.status as any,
         surgery_date: utcSurgeryDate,
