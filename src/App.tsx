@@ -3,11 +3,22 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 
 function RedirectSchedule() {
   const { token } = useParams<{ token: string }>();
   return <Navigate to={`/agendar/${token}`} replace />;
+}
+
+// Captura compartilhamentos vindos do iOS Shortcut / share_target
+// que caem em "/" com ?text=, ?title= ou ?url= e leva para /share-cirurgia
+function HomeOrShareCapture({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  if (params.get("text") || params.get("title") || params.get("url")) {
+    return <Navigate to={`/share-cirurgia${location.search}`} replace />;
+  }
+  return <>{children}</>;
 }
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -63,9 +74,11 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
+          <HomeOrShareCapture>
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          </HomeOrShareCapture>
         }
       />
       <Route
