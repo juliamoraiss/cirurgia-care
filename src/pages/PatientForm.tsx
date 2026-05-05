@@ -69,7 +69,7 @@ const patientSchema = z.object({
 const PatientForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { isAdmin, isDentist, isDoctor } = useUserRole();
+  const { isAdmin, isDentist, isDoctor, loading: roleLoading } = useUserRole();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!id);
