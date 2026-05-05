@@ -3,14 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { AlertCircle } from "lucide-react";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { AlertCircle, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   HOSPITAL_OPTIONS,
   findSimilarHospital,
@@ -26,10 +29,9 @@ interface HospitalFieldProps {
 }
 
 /**
- * Campo de Hospital com autocomplete + verificação anti-duplicado.
- * - Mostra os hospitais cadastrados (lista canônica + nomes únicos já usados em pacientes).
- * - Permite "Outro" para digitar um nome novo.
- * - Se o nome digitado for muito parecido com algum existente, sugere usar o existente.
+ * Campo de Hospital com autocomplete (combobox) + verificação anti-duplicado.
+ * Carrega hospitais já cadastrados em `patients` e mistura com a lista canônica.
+ * Permite digitar um nome novo se nenhum item for selecionado.
  */
 export function HospitalField({
   value,
@@ -39,8 +41,9 @@ export function HospitalField({
   error,
 }: HospitalFieldProps) {
   const [extra, setExtra] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
-  // Carrega hospitais únicos já usados em pacientes (para considerar como "existentes")
   useEffect(() => {
     let active = true;
     (async () => {
@@ -48,7 +51,7 @@ export function HospitalField({
         .from("patients")
         .select("hospital")
         .not("hospital", "is", null)
-        .limit(1000);
+        .limit(2000);
       if (!active || !data) return;
       const set = new Set<string>();
       for (const row of data as { hospital: string | null }[]) {
@@ -61,7 +64,6 @@ export function HospitalField({
     };
   }, []);
 
-  // Lista combinada e dedupe-ada (canônicos + cadastrados), preservando o canônico quando há colisão de normalização.
   const allHospitals = useMemo(() => {
     const seen = new Map<string, string>();
     for (const h of HOSPITAL_OPTIONS) seen.set(normalizeHospital(h), h);
@@ -73,7 +75,7 @@ export function HospitalField({
   }, [extra]);
 
   const isInList = allHospitals.some(
-    (h) => h.toLowerCase() === (value || "").toLowerCase(),
+    (h) => normalizeHospital(h) === normalizeHospital(value),
   );
 
   const suggestion = useMemo(() => {
@@ -81,52 +83,104 @@ export function HospitalField({
     return findSimilarHospital(value, allHospitals);
   }, [value, isInList, allHospitals]);
 
+  const trimmedSearch = search.trim();
+  const showCreateOption =
+    trimmedSearch.length > 0 &&
+    !allHospitals.some((h) => normalizeHospital(h) === normalizeHospital(trimmedSearch));
+
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="hospital-field">
-        {label}
-        {required ? " *" : ""}
-      </Label>
-      <Select
-        value={isInList ? value : value ? "__other__" : ""}
-        onValueChange={(v) => {
-          if (v === "__other__") {
-            // muda para modo livre, preserva o que já está digitado se ainda não está na lista
-            onChange(isInList ? "" : value);
-          } else {
-            onChange(v);
-          }
-        }}
-      >
-        <SelectTrigger className={error ? "border-destructive" : ""}>
-          <SelectValue placeholder="Selecione o hospital" />
-        </SelectTrigger>
-        <SelectContent>
-          {allHospitals.map((h) => (
-            <SelectItem key={h} value={h}>
-              {h}
-            </SelectItem>
-          ))}
-          <SelectItem value="__other__">Outro (digitar nome)</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {!isInList && (
-        <Input
-          id="hospital-field"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Digite o nome do hospital"
-          className={error ? "border-destructive" : ""}
-        />
+      {label && (
+        <Label>
+          {label}
+          {required ? " *" : ""}
+        </Label>
       )}
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between font-normal",
+              !value && "text-muted-foreground",
+              error && "border-destructive",
+            )}
+          >
+            <span className="truncate">{value || "Buscar hospital..."}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="p-0 w-[--radix-popover-trigger-width]"
+          align="start"
+        >
+          <Command
+            filter={(itemValue, searchTerm) => {
+              const a = normalizeHospital(itemValue);
+              const b = normalizeHospital(searchTerm);
+              if (!b) return 1;
+              return a.includes(b) ? 1 : 0;
+            }}
+          >
+            <CommandInput
+              placeholder="Digite para buscar..."
+              value={search}
+              onValueChange={setSearch}
+            />
+            <CommandList>
+              <CommandEmpty>Nenhum hospital encontrado.</CommandEmpty>
+              <CommandGroup heading="Hospitais cadastrados">
+                {allHospitals.map((h) => (
+                  <CommandItem
+                    key={h}
+                    value={h}
+                    onSelect={() => {
+                      onChange(h);
+                      setSearch("");
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        normalizeHospital(value) === normalizeHospital(h)
+                          ? "opacity-100"
+                          : "opacity-0",
+                      )}
+                    />
+                    {h}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              {showCreateOption && (
+                <CommandGroup heading="Novo">
+                  <CommandItem
+                    value={`__create__${trimmedSearch}`}
+                    onSelect={() => {
+                      onChange(trimmedSearch);
+                      setSearch("");
+                      setOpen(false);
+                    }}
+                  >
+                    + Usar "{trimmedSearch}" como novo hospital
+                  </CommandItem>
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
 
       {suggestion && (
         <div className="flex gap-2 p-2 bg-warning/10 border border-warning/30 rounded-md text-xs">
           <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
           <div className="flex-1 space-y-1.5">
             <p>
-              Já existe um hospital cadastrado com nome parecido:{" "}
+              Já existe um hospital cadastrado parecido:{" "}
               <strong>{suggestion}</strong>. Para evitar duplicidade, prefira usá-lo.
             </p>
             <Button
