@@ -347,7 +347,13 @@ export default function ShareCirurgia() {
       navigate(`/patients/${savedPatientId}`);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Erro ao salvar");
+      const raw = err?.message || "";
+      if (raw.includes("SURGERY_COLLISION")) {
+        const friendly = raw.replace(/.*SURGERY_COLLISION:\s*/, "");
+        toast.error(friendly || "Conflito: já existe cirurgia próxima para este paciente.");
+      } else {
+        toast.error(raw || "Erro ao salvar");
+      }
     } finally {
       setSaving(false);
       setPreviewOpen(false);
