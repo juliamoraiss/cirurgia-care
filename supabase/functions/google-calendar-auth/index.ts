@@ -30,54 +30,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const tokenParts = token.split(".");
-    if (tokenParts.length !== 3) {
+    const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: userData, error: userError } = await supabaseAuthClient.auth.getUser();
+    if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    let userId: string | null = null;
-    try {
-      const payload = JSON.parse(atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
-      userId = typeof payload?.sub === "string" ? payload.sub : null;
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!userId) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const verifyResponse = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?select=id&id=eq.${encodeURIComponent(userId)}&limit=1`,
-      {
-        headers: {
-          apikey: supabaseAnonKey,
-          Authorization: authHeader,
-        },
-      }
-    );
-
-    if (verifyResponse.status === 401 || verifyResponse.status === 403) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const user = { id: userId };
+    const user = { id: userData.user.id };
 
     const payload = await req.json().catch(() => ({}));
     const { action, code, redirect_uri, target_user_id } = payload;

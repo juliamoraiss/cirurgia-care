@@ -90,30 +90,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    const userId = authenticateRequest(req);
-    if (!userId) {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify user exists
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const authHeader = req.headers.get("Authorization")!;
 
-    const verifyResponse = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?select=id&id=eq.${encodeURIComponent(userId)}&limit=1`,
-      { headers: { apikey: supabaseAnonKey, Authorization: authHeader } }
-    );
+    const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
-    if (verifyResponse.status === 401 || verifyResponse.status === 403) {
+    const { data: userData, error: userError } = await supabaseAuthClient.auth.getUser();
+    if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const userId = userData.user.id;
 
     const body = await req.json();
     const {
