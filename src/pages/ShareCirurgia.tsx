@@ -173,6 +173,7 @@ export default function ShareCirurgia() {
       if (!data?.success) throw new Error(data?.error || "Erro ao analisar");
 
       const ex: ExtractedData = data.data;
+      if (ex.patient_name) ex.patient_name = toTitleCaseName(ex.patient_name);
       setExtracted(ex);
       setPatientName(toTitleCaseName(ex.patient_name || ""));
       // Default procedure for WhatsApp imports is Rinoplastia
