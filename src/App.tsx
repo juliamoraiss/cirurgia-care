@@ -56,10 +56,26 @@ import ShareCirurgia from "./pages/ShareCirurgia";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isApproved } = useAuth();
+  const { user, loading, isApproved, approvalChecked } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Persist any incoming share intent IMMEDIATELY so transient auth redirects
+  // (auth flicker, /pending-approval bounce, iOS PWA query-strip) don't lose it.
+  React.useEffect(() => {
+    const incoming = readShareIntentFromSearch(location.search);
+    if (hasShareIntent(incoming)) {
+      try {
+        sessionStorage.setItem(
+          "pending_share_surgery",
+          JSON.stringify(incoming),
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [location.search]);
+
+  if (loading || (user && !approvalChecked)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
