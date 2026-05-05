@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/command";
 import { AlertCircle, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { findSimilarHospital, normalizeHospital } from "@/lib/hospitals";
+import { findSimilarHospital, formatHospitalName, normalizeHospital } from "@/lib/hospitals";
 import { toast } from "sonner";
 
 interface HospitalFieldProps {
@@ -63,13 +63,13 @@ export function HospitalField({
     return findSimilarHospital(value, hospitals);
   }, [value, isInList, hospitals]);
 
-  const trimmedSearch = search.trim();
+  const trimmedSearch = formatHospitalName(search);
   const showCreateOption =
     trimmedSearch.length > 0 &&
     !hospitals.some((h) => normalizeHospital(h) === normalizeHospital(trimmedSearch));
 
   async function handleCreate(name: string) {
-    const trimmed = name.trim();
+    const trimmed = formatHospitalName(name);
     if (!trimmed || !user) return;
     // Antes de criar, checa se há um existente parecido — pede confirmação implícita usando o existente.
     const similar = findSimilarHospital(trimmed, hospitals);
