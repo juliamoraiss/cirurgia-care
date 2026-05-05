@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { getShareIntentRawText, readShareIntentFromSearch } from "@/lib/shareIntent";
 
 type Confidence = "high" | "medium" | "low" | "none";
 
@@ -97,7 +98,8 @@ export default function ShareCirurgia() {
   const { isAdmin } = useUserRole();
   const { professionals } = useProfessionals();
 
-  const sharedText = searchParams.get("text") || searchParams.get("title") || "";
+  const sharedPayload = readShareIntentFromSearch(`?${searchParams.toString()}`);
+  const sharedText = getShareIntentRawText(sharedPayload);
 
   const [rawText, setRawText] = useState(sharedText);
   const [parsing, setParsing] = useState(false);
