@@ -12,6 +12,7 @@ import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
 import { useUserRole } from "@/hooks/useUserRole";
 import { capitalizeFirst } from "@/lib/utils";
+import { safeWindowOpen } from "@/lib/urlSecurity";
 
 interface Patient {
   id: string;
