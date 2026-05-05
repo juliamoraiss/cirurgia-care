@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
   const initializedRef = useRef(false);
+  const approvalRequestRef = useRef(0);
   const navigate = useNavigate();
 
   const getPostAuthRedirectPath = () => {
@@ -44,11 +45,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const checkApprovalStatus = async (userId: string) => {
-    const { data, error } = await supabase
-      .rpc('is_user_approved', { _user_id: userId });
-    
-    if (!error) {
-      setIsApproved(data === true);
+    const requestId = ++approvalRequestRef.current;
+
+    try {
+      const { data, error } = await supabase
+        .rpc('is_user_approved', { _user_id: userId });
+
+      const approved = !error && data === true;
+      if (requestId === approvalRequestRef.current) {
+        setIsApproved(approved);
+      }
+
+      return approved;
+    } catch {
+      if (requestId === approvalRequestRef.current) {
+        setIsApproved(false);
+      }
+      return false;
     }
   };
 
@@ -62,19 +75,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer approval check to avoid blocking
-          setTimeout(() => {
-            checkApprovalStatus(session.user.id);
-          }, 0);
-        } else {
-          setIsApproved(false);
-        }
 
-        if (initializedRef.current) {
-          setLoading(false);
-        }
+        void (async () => {
+          if (session?.user) {
+            setLoading(true);
+            await checkApprovalStatus(session.user.id);
+          } else {
+            approvalRequestRef.current += 1;
+            setIsApproved(false);
+          }
+
+          if (isMounted && initializedRef.current) {
+            setLoading(false);
+          }
+        })();
       }
     );
 
