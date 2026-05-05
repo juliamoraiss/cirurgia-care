@@ -48,6 +48,7 @@ import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientFormSteps } from "@/components/PatientFormSteps";
 import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
 import { ProfessionalSelect } from "@/components/ProfessionalSelect";
+import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
 import InputMask from "react-input-mask";
 
 // Validation schema with enhanced security
