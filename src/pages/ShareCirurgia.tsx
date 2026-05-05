@@ -98,6 +98,17 @@ function toTitleCaseName(input: string): string {
     .join(" ");
 }
 
+const HOSPITAL_OPTIONS = [
+  "Hospital Brasília",
+  "Hospital Anchieta",
+  "Hospital Prontonorte",
+  "Hospital Santa Lúcia Norte",
+  "Hospital Mantevida",
+  "Hospital Ceuta",
+  "Hospital Alvorada",
+  "Hospital DF Star",
+];
+
 const DEFAULT_DOCTOR_ID = "4537559e-87e3-4656-8cf0-aa109714b6a8";
 
 function toLocalDateTimeInput(iso: string | null): string {
@@ -530,7 +541,34 @@ export default function ShareCirurgia() {
                 <Label htmlFor="hospital">Hospital</Label>
                 {conf && <ConfidenceBadge level={conf.hospital} />}
               </div>
-              <Input id="hospital" value={hospital} onChange={(e) => setHospital(e.target.value)} />
+              <Select
+                value={HOSPITAL_OPTIONS.includes(hospital) ? hospital : (hospital ? "__other__" : "")}
+                onValueChange={(v) => {
+                  if (v === "__other__") {
+                    setHospital((prev) => HOSPITAL_OPTIONS.includes(prev) ? "" : prev);
+                  } else {
+                    setHospital(v);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o hospital" />
+                </SelectTrigger>
+                <SelectContent>
+                  {HOSPITAL_OPTIONS.map((h) => (
+                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                  ))}
+                  <SelectItem value="__other__">Outro (digitar nome)</SelectItem>
+                </SelectContent>
+              </Select>
+              {!HOSPITAL_OPTIONS.includes(hospital) && (
+                <Input
+                  id="hospital"
+                  value={hospital}
+                  onChange={(e) => setHospital(e.target.value)}
+                  placeholder="Digite o nome do hospital"
+                />
+              )}
             </div>
 
             <div className="space-y-1.5">
