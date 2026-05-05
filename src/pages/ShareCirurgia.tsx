@@ -154,10 +154,15 @@ export default function ShareCirurgia() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-set responsible to self for non-admins
+  // Auto-set responsible: non-admin = self; admin = Dr. André Morais Alves por padrão
   useEffect(() => {
-    if (!isAdmin && user) setResponsibleUserId(user.id);
-  }, [isAdmin, user]);
+    if (!isAdmin && user) {
+      setResponsibleUserId(user.id);
+    } else if (isAdmin && !responsibleUserId) {
+      const defaultDoc = professionals.find((p) => p.id === DEFAULT_DOCTOR_ID);
+      if (defaultDoc) setResponsibleUserId(DEFAULT_DOCTOR_ID);
+    }
+  }, [isAdmin, user, professionals, responsibleUserId]);
 
   async function handleParse(text: string) {
     if (!text.trim()) {
