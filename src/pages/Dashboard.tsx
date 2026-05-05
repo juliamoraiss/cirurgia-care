@@ -35,6 +35,7 @@ interface Patient {
   hospital: string | null;
   status?: string;
   responsible_user_id?: string;
+  created_at?: string;
 }
 interface SystemActivity {
   id: string;
