@@ -136,7 +136,7 @@ const Dashboard = () => {
         const {
           data: pendingData,
           count: pendingAuthorization
-        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, responsible_user_id", {
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, responsible_user_id, created_at", {
           count: "exact"
         }).eq("status", "awaiting_authorization");
 
