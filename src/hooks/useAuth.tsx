@@ -215,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isApproved, approvalChecked, signIn, signUp, getPostAuthRedirectPath, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isApproved, approvalChecked, signIn, signUp, getPostAuthRedirectPath, recheckApproval: checkApprovalStatus, signOut }}>
       {children}
     </AuthContext.Provider>
   );
