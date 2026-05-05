@@ -144,20 +144,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Only admins can act on another user's calendar
+    // Only admins (or trusted service role) can act on another user's calendar
     let calendarUserId = userId;
     if (target_user_id && target_user_id !== userId) {
-      const { data: isAdmin } = await supabaseService.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-      if (!isAdmin) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (!isServiceRole) {
+        const { data: isAdmin } = await supabaseService.rpc("has_role", {
+          _user_id: userId,
+          _role: "admin",
+        });
+        if (!isAdmin) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
       calendarUserId = target_user_id;
+    } else if (isServiceRole && !target_user_id) {
+      return new Response(
+        JSON.stringify({ error: "target_user_id required for service role calls" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Get Google Calendar connection
