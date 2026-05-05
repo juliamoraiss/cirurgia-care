@@ -411,17 +411,37 @@ export default function ShareCirurgia() {
                 }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {matches.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name} — {m.procedure}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new">+ Criar novo: {patientName}</SelectItem>
+                    {matches.map((m) => {
+                      const conf = m.score >= 0.85 ? "alta" : m.score >= 0.7 ? "média" : "baixa";
+                      const dateStr = m.surgery_date
+                        ? new Date(m.surgery_date).toLocaleDateString("pt-BR")
+                        : null;
+                      return (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name} — {m.procedure}
+                          {dateStr ? ` · cirurgia ${dateStr}` : ""}
+                          {` · semelhança ${conf}`}
+                        </SelectItem>
+                      );
+                    })}
+                    <SelectItem value="new">+ Criar novo paciente: {patientName}</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Encontramos pacientes com nome parecido. Selecione um existente ou crie novo.
-                </p>
+                {(() => {
+                  const sel = matches.find((m) => m.id === selectedPatientId);
+                  if (sel && sel.surgery_date) {
+                    return (
+                      <p className="text-xs text-warning">
+                        ⚠ Este paciente já tem cirurgia em {new Date(sel.surgery_date).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}. Confirmar substituirá a data atual.
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      Selecione um paciente existente para evitar duplicidade ou crie um novo.
+                    </p>
+                  );
+                })()}
               </div>
             )}
 
