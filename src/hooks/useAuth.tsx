@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
+  const initializedRef = useRef(false);
   const navigate = useNavigate();
 
   const checkApprovalStatus = async (userId: string) => {
@@ -33,9 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (_event, session) => {
+        if (!isMounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -47,24 +52,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setIsApproved(false);
         }
-        
-        setLoading(false);
+
+        if (initializedRef.current) {
+          setLoading(false);
+        }
       }
     );
 
     // Then check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         await checkApprovalStatus(session.user.id);
+      } else {
+        setIsApproved(false);
       }
-      
+
+      initializedRef.current = true;
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (usernameOrEmail: string, password: string) => {

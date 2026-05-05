@@ -59,6 +59,7 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isApproved } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -72,7 +73,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    const redirectTo = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(redirectTo)}`} replace />;
   }
 
   if (!isApproved) {

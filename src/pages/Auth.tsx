@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Activity, Stethoscope } from "lucide-react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -23,8 +23,10 @@ const signUpSchema = z.object({
 
 const Auth = () => {
   const { signIn, signUp, user, loading, isApproved } = useAuth();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const redirectPath = new URLSearchParams(location.search).get("redirect") || "/";
   
   // Login form state
   const [username, setUsername] = useState("");
@@ -44,7 +46,7 @@ const Auth = () => {
   // Going to "/" is enough — HomeOrShareCapture forwards to /share-cirurgia
   // when a pending WhatsApp/iOS share intent exists in sessionStorage.
   if (!loading && user && isApproved) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={redirectPath} replace />;
   }
   
   // Redirect to pending approval if logged in but not approved
