@@ -157,16 +157,44 @@ export default function ShareCirurgia() {
         if (match) setResponsibleUserId(match.id);
       }
 
-      // Search for existing patient by name
+      // Search for existing patient using fuzzy matching across name tokens
       if (ex.patient_name) {
-        const { data: existing } = await supabase
-          .from("patients")
-          .select("id, name, procedure")
-          .ilike("name", `%${ex.patient_name}%`)
-          .limit(5);
-        if (existing && existing.length > 0) {
-          setMatches(existing);
-          setSelectedPatientId(existing[0].id);
+        const tokens = normalize(ex.patient_name).split(" ").filter((t) => t.length >= 3);
+        if (tokens.length > 0) {
+          // Build OR query — match any significant token via ilike
+          const orFilter = tokens.map((t) => `name.ilike.%${t}%`).join(",");
+          const { data: candidates } = await supabase
+            .from("patients")
+            .select("id, name, procedure, surgery_date, status")
+            .or(orFilter)
+            .limit(25);
+
+          if (candidates && candidates.length > 0) {
+            const ranked: PatientMatch[] = candidates
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                procedure: c.procedure,
+                surgery_date: c.surgery_date,
+                status: c.status as string | null,
+                score: nameSimilarity(ex.patient_name!, c.name),
+              }))
+              .filter((m) => m.score >= 0.5)
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 5);
+
+            if (ranked.length > 0) {
+              setMatches(ranked);
+              // Auto-select existing patient only if very confident
+              if (ranked[0].score >= 0.85) {
+                setSelectedPatientId(ranked[0].id);
+                setPatientName(ranked[0].name);
+              } else {
+                // Ambiguous — keep "new" pre-selected so user makes the call
+                setSelectedPatientId("new");
+              }
+            }
+          }
         }
       }
 
