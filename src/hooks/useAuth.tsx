@@ -63,10 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setSession(session);
         setUser(session?.user ?? null);
+        // Marca loading IMEDIATAMENTE (sync) para evitar uma janela em que
+        // user está setado mas isApproved ainda é o valor antigo (false),
+        // o que faria o ProtectedRoute redirecionar para /pending-approval.
+        if (session?.user) {
+          setLoading(true);
+        }
 
         void (async () => {
           if (session?.user) {
-            setLoading(true);
             await checkApprovalStatus(session.user.id);
           } else {
             approvalRequestRef.current += 1;
