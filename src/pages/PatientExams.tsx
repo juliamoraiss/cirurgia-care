@@ -12,6 +12,7 @@ import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
 import { useUserRole } from "@/hooks/useUserRole";
 import { capitalizeFirst } from "@/lib/utils";
+import { safeWindowOpen } from "@/lib/urlSecurity";
 
 interface Patient {
   id: string;
@@ -257,7 +258,7 @@ const PatientExams = () => {
                     
                     const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${formatCalendarDate(surgeryDate)}/${formatCalendarDate(endDate)}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
                     
-                    window.open(googleCalendarLink, '_blank');
+                    safeWindowOpen(googleCalendarLink, '_blank');
                   }}
                 >
                   <Calendar className="h-3.5 w-3.5 mr-1" />

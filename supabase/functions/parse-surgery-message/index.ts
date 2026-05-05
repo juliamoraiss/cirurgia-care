@@ -151,7 +151,7 @@ Confidence: "high" quando a informação está clara e explícita, "medium" quan
   } catch (err) {
     console.error("parse-surgery-message error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Erro desconhecido" }),
+      JSON.stringify({ error: "Erro ao processar mensagem. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

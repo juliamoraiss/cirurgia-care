@@ -32,34 +32,23 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Validate token from Authorization header OR query parameter
-    // Token can be provided as: 
-    // - Authorization: Bearer <token>
-    // - ?token=<token> (for iOS Shortcuts compatibility)
+    // Validate token from Authorization header only.
+    // Token MUST be provided as: Authorization: Bearer <token>
+    // Query parameter support was removed to avoid leaking the token via logs/Referer.
     const authHeader = req.headers.get('authorization');
-    const url = new URL(req.url);
-    const queryToken = url.searchParams.get('token');
-    
+
     let providedToken: string | null = null;
-    
-    // First try header, then fall back to query parameter
     if (authHeader) {
-      // Support both "Bearer <token>" and just "<token>" formats
-      if (authHeader.startsWith('Bearer ')) {
-        providedToken = authHeader.substring(7);
-      } else {
-        providedToken = authHeader;
-      }
-    } else if (queryToken) {
-      providedToken = queryToken;
+      providedToken = authHeader.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : authHeader;
     }
-    
-    // Require valid token for any request - reject unauthenticated access
+
     const isValidToken = providedToken && providedToken === notificationToken;
-    
+
     if (!isValidToken) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Acesso não autorizado',
           summary: '❌ Acesso não autorizado',
         }),

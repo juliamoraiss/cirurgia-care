@@ -122,12 +122,25 @@ Deno.serve(async (req) => {
     }
 
     // Allow admins to check other users' availability
-    const queryUserId = target_user_id || user.id;
-
     const supabaseService = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    let queryUserId = user.id;
+    if (target_user_id && target_user_id !== user.id) {
+      const { data: isAdmin } = await supabaseService.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      queryUserId = target_user_id;
+    }
 
     // Get the user's Google Calendar connection
     const { data: connection, error: connError } = await supabaseService

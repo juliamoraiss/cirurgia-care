@@ -129,12 +129,27 @@ Deno.serve(async (req) => {
     } = body;
 
     const effectiveAction = action || "create";
-    const calendarUserId = target_user_id || userId;
 
     const supabaseService = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Only admins can act on another user's calendar
+    let calendarUserId = userId;
+    if (target_user_id && target_user_id !== userId) {
+      const { data: isAdmin } = await supabaseService.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      calendarUserId = target_user_id;
+    }
 
     // Get Google Calendar connection
     const { data: connection, error: connError } = await supabaseService
