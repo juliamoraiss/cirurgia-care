@@ -350,7 +350,9 @@ export default function ShareCirurgia() {
       const raw = err?.message || "";
       if (raw.includes("SURGERY_COLLISION")) {
         const friendly = raw.replace(/.*SURGERY_COLLISION:\s*/, "");
-        toast.error(friendly || "Conflito: já existe cirurgia próxima para este paciente.");
+        toast.error(friendly || "Conflito: já existe cirurgia para este paciente em janela de 1 hora.", {
+          description: "Ajuste a data/hora para um horário com diferença mínima de 1 hora.",
+        });
       } else {
         toast.error(raw || "Erro ao salvar");
       }
