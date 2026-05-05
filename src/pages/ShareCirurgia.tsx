@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureHospitalRegistered } from "@/lib/hospitals";
+import { ensureHospitalRegistered, findSimilarHospital, formatHospitalName, normalizeHospital } from "@/lib/hospitals";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProfessionals } from "@/hooks/useProfessionals";
@@ -185,7 +185,16 @@ export default function ShareCirurgia() {
       setPatientName(toTitleCaseName(ex.patient_name || ""));
       // Default procedure for WhatsApp imports is Rinoplastia
       setProcedure(ex.procedure || "Rinoplastia");
-      setHospital(ex.hospital || "");
+      // Tenta casar o hospital extraído com algum já cadastrado
+      let hospitalResolved = ex.hospital ? formatHospitalName(ex.hospital) : "";
+      if (hospitalResolved) {
+        const { data: hospRows } = await supabase.from("hospitals").select("name");
+        const names = (hospRows ?? []).map((h: { name: string }) => h.name);
+        const exact = names.find((n) => normalizeHospital(n) === normalizeHospital(hospitalResolved));
+        const similar = exact || findSimilarHospital(hospitalResolved, names, 0.6);
+        if (similar) hospitalResolved = similar;
+      }
+      setHospital(hospitalResolved);
       setSurgeryDate(toLocalDateTimeInput(ex.surgery_datetime));
 
       // Try to match doctor by name
