@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureHospitalRegistered } from "@/lib/hospitals";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -673,13 +674,18 @@ const PatientForm = () => {
         }
       }
       
+      // Garante que o hospital esteja cadastrado no banco antes de associar ao paciente
+      const hospitalFinal = validatedData.hospital
+        ? await ensureHospitalRegistered(validatedData.hospital, user?.id)
+        : "";
+
       const patientData = {
         name: validatedData.name,
         phone: validatedData.phone || null,
         birth_date: validatedData.birth_date || null,
         gender: validatedData.gender || null,
         procedure: validatedData.procedure,
-        hospital: validatedData.hospital || null,
+        hospital: hospitalFinal || null,
         insurance: validatedData.insurance || null,
         status: validatedData.status as any,
         surgery_date: utcSurgeryDate,
@@ -763,7 +769,7 @@ const PatientForm = () => {
                 action: calAction,
                 patient_name: validatedData.name,
                 procedure: validatedData.procedure,
-                hospital: validatedData.hospital || null,
+                hospital: hospitalFinal || null,
                 surgery_date: utcSurgeryDate,
                 notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
                 patient_id: savedPatientId,

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureHospitalRegistered } from "@/lib/hospitals";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProfessionals } from "@/hooks/useProfessionals";
@@ -301,6 +302,10 @@ export default function ShareCirurgia() {
     setSaving(true);
     try {
       const utcSurgery = new Date(surgeryDate).toISOString();
+      // Garante o cadastro do hospital no banco antes de prosseguir
+      const hospitalFinal = hospital
+        ? await ensureHospitalRegistered(hospital, user.id)
+        : "";
       let savedPatientId: string;
       let existingEventId: string | null = null;
 
@@ -316,7 +321,7 @@ export default function ShareCirurgia() {
           .from("patients")
           .update({
             surgery_date: utcSurgery,
-            hospital: hospital || null,
+            hospital: hospitalFinal || null,
             procedure: procedure,
           })
           .eq("id", selectedPatientId);
@@ -329,7 +334,7 @@ export default function ShareCirurgia() {
           .insert([{
             name: toTitleCaseName(patientName),
             procedure: procedure.trim(),
-            hospital: hospital.trim() || null,
+            hospital: hospitalFinal || null,
             surgery_date: utcSurgery,
             status: "surgery_scheduled" as any,
             responsible_user_id: finalResponsibleId,
@@ -358,7 +363,7 @@ export default function ShareCirurgia() {
               action: calAction,
               patient_name: toTitleCaseName(patientName),
               procedure: procedure.trim(),
-              hospital: hospital.trim() || null,
+              hospital: hospitalFinal || null,
               surgery_date: utcSurgery,
               notes: "Importado via WhatsApp",
               patient_id: savedPatientId,
