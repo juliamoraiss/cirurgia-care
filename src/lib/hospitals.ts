@@ -12,6 +12,32 @@ export const HOSPITAL_OPTIONS = [
   "Hospital DF Star",
 ];
 
+// Palavras que permanecem em minúsculo no Title Case PT-BR
+const LOWER_WORDS = new Set([
+  "de", "da", "do", "das", "dos", "e", "em", "no", "na", "nos", "nas", "a", "o",
+]);
+
+/**
+ * Formata o nome do hospital: trim, remove espaços duplicados e aplica Title Case PT-BR.
+ * Ex.: "  hospital   santa  lucia " -> "Hospital Santa Lucia"
+ */
+export function formatHospitalName(s: string): string {
+  const cleaned = (s || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  return cleaned
+    .split(" ")
+    .map((word, idx) => {
+      const lower = word.toLowerCase();
+      if (idx > 0 && LOWER_WORDS.has(lower)) return lower;
+      // Preserva siglas em caixa alta (ex.: "DF")
+      if (word.length <= 3 && word === word.toUpperCase() && /^[A-ZÀ-Ú]+$/.test(word)) {
+        return word;
+      }
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
 export function normalizeHospital(s: string): string {
   return (s || "")
     .normalize("NFD")
