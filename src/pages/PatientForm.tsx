@@ -769,7 +769,7 @@ const PatientForm = () => {
                 action: calAction,
                 patient_name: validatedData.name,
                 procedure: validatedData.procedure,
-                hospital: validatedData.hospital || null,
+                hospital: hospitalFinal || null,
                 surgery_date: utcSurgeryDate,
                 notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
                 patient_id: savedPatientId,
