@@ -1,5 +1,7 @@
 // Lista canônica de hospitais usados no sistema, com utilitários para
 // detectar duplicatas (mesmo nome com pequenas variações de digitação).
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const HOSPITAL_OPTIONS = [
   "Hospital Brasília",
