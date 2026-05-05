@@ -72,16 +72,25 @@ export function CalendarDayView({
   const timeSlots = useMemo(() => {
     const dayAvailability = availabilitySlots.filter(a => a.day_of_week === dayOfWeek);
 
-    // If no availability configured, show Google Calendar busy slots as standalone
+    // If no availability configured, show Google Calendar busy slots + cirurgias agendadas
     if (dayAvailability.length === 0) {
-      if (googleBusyForDay.length === 0) return [];
-      return googleBusyForDay.map(busy => ({
+      const fallbackSlots: TimeSlot[] = googleBusyForDay.map(busy => ({
         time: busy.start,
         endTime: busy.end,
         type: "busy" as const,
         allDay: busy.allDay,
         summary: busy.summary,
       }));
+      daySurgeries.forEach(s => {
+        const surgeryStart = new Date(s.surgery_date);
+        fallbackSlots.push({
+          time: surgeryStart,
+          endTime: addMinutes(surgeryStart, 120),
+          type: "booked",
+          surgery: s,
+        });
+      });
+      return fallbackSlots.sort((a, b) => a.time.getTime() - b.time.getTime());
     }
 
     const slots: TimeSlot[] = [];
@@ -149,6 +158,24 @@ export function CalendarDayView({
         }
       });
     }
+
+    // Inclui cirurgias que ficaram FORA dos slots de disponibilidade configurados,
+    // para que sempre apareçam na visão do dia.
+    daySurgeries.forEach(s => {
+      const surgeryStart = new Date(s.surgery_date);
+      const alreadyShown = slots.some(
+        slot => slot.type === "booked" && slot.surgery?.id === s.id,
+      );
+      if (!alreadyShown) {
+        const surgeryEnd = addMinutes(surgeryStart, 120);
+        slots.push({
+          time: surgeryStart,
+          endTime: surgeryEnd,
+          type: "booked",
+          surgery: s,
+        });
+      }
+    });
 
     return slots.sort((a, b) => a.time.getTime() - b.time.getTime());
   }, [date, dayOfWeek, availabilitySlots, daySurgeries, busySlots, calendarConnected, googleBusyForDay]);
