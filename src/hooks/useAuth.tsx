@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isApproved: boolean;
+  approvalChecked: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, userType: "medico" | "dentista") => Promise<void>;
   getPostAuthRedirectPath: () => string;
