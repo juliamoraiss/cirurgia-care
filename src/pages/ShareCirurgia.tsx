@@ -38,6 +38,7 @@ import {
   readShareIntentFromSearch,
 } from "@/lib/shareIntent";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID as DEFAULT_DOCTOR_ID } from "@/lib/defaults";
+import { HospitalField } from "@/components/HospitalField";
 
 type Confidence = "high" | "medium" | "low" | "none";
 
@@ -98,17 +99,6 @@ function toTitleCaseName(input: string): string {
     })
     .join(" ");
 }
-
-const HOSPITAL_OPTIONS = [
-  "Hospital Brasília",
-  "Hospital Anchieta",
-  "Hospital Prontonorte",
-  "Hospital Santa Lúcia Norte",
-  "Hospital Mantevida",
-  "Hospital Ceuta",
-  "Hospital Alvorada",
-  "Hospital DF Star",
-];
 
 
 function toLocalDateTimeInput(iso: string | null): string {
@@ -538,37 +528,10 @@ export default function ShareCirurgia() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="hospital">Hospital</Label>
+                <Label>Hospital</Label>
                 {conf && <ConfidenceBadge level={conf.hospital} />}
               </div>
-              <Select
-                value={HOSPITAL_OPTIONS.includes(hospital) ? hospital : (hospital ? "__other__" : "")}
-                onValueChange={(v) => {
-                  if (v === "__other__") {
-                    setHospital((prev) => HOSPITAL_OPTIONS.includes(prev) ? "" : prev);
-                  } else {
-                    setHospital(v);
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o hospital" />
-                </SelectTrigger>
-                <SelectContent>
-                  {HOSPITAL_OPTIONS.map((h) => (
-                    <SelectItem key={h} value={h}>{h}</SelectItem>
-                  ))}
-                  <SelectItem value="__other__">Outro (digitar nome)</SelectItem>
-                </SelectContent>
-              </Select>
-              {!HOSPITAL_OPTIONS.includes(hospital) && (
-                <Input
-                  id="hospital"
-                  value={hospital}
-                  onChange={(e) => setHospital(e.target.value)}
-                  placeholder="Digite o nome do hospital"
-                />
-              )}
+              <HospitalField value={hospital} onChange={setHospital} label="" />
             </div>
 
             <div className="space-y-1.5">

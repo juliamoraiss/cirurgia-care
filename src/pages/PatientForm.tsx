@@ -49,6 +49,7 @@ import { PatientFormSteps } from "@/components/PatientFormSteps";
 import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
 import { ProfessionalSelect } from "@/components/ProfessionalSelect";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
+import { HospitalField } from "@/components/HospitalField";
 import InputMask from "react-input-mask";
 
 // Validation schema with enhanced security
@@ -980,26 +981,11 @@ const PatientForm = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hospital">Hospital</Label>
-                    <Select
+                    <HospitalField
                       value={formData.hospital}
-                      onValueChange={(value) => handleChange("hospital", value)}
-                    >
-                      <SelectTrigger className={errors.hospital ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Selecione o hospital" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Hospital Brasília">Hospital Brasília</SelectItem>
-                        <SelectItem value="Hospital Anchieta">Hospital Anchieta</SelectItem>
-                        <SelectItem value="Hospital Prontonorte">Hospital Prontonorte</SelectItem>
-                        <SelectItem value="Hospital Santa Lúcia Norte">Hospital Santa Lúcia Norte</SelectItem>
-                        <SelectItem value="Hospital Mantevida">Hospital Mantevida</SelectItem>
-                        <SelectItem value="Hospital Ceuta">Hospital Ceuta</SelectItem>
-                        <SelectItem value="Hospital Alvorada">Hospital Alvorada</SelectItem>
-                        <SelectItem value="Hospital DF Star">Hospital DF Star</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.hospital && <p className="text-sm text-destructive">{errors.hospital}</p>}
+                      onChange={(value) => handleChange("hospital", value)}
+                      error={errors.hospital}
+                    />
                   </div>
 
                   <div className="space-y-2">
