@@ -769,6 +769,7 @@ export type Database = {
       }
       is_authenticated_user: { Args: never; Returns: boolean }
       is_user_approved: { Args: { _user_id: string }; Returns: boolean }
+      normalize_name: { Args: { _name: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "doctor" | "dentist"
