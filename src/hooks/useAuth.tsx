@@ -138,7 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       toast.success("Login realizado com sucesso!");
-      navigate(getPostAuthRedirectPath());
+      // Não navegar aqui: a página Auth já resolve corretamente o redirect
+      // a partir de ?redirect=... ou do pending_share_surgery em sessionStorage.
+      return;
     } catch (error: any) {
       toast.error("Erro ao fazer login. Verifique suas credenciais.");
       throw error;
