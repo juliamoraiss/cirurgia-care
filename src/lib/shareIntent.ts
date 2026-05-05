@@ -41,3 +41,37 @@ export function buildShareIntentQuery(payload: Partial<ShareIntentPayload>) {
 export function getShareIntentRawText(payload: ShareIntentPayload) {
   return [payload.text, payload.title, payload.url].filter(Boolean).join("\n").trim();
 }
+
+const STORAGE_KEY = "pending_share_surgery";
+
+/** Lê (sem apagar) o share pendente do sessionStorage. */
+export function peekPendingShareIntent(): ShareIntentPayload | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as Partial<ShareIntentPayload>;
+    const payload: ShareIntentPayload = {
+      text: data.text ?? "",
+      title: data.title ?? "",
+      url: data.url ?? "",
+    };
+    return hasShareIntent(payload) ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Remove o share pendente — só deve ser chamado pela página que consumiu. */
+export function clearPendingShareIntent() {
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Constrói o caminho /share-cirurgia preservando o payload na query string. */
+export function buildShareRedirectPath(payload: Partial<ShareIntentPayload>) {
+  const query = buildShareIntentQuery(payload);
+  return query ? `/share-cirurgia?${query}` : "/share-cirurgia";
+}
