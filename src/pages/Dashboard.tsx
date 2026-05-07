@@ -174,7 +174,7 @@ const Dashboard = () => {
         setCompletedPatients(completedData);
         setPendingPatients(
           (pendingData || [])
-            .filter(p => !/troca de c[âa]nula/i.test(p.procedure || ""))
+            .filter(p => !/troca de c[âa]nula|controle/i.test(p.procedure || ""))
             .sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
         );
       } catch (error) {
