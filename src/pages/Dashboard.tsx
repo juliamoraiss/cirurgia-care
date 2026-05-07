@@ -160,11 +160,14 @@ const Dashboard = () => {
         } = await supabase.from("patient_tasks").select("id", {
           count: "exact"
         }).eq("completed", false);
+        const filteredPending = (pendingData || [])
+          .filter(p => !/troca de c[âa]nula|controle/i.test(p.procedure || ""))
+          .sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
         setStats({
           totalPatients: totalPatients || 0,
           scheduledSurgeries: scheduledData.length,
           completedSurgeries: completedData.length,
-          pendingAuthorization: pendingAuthorization || 0
+          pendingAuthorization: filteredPending.length
         });
         setMonthlySurgeries(monthlyCount || 0);
         setActivePatients(activeCount || 0);
@@ -172,11 +175,7 @@ const Dashboard = () => {
         setAllPatients(allPatientsData || []);
         setScheduledPatients(scheduledData);
         setCompletedPatients(completedData);
-        setPendingPatients(
-          (pendingData || [])
-            .filter(p => !/troca de c[âa]nula|controle/i.test(p.procedure || ""))
-            .sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
-        );
+        setPendingPatients(filteredPending);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       } finally {
