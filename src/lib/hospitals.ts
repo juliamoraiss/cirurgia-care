@@ -12,6 +12,7 @@ export const HOSPITAL_OPTIONS = [
   "Hospital Ceuta",
   "Hospital Alvorada",
   "Hospital DF Star",
+  "Hospital Daher",
 ];
 
 // Palavras que permanecem em minúsculo no Title Case PT-BR
