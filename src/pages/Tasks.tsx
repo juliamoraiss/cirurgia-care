@@ -29,6 +29,7 @@ interface Task {
     hospital: string | null;
     surgery_date: string | null;
     gender: string | null;
+    responsible_user_id: string | null;
   };
 }
 
@@ -36,7 +37,9 @@ const Tasks = () => {
   const navigate = useNavigate();
   const { isAdmin, isDentist, loading: roleLoading } = useUserRole();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [doctorPhones, setDoctorPhones] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+
 
   const canAccessTasks = isAdmin || isDentist;
 
