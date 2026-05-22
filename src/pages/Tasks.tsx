@@ -29,6 +29,7 @@ interface Task {
     hospital: string | null;
     surgery_date: string | null;
     gender: string | null;
+    responsible_user_id: string | null;
   };
 }
 
@@ -36,7 +37,9 @@ const Tasks = () => {
   const navigate = useNavigate();
   const { isAdmin, isDentist, loading: roleLoading } = useUserRole();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [doctorPhones, setDoctorPhones] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+
 
   const canAccessTasks = isAdmin || isDentist;
 
@@ -78,12 +81,29 @@ const Tasks = () => {
         .from("patient_tasks")
         .select(`
           *,
-          patient:patients(name, phone, procedure, hospital, surgery_date, gender)
+          patient:patients(name, phone, procedure, hospital, surgery_date, gender, responsible_user_id)
         `)
         .order("due_date", { ascending: true });
 
       if (error) throw error;
-      setTasks(data || []);
+      const loaded = (data || []) as unknown as Task[];
+      setTasks(loaded);
+
+      const doctorIds = Array.from(
+        new Set(loaded.map((t) => t.patient?.responsible_user_id).filter(Boolean) as string[])
+      );
+      if (doctorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, phone")
+          .in("id", doctorIds);
+        const map: Record<string, string> = {};
+        (profs || []).forEach((p: any) => {
+          if (p.phone) map[p.id] = p.phone;
+        });
+        setDoctorPhones(map);
+      }
+
     } catch (error) {
       console.error("Error loading tasks:", error);
       toast.error("Erro ao carregar tarefas");
@@ -209,7 +229,7 @@ const Tasks = () => {
                     <span>{format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                   </div>
                 )}
-                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup" || task.task_type === "cannula_reminder") && (
+                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup" || task.task_type === "cannula_reminder" || task.task_type === "surgery_confirmation_patient" || task.task_type === "surgery_confirmation_doctor") && (
                   <WhatsAppTemplates
                     patient={{
                       name: task.patient.name,
@@ -220,18 +240,28 @@ const Tasks = () => {
                       gender: task.patient.gender || "",
                     }}
                     type={
-                      task.task_type === "pre_op_instructions" 
-                        ? "pre_op" 
-                        : task.task_type === "post_op_instructions" 
-                          ? "post_op" 
+                      task.task_type === "pre_op_instructions"
+                        ? "pre_op"
+                        : task.task_type === "post_op_instructions"
+                          ? "post_op"
                           : task.task_type === "post_op_30_days"
                             ? "post_op_30_days"
                             : task.task_type === "cannula_reminder"
                               ? "cannula_reminder"
-                              : "exam_followup"
+                              : task.task_type === "surgery_confirmation_patient"
+                                ? "surgery_confirmation_patient"
+                                : task.task_type === "surgery_confirmation_doctor"
+                                  ? "surgery_confirmation_doctor"
+                                  : "exam_followup"
+                    }
+                    doctorPhone={
+                      task.task_type === "surgery_confirmation_doctor" && task.patient.responsible_user_id
+                        ? doctorPhones[task.patient.responsible_user_id]
+                        : undefined
                     }
                   />
                 )}
+
               </div>
             </div>
           </div>
