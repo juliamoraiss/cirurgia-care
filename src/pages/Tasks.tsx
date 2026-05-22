@@ -229,7 +229,7 @@ const Tasks = () => {
                     <span>{format(new Date(task.completed_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                   </div>
                 )}
-                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup" || task.task_type === "cannula_reminder") && (
+                {(task.task_type === "pre_op_instructions" || task.task_type === "post_op_instructions" || task.task_type === "post_op_30_days" || task.task_type === "exam_followup" || task.task_type === "cannula_reminder" || task.task_type === "surgery_confirmation_patient" || task.task_type === "surgery_confirmation_doctor") && (
                   <WhatsAppTemplates
                     patient={{
                       name: task.patient.name,
@@ -240,18 +240,28 @@ const Tasks = () => {
                       gender: task.patient.gender || "",
                     }}
                     type={
-                      task.task_type === "pre_op_instructions" 
-                        ? "pre_op" 
-                        : task.task_type === "post_op_instructions" 
-                          ? "post_op" 
+                      task.task_type === "pre_op_instructions"
+                        ? "pre_op"
+                        : task.task_type === "post_op_instructions"
+                          ? "post_op"
                           : task.task_type === "post_op_30_days"
                             ? "post_op_30_days"
                             : task.task_type === "cannula_reminder"
                               ? "cannula_reminder"
-                              : "exam_followup"
+                              : task.task_type === "surgery_confirmation_patient"
+                                ? "surgery_confirmation_patient"
+                                : task.task_type === "surgery_confirmation_doctor"
+                                  ? "surgery_confirmation_doctor"
+                                  : "exam_followup"
+                    }
+                    doctorPhone={
+                      task.task_type === "surgery_confirmation_doctor" && task.patient.responsible_user_id
+                        ? doctorPhones[task.patient.responsible_user_id]
+                        : undefined
                     }
                   />
                 )}
+
               </div>
             </div>
           </div>
