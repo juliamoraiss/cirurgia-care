@@ -81,12 +81,29 @@ const Tasks = () => {
         .from("patient_tasks")
         .select(`
           *,
-          patient:patients(name, phone, procedure, hospital, surgery_date, gender)
+          patient:patients(name, phone, procedure, hospital, surgery_date, gender, responsible_user_id)
         `)
         .order("due_date", { ascending: true });
 
       if (error) throw error;
-      setTasks(data || []);
+      const loaded = (data || []) as unknown as Task[];
+      setTasks(loaded);
+
+      const doctorIds = Array.from(
+        new Set(loaded.map((t) => t.patient?.responsible_user_id).filter(Boolean) as string[])
+      );
+      if (doctorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, phone")
+          .in("id", doctorIds);
+        const map: Record<string, string> = {};
+        (profs || []).forEach((p: any) => {
+          if (p.phone) map[p.id] = p.phone;
+        });
+        setDoctorPhones(map);
+      }
+
     } catch (error) {
       console.error("Error loading tasks:", error);
       toast.error("Erro ao carregar tarefas");
