@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [approvalChecked, setApprovalChecked] = useState(false);
   const initializedRef = useRef(false);
   const approvalRequestRef = useRef(0);
+  const lastUserIdRef = useRef<string | null>(null);
   const navigate = useNavigate();
 
   const getPostAuthRedirectPath = () => {
@@ -63,30 +64,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (!isMounted) return;
+
+        const nextUserId = session?.user?.id ?? null;
+        const userChanged = lastUserIdRef.current !== nextUserId;
+        const shouldBlockUi = !initializedRef.current || userChanged;
+        const shouldRecheckApproval =
+          !!nextUserId && (!initializedRef.current || userChanged || event === "SIGNED_IN");
+
+        lastUserIdRef.current = nextUserId;
 
         setSession(session);
         setUser(session?.user ?? null);
-        // Marca loading IMEDIATAMENTE (sync) e invalida o approvalChecked
-        // para evitar uma janela em que user está setado mas isApproved ainda
-        // é o valor antigo (false), o que faria o ProtectedRoute redirecionar
-        // para /pending-approval.
-        if (session?.user) {
+        // Só bloqueia a UI quando a identidade da sessão muda de fato.
+        // Em mobile/desktop, ao voltar do background, o Supabase pode disparar
+        // eventos de refresh da sessão; nesses casos mantemos a tela atual.
+        if (session?.user && shouldBlockUi) {
           setLoading(true);
           setApprovalChecked(false);
         }
 
         void (async () => {
-          if (session?.user) {
+          if (session?.user && shouldRecheckApproval) {
             await checkApprovalStatus(session.user.id);
+          } else if (session?.user) {
+            setApprovalChecked(true);
           } else {
             approvalRequestRef.current += 1;
             setIsApproved(false);
             setApprovalChecked(true);
           }
 
-          if (isMounted && initializedRef.current) {
+          if (isMounted && initializedRef.current && shouldBlockUi) {
             setLoading(false);
           }
         })();
@@ -97,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;
 
+      lastUserIdRef.current = session?.user?.id ?? null;
       setSession(session);
       setUser(session?.user ?? null);
 
