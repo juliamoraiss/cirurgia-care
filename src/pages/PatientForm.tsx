@@ -66,23 +66,27 @@ const patientSchema = z.object({
   origem: z.string().optional(),
 });
 
+type PatientStatus = z.infer<typeof patientSchema>["status"];
+
+type PatientFormState = {
+  name: string;
+  phone: string;
+  birth_date: string;
+  gender: string;
+  procedure: string;
+  hospital: string;
+  insurance: string;
+  status: PatientStatus;
+  surgery_date: string;
+  guide_validity_date: string;
+  origem: string;
+  responsible_user_id: string;
+  is_oncology: boolean;
+  oncology_stage: string;
+};
+
 type PatientFormDraft = {
-  formData?: {
-    name?: string;
-    phone?: string;
-    birth_date?: string;
-    gender?: string;
-    procedure?: string;
-    hospital?: string;
-    insurance?: string;
-    status?: "awaiting_authorization" | "awaiting_consultation" | "authorized" | "pending_scheduling" | "surgery_scheduled" | "surgery_completed" | "completed" | "cancelled";
-    surgery_date?: string;
-    guide_validity_date?: string;
-    origem?: string;
-    responsible_user_id?: string;
-    is_oncology?: boolean;
-    oncology_stage?: string;
-  };
+  formData?: Partial<PatientFormState>;
   checkedExams?: string[];
   currentStep?: number;
 };
@@ -109,7 +113,7 @@ const PatientForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isEditMode = !!id;
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PatientFormState>({
     name: "",
     phone: "",
     birth_date: "",
@@ -250,7 +254,7 @@ const PatientForm = () => {
           procedure: data.procedure || "",
           hospital: data.hospital || "",
           insurance: data.insurance || "",
-          status: data.status || "awaiting_authorization",
+    status: (data.status as PatientStatus) || "awaiting_authorization",
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
           origem: data.origem || "",
