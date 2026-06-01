@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureHospitalRegistered } from "@/lib/hospitals";
@@ -66,6 +66,43 @@ const patientSchema = z.object({
   origem: z.string().optional(),
 });
 
+type PatientStatus = z.infer<typeof patientSchema>["status"];
+
+type PatientFormState = {
+  name: string;
+  phone: string;
+  birth_date: string;
+  gender: string;
+  procedure: string;
+  hospital: string;
+  insurance: string;
+  status: PatientStatus;
+  surgery_date: string;
+  guide_validity_date: string;
+  origem: string;
+  responsible_user_id: string;
+  is_oncology: boolean;
+  oncology_stage: string;
+};
+
+type PatientFormDraft = {
+  formData?: Partial<PatientFormState>;
+  checkedExams?: string[];
+  currentStep?: number;
+};
+
+const readPatientFormDraft = (storageKey: string): PatientFormDraft | null => {
+  try {
+    const rawDraft = localStorage.getItem(storageKey);
+    if (!rawDraft) return null;
+
+    const parsedDraft = JSON.parse(rawDraft) as PatientFormDraft;
+    return parsedDraft && typeof parsedDraft === "object" ? parsedDraft : null;
+  } catch {
+    return null;
+  }
+};
+
 const PatientForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -76,7 +113,7 @@ const PatientForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isEditMode = !!id;
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PatientFormState>({
     name: "",
     phone: "",
     birth_date: "",
@@ -105,6 +142,11 @@ const PatientForm = () => {
   const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const hasRestoredDraftRef = useRef(false);
+  const patientDraftStorageKey = useMemo(
+    () => (isEditMode && id ? `patient-form-draft:${id}` : "patient-form-draft:new"),
+    [id, isEditMode],
+  );
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
@@ -127,8 +169,55 @@ const PatientForm = () => {
     if (id) {
       loadPatientData(id);
       loadPatientFiles(id);
+    } else {
+      setLoadingData(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (hasRestoredDraftRef.current) return;
+    if (loadingData) return;
+
+    const savedDraft = readPatientFormDraft(patientDraftStorageKey);
+    if (!savedDraft) {
+      hasRestoredDraftRef.current = true;
+      return;
+    }
+
+    if (savedDraft.formData) {
+      setFormData((prev) => ({ ...prev, ...savedDraft.formData }));
+      if (savedDraft.formData.procedure) {
+        setExamsChecklist(getExamsForProcedure(savedDraft.formData.procedure));
+      }
+    }
+
+    if (Array.isArray(savedDraft.checkedExams)) {
+      setCheckedExams(savedDraft.checkedExams);
+    }
+
+    if (typeof savedDraft.currentStep === "number") {
+      setCurrentStep(Math.min(Math.max(savedDraft.currentStep, 0), steps.length - 1));
+    }
+
+    hasRestoredDraftRef.current = true;
+    toast.success("Rascunho do formulário restaurado");
+  }, [loadingData, patientDraftStorageKey]);
+
+  useEffect(() => {
+    if (!hasRestoredDraftRef.current) return;
+
+    const draftPayload: PatientFormDraft = {
+      formData,
+      checkedExams,
+      currentStep,
+    };
+
+    try {
+      localStorage.setItem(patientDraftStorageKey, JSON.stringify(draftPayload));
+    } catch {
+      // ignore storage write errors
+    }
+  }, [checkedExams, currentStep, formData, patientDraftStorageKey]);
 
   async function loadPatientData(patientId: string) {
     try {
@@ -165,7 +254,7 @@ const PatientForm = () => {
           procedure: data.procedure || "",
           hospital: data.hospital || "",
           insurance: data.insurance || "",
-          status: data.status || "awaiting_authorization",
+    status: (data.status as PatientStatus) || "awaiting_authorization",
           surgery_date: localSurgeryDate,
           guide_validity_date: data.guide_validity_date || "",
           origem: data.origem || "",
@@ -801,6 +890,7 @@ const PatientForm = () => {
         await uploadFiles(savedPatientId);
       }
 
+      localStorage.removeItem(patientDraftStorageKey);
       toast.success(isEditMode ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
       navigate("/patients");
     } catch (error) {
