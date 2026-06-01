@@ -890,6 +890,7 @@ const PatientForm = () => {
         await uploadFiles(savedPatientId);
       }
 
+      localStorage.removeItem(patientDraftStorageKey);
       toast.success(isEditMode ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
       navigate("/patients");
     } catch (error) {
