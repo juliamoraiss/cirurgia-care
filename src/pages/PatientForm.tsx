@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureHospitalRegistered } from "@/lib/hospitals";
@@ -65,6 +65,39 @@ const patientSchema = z.object({
   status: z.enum(["awaiting_authorization", "awaiting_consultation", "authorized", "pending_scheduling", "surgery_scheduled", "surgery_completed", "completed", "cancelled"]),
   origem: z.string().optional(),
 });
+
+type PatientFormDraft = {
+  formData?: {
+    name?: string;
+    phone?: string;
+    birth_date?: string;
+    gender?: string;
+    procedure?: string;
+    hospital?: string;
+    insurance?: string;
+    status?: "awaiting_authorization" | "awaiting_consultation" | "authorized" | "pending_scheduling" | "surgery_scheduled" | "surgery_completed" | "completed" | "cancelled";
+    surgery_date?: string;
+    guide_validity_date?: string;
+    origem?: string;
+    responsible_user_id?: string;
+    is_oncology?: boolean;
+    oncology_stage?: string;
+  };
+  checkedExams?: string[];
+  currentStep?: number;
+};
+
+const readPatientFormDraft = (storageKey: string): PatientFormDraft | null => {
+  try {
+    const rawDraft = localStorage.getItem(storageKey);
+    if (!rawDraft) return null;
+
+    const parsedDraft = JSON.parse(rawDraft) as PatientFormDraft;
+    return parsedDraft && typeof parsedDraft === "object" ? parsedDraft : null;
+  } catch {
+    return null;
+  }
+};
 
 const PatientForm = () => {
   const navigate = useNavigate();
