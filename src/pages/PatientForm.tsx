@@ -138,6 +138,11 @@ const PatientForm = () => {
   const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const hasRestoredDraftRef = useRef(false);
+  const patientDraftStorageKey = useMemo(
+    () => (isEditMode && id ? `patient-form-draft:${id}` : "patient-form-draft:new"),
+    [id, isEditMode],
+  );
 
   // Função auxiliar para encoding correto do WhatsApp
   const encodeWhatsAppMessage = (message: string) => {
@@ -160,8 +165,55 @@ const PatientForm = () => {
     if (id) {
       loadPatientData(id);
       loadPatientFiles(id);
+    } else {
+      setLoadingData(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (hasRestoredDraftRef.current) return;
+    if (loadingData) return;
+
+    const savedDraft = readPatientFormDraft(patientDraftStorageKey);
+    if (!savedDraft) {
+      hasRestoredDraftRef.current = true;
+      return;
+    }
+
+    if (savedDraft.formData) {
+      setFormData((prev) => ({ ...prev, ...savedDraft.formData }));
+      if (savedDraft.formData.procedure) {
+        setExamsChecklist(getExamsForProcedure(savedDraft.formData.procedure));
+      }
+    }
+
+    if (Array.isArray(savedDraft.checkedExams)) {
+      setCheckedExams(savedDraft.checkedExams);
+    }
+
+    if (typeof savedDraft.currentStep === "number") {
+      setCurrentStep(Math.min(Math.max(savedDraft.currentStep, 0), steps.length - 1));
+    }
+
+    hasRestoredDraftRef.current = true;
+    toast.success("Rascunho do formulário restaurado");
+  }, [loadingData, patientDraftStorageKey]);
+
+  useEffect(() => {
+    if (!hasRestoredDraftRef.current) return;
+
+    const draftPayload: PatientFormDraft = {
+      formData,
+      checkedExams,
+      currentStep,
+    };
+
+    try {
+      localStorage.setItem(patientDraftStorageKey, JSON.stringify(draftPayload));
+    } catch {
+      // ignore storage write errors
+    }
+  }, [checkedExams, currentStep, formData, patientDraftStorageKey]);
 
   async function loadPatientData(patientId: string) {
     try {
