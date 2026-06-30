@@ -26,6 +26,7 @@ interface Patient {
   status: string;
   is_oncology: boolean;
   oncology_stage: string | null;
+  responsible_user_id: string | null;
 }
 
 interface PatientFile {
