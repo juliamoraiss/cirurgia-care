@@ -140,7 +140,9 @@ const PatientForm = () => {
   const [deletingPatient, setDeletingPatient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
+  const [patientUpdatedAt, setPatientUpdatedAt] = useState<string | null>(null);
   const [googleCalendarEventId, setGoogleCalendarEventId] = useState<string | null>(null);
+
   const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
