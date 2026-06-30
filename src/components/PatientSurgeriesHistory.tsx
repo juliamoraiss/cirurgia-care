@@ -172,7 +172,8 @@ export function PatientSurgeriesHistory({
             <AlertDialogDescription>
               A cirurgia atual ({capitalizeFirst(currentProcedure)}) será arquivada no
               histórico e o paciente voltará para “aguardando autorização” para que você
-              possa cadastrar a nova cirurgia.
+              possa cadastrar a nova cirurgia. Use isto apenas se a cirurgia atual já
+              foi realizada ou se você quer substituí-la.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
