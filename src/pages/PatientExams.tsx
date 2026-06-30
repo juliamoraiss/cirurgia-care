@@ -42,6 +42,7 @@ const PatientExams = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
+  const { user } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
   const [loading, setLoading] = useState(true);
