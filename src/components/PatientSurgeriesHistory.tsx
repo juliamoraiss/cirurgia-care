@@ -13,9 +13,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Plus, History } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar, MapPin, Plus, History, FilePlus } from "lucide-react";
 import { toast } from "sonner";
 import { capitalizeFirst } from "@/lib/utils";
+import { HospitalField } from "@/components/HospitalField";
 
 interface PatientSurgery {
   id: string;
@@ -38,6 +57,28 @@ interface Props {
   onArchived?: () => void;
 }
 
+const PROCEDURE_OPTIONS = [
+  "rinoplastia",
+  "septoplastia",
+  "rinosseptoplastia",
+  "turbinectomia",
+  "sinusectomia",
+  "adenoidectomia",
+  "amigdalectomia",
+  "timpanoplastia",
+  "mastoidectomia",
+  "traqueostomia",
+  "troca de cânula",
+  "controle",
+  "outro",
+];
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "completed", label: "Realizada" },
+  { value: "surgery_scheduled", label: "Agendada" },
+  { value: "cancelled", label: "Cancelada" },
+];
+
 export function PatientSurgeriesHistory({
   patientId,
   patientStatus,
@@ -53,6 +94,17 @@ export function PatientSurgeriesHistory({
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [archiving, setArchiving] = useState(false);
+
+  // Add to history form
+  const [formOpen, setFormOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    procedure: "",
+    hospital: "",
+    surgery_date: "",
+    status: "completed",
+    notes: "",
+  });
 
   const canStartNew = canManage;
 
@@ -73,7 +125,6 @@ export function PatientSurgeriesHistory({
   async function handleStartNewSurgery() {
     setArchiving(true);
     try {
-      // 1) Archive current surgery snapshot
       const { error: insertError } = await supabase.from("patient_surgeries").insert({
         patient_id: patientId,
         procedure: currentProcedure,
@@ -84,7 +135,6 @@ export function PatientSurgeriesHistory({
       });
       if (insertError) throw insertError;
 
-      // 2) Reset patient to allow scheduling a new surgery
       const { error: updateError } = await supabase
         .from("patients")
         .update({
@@ -109,6 +159,44 @@ export function PatientSurgeriesHistory({
     }
   }
 
+  function openForm() {
+    setForm({
+      procedure: "",
+      hospital: "",
+      surgery_date: "",
+      status: "completed",
+      notes: "",
+    });
+    setFormOpen(true);
+  }
+
+  async function handleSaveToHistory() {
+    if (!form.procedure.trim()) {
+      toast.error("Informe o procedimento");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("patient_surgeries").insert({
+        patient_id: patientId,
+        procedure: form.procedure.trim().toLowerCase(),
+        hospital: form.hospital.trim() || null,
+        surgery_date: form.surgery_date ? new Date(form.surgery_date).toISOString() : null,
+        status: form.status as any,
+        notes: form.notes.trim() || null,
+        responsible_user_id: currentResponsibleUserId ?? null,
+      });
+      if (error) throw error;
+      toast.success("Cirurgia adicionada ao histórico");
+      setFormOpen(false);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar cirurgia");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading && history.length === 0 && !canStartNew) return null;
 
   return (
@@ -121,10 +209,16 @@ export function PatientSurgeriesHistory({
               <CardTitle>Histórico de Cirurgias</CardTitle>
             </div>
             {canStartNew && (
-              <Button size="sm" onClick={() => setConfirmOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Nova cirurgia
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={openForm}>
+                  <FilePlus className="h-4 w-4 mr-1" />
+                  Adicionar ao histórico
+                </Button>
+                <Button size="sm" onClick={() => setConfirmOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nova cirurgia
+                </Button>
+              </div>
             )}
           </div>
           <CardDescription>
@@ -165,15 +259,103 @@ export function PatientSurgeriesHistory({
         )}
       </Card>
 
+      {/* Add to history form */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Adicionar cirurgia ao histórico</DialogTitle>
+            <DialogDescription>
+              Cadastre uma cirurgia diretamente no histórico do paciente, sem alterar a
+              cirurgia atual.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Procedimento *</Label>
+              <Select
+                value={form.procedure}
+                onValueChange={(v) => setForm((f) => ({ ...f, procedure: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o procedimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROCEDURE_OPTIONS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {capitalizeFirst(p)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <HospitalField
+                value={form.hospital}
+                onChange={(v) => setForm((f) => ({ ...f, hospital: v }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Data da cirurgia</Label>
+              <Input
+                type="datetime-local"
+                value={form.surgery_date}
+                onChange={(e) => setForm((f) => ({ ...f, surgery_date: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Textarea
+                rows={3}
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder="Observações sobre esta cirurgia (opcional)"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveToHistory} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar no histórico"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Replace-current confirmation */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Registrar nova cirurgia?</AlertDialogTitle>
+            <AlertDialogTitle>Substituir cirurgia atual?</AlertDialogTitle>
             <AlertDialogDescription>
               A cirurgia atual ({capitalizeFirst(currentProcedure)}) será arquivada no
               histórico e o paciente voltará para “aguardando autorização” para que você
-              possa cadastrar a nova cirurgia. Use isto apenas se a cirurgia atual já
-              foi realizada ou se você quer substituí-la.
+              cadastre a nova cirurgia ativa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
