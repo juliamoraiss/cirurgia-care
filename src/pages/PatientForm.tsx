@@ -89,7 +89,9 @@ type PatientFormDraft = {
   formData?: Partial<PatientFormState>;
   checkedExams?: string[];
   currentStep?: number;
+  savedAt?: number;
 };
+
 
 const readPatientFormDraft = (storageKey: string): PatientFormDraft | null => {
   try {
