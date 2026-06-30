@@ -281,7 +281,9 @@ const PatientForm = () => {
           oncology_stage: data.oncology_stage || "",
         });
         setOriginalSurgeryDate(data.surgery_date || null);
+        setPatientUpdatedAt((data as any).updated_at || (data as any).created_at || null);
         setGoogleCalendarEventId((data as any).google_calendar_event_id || null);
+
         
         // Set checklist for the procedure and restore checked exams
         const procedureExams = getExamsForProcedure(data.procedure || "");
