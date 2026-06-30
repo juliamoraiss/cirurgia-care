@@ -54,7 +54,7 @@ export function PatientSurgeriesHistory({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
-  const canStartNew = canManage && patientStatus === "completed";
+  const canStartNew = canManage;
 
   async function load() {
     const { data, error } = await supabase
