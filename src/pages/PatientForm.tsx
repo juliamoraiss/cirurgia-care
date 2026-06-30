@@ -89,7 +89,9 @@ type PatientFormDraft = {
   formData?: Partial<PatientFormState>;
   checkedExams?: string[];
   currentStep?: number;
+  savedAt?: number;
 };
+
 
 const readPatientFormDraft = (storageKey: string): PatientFormDraft | null => {
   try {
@@ -138,7 +140,9 @@ const PatientForm = () => {
   const [deletingPatient, setDeletingPatient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
+  const [patientUpdatedAt, setPatientUpdatedAt] = useState<string | null>(null);
   const [googleCalendarEventId, setGoogleCalendarEventId] = useState<string | null>(null);
+
   const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -184,6 +188,18 @@ const PatientForm = () => {
       return;
     }
 
+    // Discard draft if the patient was updated in the DB after the draft was saved
+    // (avoids overwriting current data with stale local values, e.g. after archiving a surgery)
+    if (isEditMode && patientUpdatedAt) {
+      const dbUpdated = new Date(patientUpdatedAt).getTime();
+      const draftSaved = savedDraft.savedAt ?? 0;
+      if (!draftSaved || dbUpdated > draftSaved) {
+        try { localStorage.removeItem(patientDraftStorageKey); } catch {}
+        hasRestoredDraftRef.current = true;
+        return;
+      }
+    }
+
     if (savedDraft.formData) {
       setFormData((prev) => ({ ...prev, ...savedDraft.formData }));
       if (savedDraft.formData.procedure) {
@@ -201,7 +217,7 @@ const PatientForm = () => {
 
     hasRestoredDraftRef.current = true;
     toast.success("Rascunho do formulário restaurado");
-  }, [loadingData, patientDraftStorageKey]);
+  }, [loadingData, patientDraftStorageKey, isEditMode, patientUpdatedAt]);
 
   useEffect(() => {
     if (!hasRestoredDraftRef.current) return;
@@ -210,6 +226,7 @@ const PatientForm = () => {
       formData,
       checkedExams,
       currentStep,
+      savedAt: Date.now(),
     };
 
     try {
@@ -218,6 +235,7 @@ const PatientForm = () => {
       // ignore storage write errors
     }
   }, [checkedExams, currentStep, formData, patientDraftStorageKey]);
+
 
   async function loadPatientData(patientId: string) {
     try {
@@ -263,7 +281,9 @@ const PatientForm = () => {
           oncology_stage: data.oncology_stage || "",
         });
         setOriginalSurgeryDate(data.surgery_date || null);
+        setPatientUpdatedAt((data as any).updated_at || (data as any).created_at || null);
         setGoogleCalendarEventId((data as any).google_calendar_event_id || null);
+
         
         // Set checklist for the procedure and restore checked exams
         const procedureExams = getExamsForProcedure(data.procedure || "");
