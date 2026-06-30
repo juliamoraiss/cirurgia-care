@@ -188,6 +188,18 @@ const PatientForm = () => {
       return;
     }
 
+    // Discard draft if the patient was updated in the DB after the draft was saved
+    // (avoids overwriting current data with stale local values, e.g. after archiving a surgery)
+    if (isEditMode && patientUpdatedAt) {
+      const dbUpdated = new Date(patientUpdatedAt).getTime();
+      const draftSaved = savedDraft.savedAt ?? 0;
+      if (!draftSaved || dbUpdated > draftSaved) {
+        try { localStorage.removeItem(patientDraftStorageKey); } catch {}
+        hasRestoredDraftRef.current = true;
+        return;
+      }
+    }
+
     if (savedDraft.formData) {
       setFormData((prev) => ({ ...prev, ...savedDraft.formData }));
       if (savedDraft.formData.procedure) {
@@ -205,7 +217,7 @@ const PatientForm = () => {
 
     hasRestoredDraftRef.current = true;
     toast.success("Rascunho do formulário restaurado");
-  }, [loadingData, patientDraftStorageKey]);
+  }, [loadingData, patientDraftStorageKey, isEditMode, patientUpdatedAt]);
 
   useEffect(() => {
     if (!hasRestoredDraftRef.current) return;
@@ -214,6 +226,7 @@ const PatientForm = () => {
       formData,
       checkedExams,
       currentStep,
+      savedAt: Date.now(),
     };
 
     try {
@@ -222,6 +235,7 @@ const PatientForm = () => {
       // ignore storage write errors
     }
   }, [checkedExams, currentStep, formData, patientDraftStorageKey]);
+
 
   async function loadPatientData(patientId: string) {
     try {
