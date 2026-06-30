@@ -149,7 +149,25 @@ export function PatientSurgeryTimeline({
           .order("archived_at", { ascending: true }),
       ]);
       if (!alive) return;
-      setHistory((h.data as HistoryRow[]) || []);
+      const rawHistory = (h.data as HistoryRow[]) || [];
+      // Filter out "reset" events that happen when archiving a surgery
+      // (status completed -> awaiting_authorization, or surgery_date value -> null)
+      const filtered = rawHistory.filter((r) => {
+        if (
+          r.field_changed === "status" &&
+          r.old_value === "completed" &&
+          r.new_value === "awaiting_authorization"
+        )
+          return false;
+        if (
+          r.field_changed === "surgery_date" &&
+          r.old_value &&
+          !r.new_value
+        )
+          return false;
+        return true;
+      });
+      setHistory(filtered);
       setArchived((a.data as ArchivedSurgery[]) || []);
       setLoading(false);
     })();
