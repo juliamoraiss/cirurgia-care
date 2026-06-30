@@ -13,6 +13,8 @@ import PdfViewer from "@/components/PdfViewer";
 import { useUserRole } from "@/hooks/useUserRole";
 import { capitalizeFirst } from "@/lib/utils";
 import { safeWindowOpen } from "@/lib/urlSecurity";
+import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Patient {
   id: string;
