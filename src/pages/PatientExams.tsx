@@ -68,7 +68,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, birth_date, status, is_oncology, oncology_stage")
+        .select("id, name, procedure, hospital, surgery_date, birth_date, status, is_oncology, oncology_stage, responsible_user_id")
         .eq("id", id)
         .single();
 
