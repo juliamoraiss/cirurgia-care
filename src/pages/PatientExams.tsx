@@ -13,6 +13,8 @@ import PdfViewer from "@/components/PdfViewer";
 import { useUserRole } from "@/hooks/useUserRole";
 import { capitalizeFirst } from "@/lib/utils";
 import { safeWindowOpen } from "@/lib/urlSecurity";
+import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Patient {
   id: string;
@@ -24,6 +26,7 @@ interface Patient {
   status: string;
   is_oncology: boolean;
   oncology_stage: string | null;
+  responsible_user_id: string | null;
 }
 
 interface PatientFile {
@@ -39,6 +42,7 @@ const PatientExams = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
+  const { user } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +69,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, birth_date, status, is_oncology, oncology_stage")
+        .select("id, name, procedure, hospital, surgery_date, birth_date, status, is_oncology, oncology_stage, responsible_user_id")
         .eq("id", id)
         .single();
 
@@ -325,6 +329,19 @@ const PatientExams = () => {
           )}
         </CardContent>
       </Card>
+
+      <PatientSurgeriesHistory
+        patientId={id!}
+        patientStatus={patient.status}
+        currentProcedure={patient.procedure}
+        currentHospital={patient.hospital}
+        currentSurgeryDate={patient.surgery_date}
+        currentResponsibleUserId={patient.responsible_user_id}
+        canManage={isAdmin || !!(user && patient.responsible_user_id === user.id)}
+        onArchived={() => {
+          loadPatientData();
+        }}
+      />
 
       <PatientNotesSection patientId={id!} />
 

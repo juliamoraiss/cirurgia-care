@@ -363,6 +363,59 @@ export type Database = {
           },
         ]
       }
+      patient_surgeries: {
+        Row: {
+          archived_at: string
+          created_at: string
+          created_by: string | null
+          hospital: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          procedure: string
+          responsible_user_id: string | null
+          status: Database["public"]["Enums"]["patient_status"]
+          surgery_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string
+          created_at?: string
+          created_by?: string | null
+          hospital?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          procedure: string
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["patient_status"]
+          surgery_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string
+          created_at?: string
+          created_by?: string | null
+          hospital?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          procedure?: string
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["patient_status"]
+          surgery_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_surgeries_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_tasks: {
         Row: {
           completed: boolean
