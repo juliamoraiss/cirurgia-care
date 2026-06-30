@@ -291,7 +291,6 @@ export function PatientSurgeriesHistory({
             </div>
 
             <div className="space-y-2">
-              <Label>Hospital</Label>
               <HospitalField
                 value={form.hospital}
                 onChange={(v) => setForm((f) => ({ ...f, hospital: v }))}
