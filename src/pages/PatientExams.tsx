@@ -329,6 +329,19 @@ const PatientExams = () => {
         </CardContent>
       </Card>
 
+      <PatientSurgeriesHistory
+        patientId={id!}
+        patientStatus={patient.status}
+        currentProcedure={patient.procedure}
+        currentHospital={patient.hospital}
+        currentSurgeryDate={patient.surgery_date}
+        currentResponsibleUserId={patient.responsible_user_id}
+        canManage={isAdmin || !!(user && patient.responsible_user_id === user.id)}
+        onArchived={() => {
+          loadPatientData();
+        }}
+      />
+
       <PatientNotesSection patientId={id!} />
 
       {/* Oncology Timeline - only for oncology patients */}
