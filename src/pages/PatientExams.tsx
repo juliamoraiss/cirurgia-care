@@ -344,6 +344,15 @@ const PatientExams = () => {
         }}
       />
 
+      <PatientSurgeryTimeline
+        patientId={id!}
+        currentProcedure={patient.procedure}
+        currentHospital={patient.hospital}
+        currentSurgeryDate={patient.surgery_date}
+        currentStatus={patient.status}
+      />
+
+
       <PatientNotesSection patientId={id!} />
 
       {/* Oncology Timeline - only for oncology patients */}
