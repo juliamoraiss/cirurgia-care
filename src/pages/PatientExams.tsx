@@ -14,6 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { capitalizeFirst } from "@/lib/utils";
 import { safeWindowOpen } from "@/lib/urlSecurity";
 import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
+import { PatientSurgeryTimeline } from "@/components/PatientSurgeryTimeline";
 import { useAuth } from "@/hooks/useAuth";
 
 interface Patient {
@@ -342,6 +343,15 @@ const PatientExams = () => {
           loadPatientData();
         }}
       />
+
+      <PatientSurgeryTimeline
+        patientId={id!}
+        currentProcedure={patient.procedure}
+        currentHospital={patient.hospital}
+        currentSurgeryDate={patient.surgery_date}
+        currentStatus={patient.status}
+      />
+
 
       <PatientNotesSection patientId={id!} />
 
