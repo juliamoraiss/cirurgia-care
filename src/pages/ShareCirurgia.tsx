@@ -184,7 +184,12 @@ export default function ShareCirurgia() {
       setExtracted(ex);
       setPatientName(toTitleCaseName(ex.patient_name || ""));
       // Default procedure for WhatsApp imports is rinoplastia (lowercase para casar com o Select do PatientForm)
-      setProcedure((ex.procedure || "Rinoplastia").toLowerCase());
+      let procResolved = (ex.procedure || "Rinoplastia").toLowerCase();
+      // Consolidar "rino com cart. costal" (e variações) como "rinoplastia"
+      if (/rino.*cart.*costal/i.test(procResolved)) {
+        procResolved = "rinoplastia";
+      }
+      setProcedure(procResolved);
       // Tenta casar o hospital extraído com algum já cadastrado
       let hospitalResolved = ex.hospital ? formatHospitalName(ex.hospital) : "";
       if (hospitalResolved) {
