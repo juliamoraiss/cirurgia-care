@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
       .from("patients")
       .select("id, name, procedure, surgery_date, hospital")
       .not("surgery_date", "is", null)
-      .gte("surgery_date", saoPauloTime.toISOString()) // a partir de AGORA (remove cirurgias que já passaram)
+      .gte("surgery_date", now.toISOString())
       .lt("surgery_date", next7DaysEnd.toISOString()) // até 7 dias à frente
       .order("surgery_date", { ascending: true });
 
