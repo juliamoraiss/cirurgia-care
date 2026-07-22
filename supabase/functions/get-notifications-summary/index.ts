@@ -1,47 +1,45 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const ALLOWED_ORIGINS = [
-  'https://medsystem.lovable.app',
-  'https://4acdf001-5ce9-4858-b746-f16af6b614e1.lovableproject.com',
-  'http://localhost:5173',
-  'http://localhost:4173',
+  "https://medsystem.lovable.app",
+  "https://4acdf001-5ce9-4858-b746-f16af6b614e1.lovableproject.com",
+  "http://localhost:5173",
+  "http://localhost:4173",
 ];
 
 function getCorsHeaders(origin: string | null) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin || '') ? origin : ALLOWED_ORIGINS[0];
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin || "") ? origin : ALLOWED_ORIGINS[0];
   return {
-    'Access-Control-Allow-Origin': allowedOrigin!,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Credentials': 'true',
+    "Access-Control-Allow-Origin": allowedOrigin!,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Credentials": "true",
   };
 }
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get('origin');
+  const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
 
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const notificationToken = Deno.env.get('NOTIFICATION_TOKEN');
-    
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const notificationToken = Deno.env.get("NOTIFICATION_TOKEN");
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Validate token from Authorization header only.
     // Token MUST be provided as: Authorization: Bearer <token>
     // Query parameter support was removed to avoid leaking the token via logs/Referer.
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.get("authorization");
 
     let providedToken: string | null = null;
     if (authHeader) {
-      providedToken = authHeader.startsWith('Bearer ')
-        ? authHeader.substring(7)
-        : authHeader;
+      providedToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
     }
 
     const isValidToken = providedToken && providedToken === notificationToken;
@@ -49,33 +47,34 @@ Deno.serve(async (req) => {
     if (!isValidToken) {
       return new Response(
         JSON.stringify({
-          error: 'Acesso não autorizado',
-          summary: '❌ Acesso não autorizado',
+          error: "Acesso não autorizado",
+          summary: "❌ Acesso não autorizado",
         }),
         {
           status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     // Get current time in São Paulo timezone
     const now = new Date();
     const saoPauloOffset = -3; // UTC-3
-    const saoPauloTime = new Date(now.getTime() + (saoPauloOffset * 60 * 60 * 1000));
-    
+    const saoPauloTime = new Date(now.getTime() + saoPauloOffset * 60 * 60 * 1000);
+
     // Get start of today in São Paulo (00:00:00)
     const todayStart = new Date(saoPauloTime);
     todayStart.setHours(0, 0, 0, 0);
-    
+
     // Get start of tomorrow in São Paulo
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
     // Get overdue tasks (due_date < start of today in São Paulo)
     const { data: overdueTasks, error: overdueError } = await supabase
-      .from('patient_tasks')
-      .select(`
+      .from("patient_tasks")
+      .select(
+        `
         id,
         title,
         due_date,
@@ -86,19 +85,21 @@ Deno.serve(async (req) => {
           name,
           phone
         )
-      `)
-      .eq('completed', false)
-      .lt('due_date', todayStart.toISOString())
-      .order('due_date', { ascending: true });
+      `,
+      )
+      .eq("completed", false)
+      .lt("due_date", todayStart.toISOString())
+      .order("due_date", { ascending: true });
 
     if (overdueError) {
-      console.error('Error fetching overdue tasks:', overdueError);
+      console.error("Error fetching overdue tasks:", overdueError);
     }
 
     // Get today's tasks (between start of today and start of tomorrow in São Paulo)
     const { data: todayTasks, error: todayError } = await supabase
-      .from('patient_tasks')
-      .select(`
+      .from("patient_tasks")
+      .select(
+        `
         id,
         title,
         due_date,
@@ -109,14 +110,15 @@ Deno.serve(async (req) => {
           name,
           phone
         )
-      `)
-      .eq('completed', false)
-      .gte('due_date', todayStart.toISOString())
-      .lt('due_date', tomorrowStart.toISOString())
-      .order('due_date', { ascending: true });
+      `,
+      )
+      .eq("completed", false)
+      .gte("due_date", todayStart.toISOString())
+      .lt("due_date", tomorrowStart.toISOString())
+      .order("due_date", { ascending: true });
 
     if (todayError) {
-      console.error('Error fetching today tasks:', todayError);
+      console.error("Error fetching today tasks:", todayError);
     }
 
     // Get new patients (last 24 hours)
@@ -124,36 +126,37 @@ Deno.serve(async (req) => {
     last24Hours.setHours(last24Hours.getHours() - 24);
 
     const { data: newPatients, error: patientsError } = await supabase
-      .from('patients')
-      .select('id, name, procedure, created_at')
-      .gte('created_at', last24Hours.toISOString())
-      .order('created_at', { ascending: false });
+      .from("patients")
+      .select("id, name, procedure, created_at")
+      .gte("created_at", last24Hours.toISOString())
+      .order("created_at", { ascending: false });
 
     if (patientsError) {
-      console.error('Error fetching new patients:', patientsError);
+      console.error("Error fetching new patients:", patientsError);
     }
 
     // Get upcoming surgeries (today and next 2 days in São Paulo timezone)
-    const dayAfterTomorrowStart = new Date(tomorrowStart);
-    dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 1);
+    // Get upcoming surgeries (from now up to the next 7 days)
+    const next7DaysEnd = new Date(todayStart);
+    next7DaysEnd.setDate(next7DaysEnd.getDate() + 8); // início do 8º dia = cobre 7 dias completos à frente
 
     const { data: upcomingSurgeries, error: surgeriesError } = await supabase
-      .from('patients')
-      .select('id, name, procedure, surgery_date, hospital')
-      .not('surgery_date', 'is', null)
-      .gte('surgery_date', todayStart.toISOString())
-      .lt('surgery_date', dayAfterTomorrowStart.toISOString())
-      .order('surgery_date', { ascending: true });
+      .from("patients")
+      .select("id, name, procedure, surgery_date, hospital")
+      .not("surgery_date", "is", null)
+      .gte("surgery_date", saoPauloTime.toISOString()) // a partir de AGORA (remove cirurgias que já passaram)
+      .lt("surgery_date", next7DaysEnd.toISOString()) // até 7 dias à frente
+      .order("surgery_date", { ascending: true });
 
     if (surgeriesError) {
-      console.error('Error fetching upcoming surgeries:', surgeriesError);
+      console.error("Error fetching upcoming surgeries:", surgeriesError);
     }
 
     // Get the base URL from environment or use default
-    const baseUrl = 'https://medsystem.lovable.app';
+    const baseUrl = "https://medsystem.lovable.app";
 
     // Format response - all requests are authenticated at this point
-    const overdueTasksFormatted = (overdueTasks || []).map(task => ({
+    const overdueTasksFormatted = (overdueTasks || []).map((task) => ({
       patient_name: (task.patients as any)?.name,
       patient_id: (task.patients as any)?.id,
       task_id: task.id,
@@ -163,7 +166,7 @@ Deno.serve(async (req) => {
       task_url: `${baseUrl}/tasks`,
     }));
 
-    const todayTasksFormatted = (todayTasks || []).map(task => ({
+    const todayTasksFormatted = (todayTasks || []).map((task) => ({
       patient_name: (task.patients as any)?.name,
       patient_id: (task.patients as any)?.id,
       task_id: task.id,
@@ -173,13 +176,13 @@ Deno.serve(async (req) => {
       task_url: `${baseUrl}/tasks`,
     }));
 
-    const newPatientsFormatted = (newPatients || []).map(patient => ({
+    const newPatientsFormatted = (newPatients || []).map((patient) => ({
       name: patient.name,
       procedure: patient.procedure,
       created_at: patient.created_at,
     }));
 
-    const upcomingSurgeriesFormatted = (upcomingSurgeries || []).map(surgery => ({
+    const upcomingSurgeriesFormatted = (upcomingSurgeries || []).map((surgery) => ({
       patient_name: surgery.name,
       procedure: surgery.procedure,
       surgery_date: surgery.surgery_date,
@@ -188,26 +191,30 @@ Deno.serve(async (req) => {
 
     // Build summary text
     const summaryParts = [];
-    
+
     if (overdueTasksFormatted.length > 0) {
-      summaryParts.push(`⚠️ ${overdueTasksFormatted.length} tarefa${overdueTasksFormatted.length > 1 ? 's' : ''} atrasada${overdueTasksFormatted.length > 1 ? 's' : ''}`);
-    }
-    
-    if (todayTasksFormatted.length > 0) {
-      summaryParts.push(`📅 ${todayTasksFormatted.length} tarefa${todayTasksFormatted.length > 1 ? 's' : ''} hoje`);
-    }
-    
-    if (newPatientsFormatted.length > 0) {
-      summaryParts.push(`👤 ${newPatientsFormatted.length} novo${newPatientsFormatted.length > 1 ? 's' : ''} paciente${newPatientsFormatted.length > 1 ? 's' : ''}`);
-    }
-    
-    if (upcomingSurgeriesFormatted.length > 0) {
-      summaryParts.push(`🏥 ${upcomingSurgeriesFormatted.length} cirurgia${upcomingSurgeriesFormatted.length > 1 ? 's' : ''} próxima${upcomingSurgeriesFormatted.length > 1 ? 's' : ''}`);
+      summaryParts.push(
+        `⚠️ ${overdueTasksFormatted.length} tarefa${overdueTasksFormatted.length > 1 ? "s" : ""} atrasada${overdueTasksFormatted.length > 1 ? "s" : ""}`,
+      );
     }
 
-    const summary = summaryParts.length > 0 
-      ? summaryParts.join(', ')
-      : '✅ Tudo em dia!';
+    if (todayTasksFormatted.length > 0) {
+      summaryParts.push(`📅 ${todayTasksFormatted.length} tarefa${todayTasksFormatted.length > 1 ? "s" : ""} hoje`);
+    }
+
+    if (newPatientsFormatted.length > 0) {
+      summaryParts.push(
+        `👤 ${newPatientsFormatted.length} novo${newPatientsFormatted.length > 1 ? "s" : ""} paciente${newPatientsFormatted.length > 1 ? "s" : ""}`,
+      );
+    }
+
+    if (upcomingSurgeriesFormatted.length > 0) {
+      summaryParts.push(
+        `🏥 ${upcomingSurgeriesFormatted.length} cirurgia${upcomingSurgeriesFormatted.length > 1 ? "s" : ""} próxima${upcomingSurgeriesFormatted.length > 1 ? "s" : ""}`,
+      );
+    }
+
+    const summary = summaryParts.length > 0 ? summaryParts.join(", ") : "✅ Tudo em dia!";
 
     const response = {
       overdue_tasks: {
@@ -230,20 +237,19 @@ Deno.serve(async (req) => {
     };
 
     return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
-    console.error('Error in get-notifications-summary:', error);
+    console.error("Error in get-notifications-summary:", error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Erro ao buscar notificações. Tente novamente.',
-        summary: '❌ Erro ao buscar notificações',
-      }), 
+      JSON.stringify({
+        error: "Erro ao buscar notificações. Tente novamente.",
+        summary: "❌ Erro ao buscar notificações",
+      }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
