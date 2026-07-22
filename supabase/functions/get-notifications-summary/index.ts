@@ -183,13 +183,13 @@ Deno.serve(async (req) => {
 
     const newPatientsFormatted = (newPatients || []).map((patient) => ({
       name: patient.name,
-      procedure: patient.procedure,
+      procedure: capitalizeFirst(patient.procedure),
       created_at: patient.created_at,
     }));
 
     const upcomingSurgeriesFormatted = (upcomingSurgeries || []).map((surgery) => ({
       patient_name: surgery.name,
-      procedure: surgery.procedure,
+      procedure: capitalizeFirst(surgery.procedure),
       surgery_date: surgery.surgery_date,
       hospital: surgery.hospital,
     }));
