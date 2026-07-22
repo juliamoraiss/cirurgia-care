@@ -16,6 +16,11 @@ function getCorsHeaders(origin: string | null) {
   };
 }
 
+function capitalizeFirst(value: string | null | undefined): string | null {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
@@ -178,13 +183,13 @@ Deno.serve(async (req) => {
 
     const newPatientsFormatted = (newPatients || []).map((patient) => ({
       name: patient.name,
-      procedure: patient.procedure,
+      procedure: capitalizeFirst(patient.procedure),
       created_at: patient.created_at,
     }));
 
     const upcomingSurgeriesFormatted = (upcomingSurgeries || []).map((surgery) => ({
       patient_name: surgery.name,
-      procedure: surgery.procedure,
+      procedure: capitalizeFirst(surgery.procedure),
       surgery_date: surgery.surgery_date,
       hospital: surgery.hospital,
     }));
