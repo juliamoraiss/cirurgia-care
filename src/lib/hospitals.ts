@@ -8,6 +8,7 @@ export const HOSPITAL_OPTIONS = [
   "Hospital Anchieta",
   "Hospital Prontonorte",
   "Hospital Santa Lúcia Norte",
+  "Hospital Santa Lúcia Sul",
   "Hospital Mantevida",
   "Hospital Ceuta",
   "Hospital Alvorada",
