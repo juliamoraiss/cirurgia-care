@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientTasksSection } from "@/components/PatientTasksSection";
+import { DeletePatientCard, PatientQuickActions } from "@/components/PatientQuickActions";
 import { ToConfirmBadge } from "@/components/ToConfirmBadge";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { OncologyTimeline } from "@/components/OncologyTimeline";
@@ -38,6 +39,7 @@ interface Patient {
   birth_date: string | null;
   status: string;
   is_oncology: boolean;
+  google_calendar_event_id?: string | null;
   oncology_stage: string | null;
   responsible_user_id: string | null;
 }
@@ -92,6 +94,8 @@ const PatientExams = () => {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
   const [loading, setLoading] = useState(true);
+  // Recria as seções (notas etc.) depois de uma ação rápida
+  const [refreshKey, setRefreshKey] = useState(0);
   const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -115,7 +119,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, surgery_to_confirm, birth_date, status, is_oncology, oncology_stage, responsible_user_id, insurance, phone, guide_validity_date")
+        .select("id, name, procedure, hospital, surgery_date, surgery_to_confirm, birth_date, status, is_oncology, oncology_stage, responsible_user_id, insurance, phone, guide_validity_date, google_calendar_event_id")
         .eq("id", id)
         .single();
 
@@ -320,6 +324,18 @@ const PatientExams = () => {
           ))}
         </div>
       </div>
+
+      {/* Ações rápidas: status, data, nota e arquivo sem abrir o formulário */}
+      {isAdmin && (
+        <PatientQuickActions
+          patient={{ ...patient, id: id! }}
+          onChanged={() => {
+            loadPatientData();
+            loadPatientFiles();
+            setRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
 
       {/* Celular: lista agrupada "rótulo à esquerda, valor à direita" */}
       <GroupedSection title="Cirurgia">
@@ -566,7 +582,7 @@ const PatientExams = () => {
       {/* Tarefas do paciente ficam na ficha (antes só apareciam na tela de edição) */}
       {canManagePatient && <PatientTasksSection patientId={id!} />}
 
-      <PatientNotesSection patientId={id!} />
+      <PatientNotesSection key={`notes-${refreshKey}`} patientId={id!} />
 
       {/* Oncology Timeline - only for oncology patients */}
       {patient.is_oncology && (
@@ -673,6 +689,13 @@ const PatientExams = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Exclusão fica no fim da ficha, longe das ações do dia a dia */}
+      {isAdmin && (
+        <div className="pt-4 pb-2">
+          <DeletePatientCard patient={{ ...patient, id: id! }} />
+        </div>
+      )}
     </div>
     </>
   );

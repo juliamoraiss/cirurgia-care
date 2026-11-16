@@ -1,76 +1,50 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Check, Copy, FileText, Link2, MessageCircle, Trash2, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureHospitalRegistered } from "@/lib/hospitals";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useProfessionals } from "@/hooks/useProfessionals";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
-import { autoCompleteAfterMessage } from "@/lib/tasks";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2, Link2, Copy, Check } from "lucide-react";
-import { toast } from "sonner";
-import { z } from "zod";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PageHeader, HeaderAction } from "@/components/PageHeader";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
-import { PatientFormSteps } from "@/components/PatientFormSteps";
-import { PageHeader } from "@/components/PageHeader";
-import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
-import { ProfessionalSelect } from "@/components/ProfessionalSelect";
+import { PatientSurgeryTimeline } from "@/components/PatientSurgeryTimeline";
+import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
+import { FieldGroup } from "@/components/form/FieldRow";
+import {
+  BirthDateField,
+  ChoiceChips,
+  GuideValidityField,
+  PhoneField,
+  SegmentedField,
+  SelectSheetField,
+  StatusField,
+  SurgeryDateTimeField,
+  SwitchField,
+  TextField,
+} from "@/components/form/fields";
+import { DiscardChangesDialog, FormSection, ResumeDraftDialog, SaveBar, SaveEffectsSheet, type SaveState } from "@/components/form/layout";
+import { DuplicateWarning, ImportWhatsAppSheet, importedHighlight, type ImportedPatientData } from "@/components/form/PatientAssist";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
-import { HospitalField } from "@/components/HospitalField";
-import InputMask from "react-input-mask";
 import { describeError } from "@/lib/errors";
+import { HOSPITAL_OPTIONS, ensureHospitalRegistered } from "@/lib/hospitals";
+import { getExamsForProcedure } from "@/lib/patientAlerts";
+import { createSurgeryTasks, detectSaveEffects, runSaveEffects, type EffectKey, type PatientSnapshot, type SaveEffect } from "@/lib/patientActions";
+import { DEFAULT_INSURANCES, ONCOLOGY_STAGES, ORIGEM_OPTIONS, PROCEDURE_OPTIONS, type PatientStatusValue } from "@/lib/patientOptions";
+import { normalizePhoneDigits, phoneError } from "@/lib/phone";
+import { longDateTime } from "@/lib/dates";
 
-// Validation schema with enhanced security
-const patientSchema = z.object({
-  name: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres").max(200, "Nome deve ter no máximo 200 caracteres"),
-  phone: z.string().regex(/^\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}$/, "Telefone inválido. Formato: (XX) XXXXX-XXXX").optional().or(z.literal("")),
-  birth_date: z.string().optional(),
-  gender: z.enum(["masculino", "feminino"]).optional().or(z.literal("")),
-  procedure: z.string().trim().min(3, "Procedimento deve ter no mínimo 3 caracteres").max(500, "Procedimento deve ter no máximo 500 caracteres"),
-  hospital: z.string().max(200, "Hospital deve ter no máximo 200 caracteres").optional().or(z.literal("")),
-  insurance: z.string().max(200, "Convênio deve ter no máximo 200 caracteres").optional().or(z.literal("")),
-  status: z.enum(["awaiting_authorization", "awaiting_consultation", "authorized", "pending_scheduling", "surgery_scheduled", "surgery_completed", "completed", "cancelled"]),
-  origem: z.string().optional(),
-});
+// ---------------------------------------------------------------------------
+// Tipos e utilitários
+// ---------------------------------------------------------------------------
 
-type PatientStatus = z.infer<typeof patientSchema>["status"];
-
-type PatientFormState = {
+type FormState = {
   name: string;
   phone: string;
   birth_date: string;
@@ -78,8 +52,8 @@ type PatientFormState = {
   procedure: string;
   hospital: string;
   insurance: string;
-  status: PatientStatus;
-  surgery_date: string;
+  status: PatientStatusValue;
+  surgery_date: string; // "AAAA-MM-DDTHH:mm" local
   surgery_to_confirm: boolean;
   guide_validity_date: string;
   origem: string;
@@ -88,208 +62,209 @@ type PatientFormState = {
   oncology_stage: string;
 };
 
-type PatientFormDraft = {
-  formData?: Partial<PatientFormState>;
-  checkedExams?: string[];
-  currentStep?: number;
-  savedAt?: number;
+const EMPTY_FORM: FormState = {
+  name: "",
+  phone: "",
+  birth_date: "",
+  gender: "",
+  procedure: "",
+  hospital: "",
+  insurance: "",
+  status: "awaiting_authorization",
+  surgery_date: "",
+  surgery_to_confirm: false,
+  guide_validity_date: "",
+  origem: "",
+  responsible_user_id: "",
+  is_oncology: false,
+  oncology_stage: "",
 };
 
+type Draft = { form: FormState; checkedExams: string[]; savedAt: number };
 
-const readPatientFormDraft = (storageKey: string): PatientFormDraft | null => {
+const SECTION_IDS = ["dados", "cirurgia", "autorizacao", "exames", "notas", "feedback", "historico"] as const;
+type SectionId = (typeof SECTION_IDS)[number];
+
+/** UTC do banco → "AAAA-MM-DDTHH:mm" local. */
+function toLocalInput(iso: string | null | undefined) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function toIso(local: string) {
+  return local ? new Date(local).toISOString() : "";
+}
+
+function titleCase(name: string) {
+  return name
+    .split(" ")
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(" ");
+}
+
+function readDraft(key: string): Draft | null {
   try {
-    const rawDraft = localStorage.getItem(storageKey);
-    if (!rawDraft) return null;
-
-    const parsedDraft = JSON.parse(rawDraft) as PatientFormDraft;
-    return parsedDraft && typeof parsedDraft === "object" ? parsedDraft : null;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Draft) : null;
   } catch {
     return null;
   }
+}
+
+/** Erros em linguagem simples, campo a campo. */
+function validate(f: FormState, isNew: boolean, needsProfessional: boolean): Partial<Record<keyof FormState, string>> {
+  const e: Partial<Record<keyof FormState, string>> = {};
+  if (f.name.trim().length < 3) e.name = "Digite o nome completo";
+  const pErr = phoneError(f.phone);
+  if (pErr) e.phone = pErr;
+  else if (isNew && !normalizePhoneDigits(f.phone)) e.phone = "Informe o telefone";
+  if (!f.procedure) e.procedure = "Escolha o procedimento";
+  if (needsProfessional && !f.responsible_user_id) e.responsible_user_id = "Escolha o profissional";
+  if (f.status === "surgery_scheduled") {
+    if (!f.surgery_date) e.surgery_date = 'Para "Cirurgia agendada", informe a data e a hora';
+    if (!f.hospital) e.hospital = 'Para "Cirurgia agendada", informe o hospital';
+  }
+  if (f.surgery_date && f.guide_validity_date && new Date(f.surgery_date) > new Date(`${f.guide_validity_date}T23:59:59`)) {
+    e.surgery_date = "A cirurgia está depois da validade da guia";
+  }
+  return e;
+}
+
+const FIELD_SECTION: Partial<Record<keyof FormState, SectionId>> = {
+  name: "dados",
+  phone: "dados",
+  responsible_user_id: "dados",
+  procedure: "cirurgia",
+  hospital: "cirurgia",
+  surgery_date: "cirurgia",
+  status: "autorizacao",
 };
+
+// ---------------------------------------------------------------------------
 
 const PatientForm = () => {
   const navigate = useNavigate();
-
-  // Volta para a tela de onde o usuário veio (ficha, agenda, tarefas, lista...).
-  // Se o formulário foi aberto direto por link, cai na lista de pacientes.
-  const goBack = () => {
-    const historyIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
-    if (historyIdx > 0) {
-      navigate(-1);
-    } else {
-      navigate("/patients", { replace: true });
-    }
-  };
   const { id } = useParams();
-  const { isAdmin, isDoctor, loading: roleLoading } = useUserRole();
+  const [searchParams] = useSearchParams();
+  const isNew = !id;
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(!!id);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const isEditMode = !!id;
-  
-  // ?surgery_date=AAAA-MM-DDTHH:mm (ex.: "+" da Agenda) já preenche a data da cirurgia
-  const presetSurgeryDate = (() => {
-    const v = new URLSearchParams(window.location.search).get("surgery_date") || "";
+  const isMobile = useIsMobile();
+  const { professionals } = useProfessionals();
+
+  const draftKey = isNew ? "patient-form-draft:new" : `patient-form-draft:${id}`;
+
+  // "+" da Agenda: ?surgery_date=AAAA-MM-DDTHH:mm já preenche a data
+  const presetDate = (() => {
+    const v = searchParams.get("surgery_date") || "";
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? v : "";
   })();
-  const [formData, setFormData] = useState<PatientFormState>({
-    name: "",
-    phone: "",
-    birth_date: "",
-    gender: "",
-    procedure: "",
-    hospital: "",
-    insurance: "",
-    status: presetSurgeryDate ? "surgery_scheduled" : "awaiting_authorization",
-    surgery_date: presetSurgeryDate,
-    surgery_to_confirm: false,
-    guide_validity_date: "",
-    origem: "",
-    responsible_user_id: "",
-    is_oncology: false,
-    oncology_stage: "",
-  });
-  const [files, setFiles] = useState<File[]>([]);
-  const [existingFiles, setExistingFiles] = useState<any[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
-  const [examsChecklist, setExamsChecklist] = useState<string[]>([]);
-  const [checkedExams, setCheckedExams] = useState<string[]>([]);
-  const [deletingPatient, setDeletingPatient] = useState(false);
-  // ?step=2 abre direto numa etapa (ex.: "Adicionar exame" na ficha)
-  const [currentStep, setCurrentStep] = useState(() => {
-    const step = Number(new URLSearchParams(window.location.search).get("step"));
-    return Number.isInteger(step) && step >= 0 && step <= 2 ? step : 0;
-  });
-  const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
-  const [originalToConfirm, setOriginalToConfirm] = useState(false);
-  const [patientUpdatedAt, setPatientUpdatedAt] = useState<string | null>(null);
-  const [googleCalendarEventId, setGoogleCalendarEventId] = useState<string | null>(null);
 
+  const [loadingData, setLoadingData] = useState(!isNew);
+  const [form, setForm] = useState<FormState>(() => ({
+    ...EMPTY_FORM,
+    surgery_date: presetDate,
+    status: presetDate ? "surgery_scheduled" : EMPTY_FORM.status,
+  }));
+  // Último estado salvo (para saber o que mudou e o que disparar ao salvar)
+  const [baseline, setBaseline] = useState<FormState | null>(null);
+  const [checkedExams, setCheckedExams] = useState<string[]>([]);
+  const [baselineExams, setBaselineExams] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<
+    { id: string; file_name: string; file_path: string; file_size: number; created_at: string }[]
+  >([]);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const [submitted, setSubmitted] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [pendingEffects, setPendingEffects] = useState<SaveEffect[] | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [resumeDraft, setResumeDraft] = useState<Draft | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [imported, setImported] = useState<Set<string>>(new Set());
+  const [moreOpen, setMoreOpen] = useState(!!presetDate);
+  const [hospitalNames, setHospitalNames] = useState<string[]>(HOSPITAL_OPTIONS);
+  const [insurances, setInsurances] = useState<string[]>(DEFAULT_INSURANCES);
+  const [commonTime, setCommonTime] = useState<string | null>(null);
+  const [viewingFile, setViewingFile] = useState<{ url: string; name: string } | null>(null);
   const [schedulingLink, setSchedulingLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const hasRestoredDraftRef = useRef(false);
-  const patientDraftStorageKey = useMemo(
-    () => (isEditMode && id ? `patient-form-draft:${id}` : "patient-form-draft:new"),
-    [id, isEditMode],
-  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Função auxiliar para encoding correto do WhatsApp
-  const encodeWhatsAppMessage = (message: string) => {
-    return encodeURIComponent(message);
-  };
+  // Seções abertas: ?section=autorizacao (ou ?step=2 antigo → exames)
+  const [openSections, setOpenSections] = useState<Set<SectionId>>(() => {
+    const param = searchParams.get("section") as SectionId | null;
+    if (param && SECTION_IDS.includes(param)) return new Set([param]);
+    if (searchParams.get("step") === "2") return new Set<SectionId>(["exames"]);
+    return new Set<SectionId>(["dados", "cirurgia", "autorizacao"]);
+  });
+  const toggleSection = (s: SectionId) =>
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      return next;
+    });
 
-  // Auto-assign responsible para novos pacientes:
-  // - Não admin: o próprio usuário
-  // - Admin: Dr. André Morais Alves como padrão
+  // Abre a seção pedida na URL rolando até ela
   useEffect(() => {
-    if (isEditMode || !user || roleLoading) return;
-    if (!isAdmin) {
-      setFormData(prev => prev.responsible_user_id ? prev : { ...prev, responsible_user_id: user.id });
-    } else {
-      setFormData(prev => prev.responsible_user_id ? prev : { ...prev, responsible_user_id: DEFAULT_RESPONSIBLE_DOCTOR_ID });
-    }
-  }, [isEditMode, isAdmin, user, roleLoading]);
+    const param = searchParams.get("section") || (searchParams.get("step") === "2" ? "exames" : null);
+    if (!param || loadingData) return;
+    setTimeout(() => document.getElementById(`section-${param}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+  }, [loadingData, searchParams]);
+
+  // ------------------------------------------------------------ carregar
+
+  const loadFiles = useCallback(async (patientId: string) => {
+    const { data } = await supabase
+      .from("patient_files")
+      .select("id, file_name, file_path, file_size, created_at")
+      .eq("patient_id", patientId)
+      .order("created_at", { ascending: false });
+    setExistingFiles(data || []);
+  }, []);
 
   useEffect(() => {
-    if (id) {
-      loadPatientData(id);
-      loadPatientFiles(id);
-    } else {
-      setLoadingData(false);
-    }
-  }, [id]);
+    // Listas de hospitais e convênios (inclui os já usados por pacientes)
+    supabase
+      .from("hospitals")
+      .select("name")
+      .then(({ data }) => {
+        const names = (data || []).map((h: { name: string }) => h.name);
+        setHospitalNames((prev) => Array.from(new Set([...prev, ...names])).sort((a, b) => a.localeCompare(b)));
+      });
+    supabase
+      .from("patients")
+      .select("insurance")
+      .not("insurance", "is", null)
+      .then(({ data }) => {
+        let custom: string[] = [];
+        try {
+          custom = JSON.parse(localStorage.getItem("custom_insurances") || "[]");
+        } catch {
+          /* ignore */
+        }
+        const used = (data || []).map((p: { insurance: string | null }) => p.insurance || "").filter(Boolean);
+        setInsurances(Array.from(new Set([...DEFAULT_INSURANCES, ...custom, ...used])).sort((a, b) => a.localeCompare(b)));
+      });
+  }, []);
 
   useEffect(() => {
-    if (hasRestoredDraftRef.current) return;
-    if (loadingData) return;
-
-    const savedDraft = readPatientFormDraft(patientDraftStorageKey);
-    if (!savedDraft) {
-      hasRestoredDraftRef.current = true;
+    if (isNew) {
+      setBaseline(form);
+      const draft = readDraft(draftKey);
+      if (draft && JSON.stringify(draft.form) !== JSON.stringify(form)) setResumeDraft(draft);
       return;
     }
-
-    // Discard draft if the patient was updated in the DB after the draft was saved
-    // (avoids overwriting current data with stale local values, e.g. after archiving a surgery)
-    if (isEditMode && patientUpdatedAt) {
-      const dbUpdated = new Date(patientUpdatedAt).getTime();
-      const draftSaved = savedDraft.savedAt ?? 0;
-      if (!draftSaved || dbUpdated > draftSaved) {
-        try { localStorage.removeItem(patientDraftStorageKey); } catch {}
-        hasRestoredDraftRef.current = true;
-        return;
-      }
-    }
-
-    if (savedDraft.formData) {
-      setFormData((prev) => ({ ...prev, ...savedDraft.formData }));
-      if (savedDraft.formData.procedure) {
-        setExamsChecklist(getExamsForProcedure(savedDraft.formData.procedure));
-      }
-    }
-
-    if (Array.isArray(savedDraft.checkedExams)) {
-      setCheckedExams(savedDraft.checkedExams);
-    }
-
-    if (typeof savedDraft.currentStep === "number") {
-      setCurrentStep(Math.min(Math.max(savedDraft.currentStep, 0), steps.length - 1));
-    }
-
-    hasRestoredDraftRef.current = true;
-    toast.success("Rascunho do formulário restaurado");
-  }, [loadingData, patientDraftStorageKey, isEditMode, patientUpdatedAt]);
-
-  useEffect(() => {
-    if (!hasRestoredDraftRef.current) return;
-
-    const draftPayload: PatientFormDraft = {
-      formData,
-      checkedExams,
-      currentStep,
-      savedAt: Date.now(),
-    };
-
-    try {
-      localStorage.setItem(patientDraftStorageKey, JSON.stringify(draftPayload));
-    } catch {
-      // ignore storage write errors
-    }
-  }, [checkedExams, currentStep, formData, patientDraftStorageKey]);
-
-
-  async function loadPatientData(patientId: string) {
-    try {
-      const { data, error } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("id", patientId)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        // Extract checklist before setting formData to preserve it
-        const savedExams = data.exams_checklist || [];
-        
-        // Convert UTC timestamp to local datetime-local format
-        let localSurgeryDate = "";
-        if (data.surgery_date) {
-          const date = new Date(data.surgery_date);
-          // Format to YYYY-MM-DDTHH:mm for datetime-local input
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          localSurgeryDate = `${year}-${month}-${day}T${hours}:${minutes}`;
-        }
-        
-        setFormData({
+    (async () => {
+      try {
+        const { data, error } = await supabase.from("patients").select("*").eq("id", id!).single();
+        if (error) throw error;
+        const loaded: FormState = {
           name: data.name || "",
           phone: data.phone || "",
           birth_date: data.birth_date || "",
@@ -297,1370 +272,829 @@ const PatientForm = () => {
           procedure: data.procedure || "",
           hospital: data.hospital || "",
           insurance: data.insurance || "",
-    status: (data.status as PatientStatus) || "awaiting_authorization",
-          surgery_date: localSurgeryDate,
+          status: (data.status as PatientStatusValue) || "awaiting_authorization",
+          surgery_date: toLocalInput(data.surgery_date),
           surgery_to_confirm: !!data.surgery_to_confirm,
           guide_validity_date: data.guide_validity_date || "",
           origem: data.origem || "",
           responsible_user_id: data.responsible_user_id || "",
-          is_oncology: data.is_oncology || false,
+          is_oncology: !!data.is_oncology,
           oncology_stage: data.oncology_stage || "",
-        });
-        setOriginalSurgeryDate(data.surgery_date || null);
-        setOriginalToConfirm(!!data.surgery_to_confirm);
-        setPatientUpdatedAt((data as any).updated_at || (data as any).created_at || null);
-        setGoogleCalendarEventId((data as any).google_calendar_event_id || null);
+        };
+        setForm(loaded);
+        setBaseline(loaded);
+        setCheckedExams(data.exams_checklist || []);
+        setBaselineExams(data.exams_checklist || []);
+        setEventId(data.google_calendar_event_id || null);
+        await loadFiles(id!);
 
-        
-        // Set checklist for the procedure and restore checked exams
-        const procedureExams = getExamsForProcedure(data.procedure || "");
-        setExamsChecklist(procedureExams);
-        setCheckedExams(savedExams);
+        // Rascunho mais novo que a última atualização do paciente → perguntar
+        const draft = readDraft(draftKey);
+        const updatedAt = new Date(data.updated_at || data.created_at).getTime();
+        if (draft && draft.savedAt > updatedAt && JSON.stringify(draft.form) !== JSON.stringify(loaded)) {
+          setResumeDraft(draft);
+        } else if (draft) {
+          localStorage.removeItem(draftKey);
+        }
+      } catch (error) {
+        toast.error(describeError("Erro ao carregar dados do paciente", error));
+        navigate("/patients");
+      } finally {
+        setLoadingData(false);
       }
-    } catch (error) {
-      toast.error(describeError("Erro ao carregar dados do paciente", error));
-      navigate("/patients");
-    } finally {
-      setLoadingData(false);
-    }
-  }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
-  async function loadPatientFiles(patientId: string) {
-    try {
-      const { data, error } = await supabase
-        .from("patient_files")
-        .select("*")
-        .eq("patient_id", patientId)
-        .order("created_at", { ascending: false });
+  // Profissional padrão para paciente novo
+  useEffect(() => {
+    if (!isNew || !user || roleLoading) return;
+    const def = isAdmin ? DEFAULT_RESPONSIBLE_DOCTOR_ID : user.id;
+    setForm((f) => (f.responsible_user_id ? f : { ...f, responsible_user_id: def }));
+    setBaseline((b) => (b && !b.responsible_user_id ? { ...b, responsible_user_id: def } : b));
+  }, [isNew, isAdmin, user, roleLoading]);
 
-      if (error) throw error;
-      setExistingFiles(data || []);
-    } catch (error) {
-      // Error logged server-side
-    }
-  }
+  // ------------------------------------------------------------ estado derivado
 
-  const steps = [
-    {
-      title: "Dados Pessoais",
-      description: "Informações básicas do paciente",
-    },
-    {
-      title: "Dados da Cirurgia",
-      description: "Procedimento e informações hospitalares",
-    },
-    {
-      title: "Exames e Finalizações",
-      description: "Checklist de exames e arquivos",
-    },
-  ];
+  const dirty =
+    !!baseline &&
+    (JSON.stringify(form) !== JSON.stringify(baseline) ||
+      JSON.stringify([...checkedExams].sort()) !== JSON.stringify([...baselineExams].sort()) ||
+      files.length > 0);
 
-  // Campos exibidos em cada etapa — usado para validar só a etapa atual
-  // e para levar o usuário até a etapa onde está o erro.
-  const STEP_FIELDS: string[][] = [
-    ["name", "phone", "birth_date", "gender", "responsible_user_id"],
-    ["procedure", "hospital", "insurance", "status", "origem", "surgery_date", "guide_validity_date"],
-    [],
-  ];
+  const errors = validate(form, isNew, isNew && isAdmin);
+  const visibleError = (field: keyof FormState) => (submitted || touched.has(field) ? errors[field] ?? null : null);
 
-  const collectFormErrors = (): Record<string, string> => {
-    const fieldErrors: Record<string, string> = {};
-    const result = patientSchema.safeParse(formData);
-    if (!result.success) {
-      result.error.errors.forEach((err) => {
-        const field = err.path[0] as string | undefined;
-        if (field && !fieldErrors[field]) fieldErrors[field] = err.message;
-      });
-    }
-    if (!isEditMode && isAdmin && !formData.responsible_user_id) {
-      fieldErrors.responsible_user_id = "Selecione o profissional responsável pelo paciente";
-    }
-    if (formData.surgery_date && formData.guide_validity_date) {
-      // A guia vale até o fim do dia da validade
-      const surgeryDate = new Date(formData.surgery_date);
-      const validityEnd = new Date(`${formData.guide_validity_date}T23:59:59`);
-      if (surgeryDate > validityEnd) {
-        fieldErrors.surgery_date = "A data da cirurgia não pode ultrapassar a validade da guia";
-      }
-    }
-    return fieldErrors;
-  };
+  const examsChecklist = getExamsForProcedure(form.procedure);
 
-  const scrollToTop = () => {
-    // O conteúdo rola dentro do <main> do Layout, não na janela
-    document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const goToStep = (step: number) => {
-    setCurrentStep(step);
-    scrollToTop();
-  };
-
-  const handleNextStep = () => {
-    if (currentStep >= steps.length - 1) return;
-
-    const allErrors = collectFormErrors();
-    const stepErrors = Object.fromEntries(
-      Object.entries(allErrors).filter(([field]) => STEP_FIELDS[currentStep].includes(field))
-    );
-    if (Object.keys(stepErrors).length > 0) {
-      setErrors(stepErrors);
-      toast.error("Corrija os campos destacados antes de continuar");
+  // Rascunho automático (sobrevive a fechar o app ou cair a internet)
+  useEffect(() => {
+    if (!baseline || loadingData || resumeDraft) return;
+    if (!dirty) {
+      localStorage.removeItem(draftKey);
       return;
     }
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ form, checkedExams, savedAt: Date.now() } satisfies Draft));
+      } catch {
+        /* ignore */
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [form, checkedExams, dirty, baseline, loadingData, resumeDraft, draftKey]);
 
-    setErrors({});
-    goToStep(currentStep + 1);
-  };
-
-  const handleStepClick = (step: number) => {
-    if (step === currentStep) return;
-    // Voltar é sempre livre; avançar pelo indicador só na edição
-    if (step < currentStep || isEditMode) goToStep(step);
-  };
-
-  const handlePreviousStep = () => {
-    if (currentStep > 0) {
-      goToStep(currentStep - 1);
-    }
-  };
-
-  const getExamsForProcedure = (procedure: string): string[] => {
-    const examsMap: Record<string, string[]> = {
-      simpatectomia: ["Risco Cirúrgico Cardiológico"],
-      lobectomia: [
-        "PET - CT",
-        "Risco cardiológico",
-        "Risco Pneumologico",
-        "Ressonância Magnética de Crânio",
-        "Resultado de biopsia",
-        "Última tomografia do tórax (opcional)"
-      ],
-      rinoplastia: [],
-      broncoscopia: ["Risco cardiológico (opcional)"]
+  // Avisa o navegador ao fechar a aba com alterações
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
     };
-    return examsMap[procedure] || [];
-  };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
-  const formatNameToTitleCase = (name: string) => {
-    return name
-      .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  const handleChange = (field: string, value: string) => {
-    let formattedValue = value;
-    
-    if (field === 'name') {
-      formattedValue = formatNameToTitleCase(value);
+  // Sugestão: horário mais comum no hospital escolhido
+  useEffect(() => {
+    if (!form.hospital) {
+      setCommonTime(null);
+      return;
     }
-    
-    setFormData((prev) => {
-      const updated = { ...prev, [field]: formattedValue };
-      
-      // Auto-revert status when surgery date is cleared
-      if (field === 'surgery_date' && !formattedValue && (prev.status === 'surgery_scheduled' || prev.status === 'pending_scheduling')) {
-        updated.status = 'authorized';
-      }
-      // Sem data não há o que confirmar
-      if (field === 'surgery_date' && !formattedValue) {
-        updated.surgery_to_confirm = false;
-      }
-      
-      return updated;
-    });
-    
-    if (field === 'procedure') {
-      const newExams = getExamsForProcedure(value);
-      setExamsChecklist(newExams);
-      if (!isEditMode || formData.procedure !== value) {
-        setCheckedExams([]);
-      }
-    }
-    
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+    let cancelled = false;
+    supabase
+      .from("patients")
+      .select("surgery_date")
+      .eq("hospital", form.hospital)
+      .not("surgery_date", "is", null)
+      .limit(200)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const counts = new Map<string, number>();
+        for (const r of data || []) {
+          const t = toLocalInput(r.surgery_date).slice(11, 16);
+          if (t) counts.set(t, (counts.get(t) || 0) + 1);
+        }
+        const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+        setCommonTime(best && best[1] >= 2 ? best[0] : null);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.hospital]);
+
+  // ------------------------------------------------------------ edição
+
+  const set = <K extends keyof FormState>(field: K, value: FormState[K]) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "name") next.name = titleCase(value as string);
+      if (field === "surgery_date" && !value) {
+        next.surgery_to_confirm = false;
+        if (prev.status === "surgery_scheduled" || prev.status === "pending_scheduling") next.status = "authorized";
+      }
+      // Marcar data num paciente autorizado já o coloca como agendado
+      if (field === "surgery_date" && value && !prev.surgery_date && (prev.status === "authorized" || prev.status === "pending_scheduling")) {
+        next.status = "surgery_scheduled";
+      }
+      return next;
+    });
+    setTouched((t) => new Set(t).add(field));
+    if (field === "procedure" && value !== baseline?.procedure) setCheckedExams([]);
+  };
+
+  const applyImport = (data: ImportedPatientData) => {
+    const keys = new Set<string>();
+    setForm((prev) => {
+      const next = { ...prev };
+      (Object.keys(data) as (keyof ImportedPatientData)[]).forEach((k) => {
+        const v = data[k];
+        if (!v) return;
+        keys.add(k);
+        (next as Record<string, unknown>)[k] = k === "name" ? titleCase(v) : v;
+      });
+      if (data.surgery_date && (next.status === "awaiting_authorization" || next.status === "authorized")) next.status = "surgery_scheduled";
+      return next;
+    });
+    if (data.insurance && !insurances.includes(data.insurance)) setInsurances((l) => [...l, data.insurance!].sort());
+    if (data.hospital && !hospitalNames.includes(data.hospital)) setHospitalNames((l) => [...l, data.hospital!].sort());
+    setImported(keys);
+    if (["birth_date", "insurance", "hospital", "surgery_date"].some((k) => keys.has(k))) setMoreOpen(true);
+  };
+
+  const addInsurance = (v: string) => {
+    setInsurances((l) => Array.from(new Set([...l, v])).sort((a, b) => a.localeCompare(b)));
+    try {
+      const custom: string[] = JSON.parse(localStorage.getItem("custom_insurances") || "[]");
+      localStorage.setItem("custom_insurances", JSON.stringify(Array.from(new Set([...custom, v]))));
+    } catch {
+      /* ignore */
     }
   };
 
-  const toggleExam = (exam: string) => {
-    setCheckedExams(prev => 
-      prev.includes(exam) 
-        ? prev.filter(e => e !== exam)
-        : [...prev, exam]
-    );
+  // Campo focado nunca fica atrás do teclado
+  const handleFocusCapture = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!isMobile) return;
+    const target = e.target as HTMLElement;
+    if (!/INPUT|TEXTAREA/.test(target.tagName)) return;
+    setTimeout(() => target.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   };
+
+  // ------------------------------------------------------------ arquivos
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    const allowedTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg", 
-      "image/png",
-      "image/gif",
-      "image/webp"
-    ];
-    
-    const validFiles = selectedFiles.filter(file => allowedTypes.includes(file.type));
-    
-    if (validFiles.length !== selectedFiles.length) {
-      toast.error("Apenas arquivos PDF e imagens (JPEG, PNG, GIF, WEBP) são permitidos");
+    const selected = Array.from(e.target.files || []);
+    const allowed = ["application/pdf", "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const valid = selected.filter((f) => allowed.includes(f.type));
+    if (valid.length !== selected.length) toast.error("Apenas PDF e imagens (JPEG, PNG, GIF, WEBP)");
+    setFiles((prev) => [...prev, ...valid]);
+    e.target.value = "";
+  };
+
+  const uploadFiles = async (patientId: string) => {
+    for (const file of files) {
+      const ext = file.name.split(".").pop();
+      const path = `${patientId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("patient-files").upload(path, file);
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase.from("patient_files").insert({
+        patient_id: patientId,
+        file_path: path,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        uploaded_by: user!.id,
+      });
+      if (dbErr) throw dbErr;
     }
-    
-    setFiles(prev => [...prev, ...validFiles]);
+    setFiles([]);
+    await loadFiles(patientId);
   };
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+  const viewFile = async (path: string, name: string) => {
+    const { data, error } = await supabase.storage.from("patient-files").createSignedUrl(path, 3600);
+    if (error) toast.error(describeError("Erro ao carregar arquivo", error));
+    else if (data?.signedUrl) setViewingFile({ url: data.signedUrl, name });
   };
 
-  const viewFile = async (filePath: string, fileName: string) => {
+  const deleteFile = async (fileId: string, path: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("patient-files")
-        .createSignedUrl(filePath, 3600); // URL válida por 1 hora
-
+      const { error: sErr } = await supabase.storage.from("patient-files").remove([path]);
+      if (sErr) throw sErr;
+      const { error } = await supabase.from("patient_files").delete().eq("id", fileId);
       if (error) throw error;
-      if (data?.signedUrl) {
-        setViewingFile({ url: data.signedUrl, name: fileName });
-      }
-    } catch (error) {
-      toast.error(describeError("Erro ao carregar arquivo", error));
-    }
-  };
-
-  const deleteExistingFile = async (fileId: string, filePath: string) => {
-    try {
-      const { error: storageError } = await supabase.storage
-        .from("patient-files")
-        .remove([filePath]);
-
-      if (storageError) throw storageError;
-
-      const { error: dbError } = await supabase
-        .from("patient_files")
-        .delete()
-        .eq("id", fileId);
-
-      if (dbError) throw dbError;
-
-      setExistingFiles(prev => prev.filter(f => f.id !== fileId));
-      toast.success("Arquivo removido com sucesso");
+      setExistingFiles((prev) => prev.filter((f) => f.id !== fileId));
+      toast.success("Arquivo removido");
     } catch (error) {
       toast.error(describeError("Erro ao remover arquivo", error));
     }
   };
 
-  const uploadFiles = async (patientId: string) => {
-    if (files.length === 0) return;
-
-    setUploadingFiles(true);
-    try {
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${patientId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("patient-files")
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { error: dbError } = await supabase
-          .from("patient_files")
-          .insert({
-            patient_id: patientId,
-            file_path: fileName,
-            file_name: file.name,
-            file_type: file.type,
-            file_size: file.size,
-            uploaded_by: user!.id,
-          });
-
-        if (dbError) throw dbError;
-      }
-
-      setFiles([]);
-      if (id) {
-        await loadPatientFiles(id);
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setUploadingFiles(false);
-    }
-  };
-
-  const sendDoctorWhatsApp = (surgeryDateISO: string, patientName: string, procedure: string, hospital: string) => {
-    try {
-      const doctorPhone = "61992581199";
-      const surgeryDate = new Date(surgeryDateISO);
-      
-      // Formatar data e hora
-      const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
-      const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      
-      // Criar link do Google Calendar
-      const calendarTitle = `Cirurgia - ${patientName} (${procedure})`;
-      const calendarDetails = `Paciente: ${patientName}\nProcedimento: ${procedure}\nHospital: ${hospital}`;
-      const calendarLocation = hospital;
-      
-      // Formato para Google Calendar: YYYYMMDDTHHmmssZ
-      const startDate = surgeryDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      const endDate = new Date(surgeryDate.getTime() + 2 * 60 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      
-      const googleCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(calendarDetails)}&location=${encodeURIComponent(calendarLocation)}`;
-      
-      // Mensagem para o médico com emojis usando Unicode
-      const message = `\u{1F3E5} Nova Cirurgia Agendada\n\n\u{1F464} Paciente: ${patientName}\n\u{1F52C} Procedimento: ${procedure}\n\u{1F4C5} Data: ${formattedDate}\n\u{23F0} Horário: ${formattedTime}\n\u{1F3E5} Local: ${hospital}\n\n\u{1F4C6} Adicionar ao Google Agenda:\n${googleCalendarLink}`;
-      
-      const whatsappUrl = createWhatsAppUrl(doctorPhone, message);
-      safeWindowOpen(whatsappUrl);
-      // Mensagem enviada pelo sistema → conclui a tarefa de confirmação ao médico
-      if (isEditMode && id) void autoCompleteAfterMessage(id, ["surgery_confirmation_doctor"]);
-    } catch (error) {
-      console.error("Erro ao enviar WhatsApp ao médico:", error);
-    }
-  };
-
-  const createAutomaticTasks = async (patientId: string, surgeryDateISO: string, patientName: string, procedure: string) => {
-    try {
-      const surgeryDate = new Date(surgeryDateISO);
-      
-      // Tarefa de confirmação ao paciente (imediatamente)
-      const confirmPatientDate = new Date();
-      
-      const { data: existingConfirmPatient } = await supabase
-        .from("patient_tasks")
-        .select("id")
-        .eq("patient_id", patientId)
-        .eq("task_type", "surgery_confirmation_patient")
-        .eq("completed", false)
-        .maybeSingle();
-      
-      if (!existingConfirmPatient) {
-        await supabase.from("patient_tasks").insert({
-          patient_id: patientId,
-          task_type: "surgery_confirmation_patient",
-          title: "Enviar confirmação da cirurgia ao paciente",
-          description: `Confirmar agendamento da cirurgia de ${procedure} com o paciente ${patientName}`,
-          due_date: confirmPatientDate.toISOString(),
-          created_by: user!.id,
-        });
-      }
-      
-      // Tarefa de confirmação ao médico (imediatamente)
-      const { data: existingConfirmDoctor } = await supabase
-        .from("patient_tasks")
-        .select("id")
-        .eq("patient_id", patientId)
-        .eq("task_type", "surgery_confirmation_doctor")
-        .eq("completed", false)
-        .maybeSingle();
-      
-      if (!existingConfirmDoctor) {
-        await supabase.from("patient_tasks").insert({
-          patient_id: patientId,
-          task_type: "surgery_confirmation_doctor",
-          title: "Enviar confirmação da cirurgia ao médico",
-          description: `Notificar o médico sobre a cirurgia de ${procedure} do paciente ${patientName}`,
-          due_date: confirmPatientDate.toISOString(),
-          created_by: user!.id,
-        });
-      }
-      
-      // Tarefa de instruções pré-operatórias (1 dia antes, meia-noite)
-      const preOpDate = new Date(surgeryDate);
-      preOpDate.setDate(preOpDate.getDate() - 1);
-      preOpDate.setHours(0, 0, 0, 0);
-      
-      // Verificar se já existe tarefa pré-op não concluída
-      const { data: existingPreOp } = await supabase
-        .from("patient_tasks")
-        .select("id")
-        .eq("patient_id", patientId)
-        .eq("task_type", "pre_op_instructions")
-        .eq("completed", false)
-        .maybeSingle();
-      
-      if (!existingPreOp) {
-        await supabase.from("patient_tasks").insert({
-          patient_id: patientId,
-          task_type: "pre_op_instructions",
-          title: "Enviar instruções pré-operatórias",
-          description: `Enviar instruções ao paciente ${patientName} para a cirurgia de ${procedure}`,
-          due_date: preOpDate.toISOString(),
-          created_by: user!.id,
-        });
-      }
-      
-      // Tarefa de recomendações pós-operatórias (mesma data, 5 horas após)
-      const postOpDate = new Date(surgeryDate);
-      postOpDate.setHours(postOpDate.getHours() + 5);
-      
-      // Verificar se já existe tarefa pós-op não concluída
-      const { data: existingPostOp } = await supabase
-        .from("patient_tasks")
-        .select("id")
-        .eq("patient_id", patientId)
-        .eq("task_type", "post_op_instructions")
-        .eq("completed", false)
-        .maybeSingle();
-      
-      if (!existingPostOp) {
-        await supabase.from("patient_tasks").insert({
-          patient_id: patientId,
-          task_type: "post_op_instructions",
-          title: "Enviar recomendações pós-operatórias",
-          description: `Enviar recomendações ao paciente ${patientName}`,
-          due_date: postOpDate.toISOString(),
-          created_by: user!.id,
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao criar tarefas automáticas:", error);
-      // Não lançar erro para não interromper o fluxo principal
-    }
-  };
+  // ------------------------------------------------------------ link de agendamento
 
   const generateSchedulingLink = async () => {
     if (!id || !user) return;
     setGeneratingLink(true);
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-
-      const doctorId = formData.responsible_user_id || user.id;
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 7);
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       const token = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-        .map(b => chars[b % chars.length])
-        .join('');
-
-      const { error } = await supabase
-        .from("scheduling_links")
-        .insert({
-          patient_id: id,
-          doctor_id: doctorId,
-          expires_at: expiresAt.toISOString(),
-          token,
-        });
-
+        .map((b) => chars[b % chars.length])
+        .join("");
+      const { error } = await supabase.from("scheduling_links").insert({
+        patient_id: id,
+        doctor_id: form.responsible_user_id || user.id,
+        expires_at: expires.toISOString(),
+        token,
+      });
       if (error) throw error;
-
-      const link = `${window.location.origin}/agendar/${token}`;
-      setSchedulingLink(link);
-      toast.success("Link de agendamento gerado!");
+      setSchedulingLink(`${window.location.origin}/agendar/${token}`);
+      toast.success("Link de agendamento gerado");
     } catch (error) {
-      console.error("Erro ao gerar link de agendamento:", error);
       toast.error(describeError("Erro ao gerar link de agendamento", error));
     } finally {
       setGeneratingLink(false);
     }
   };
 
-  const copySchedulingLink = async () => {
-    if (!schedulingLink) return;
-    try {
-      await navigator.clipboard.writeText(schedulingLink);
-      setLinkCopied(true);
-      toast.success("Link copiado!");
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch {
-      toast.error("Erro ao copiar link");
-    }
-  };
+  // ------------------------------------------------------------ salvar
 
-  const handleDeletePatient = async () => {
-    if (!id || !user) return;
+  const snapshot = (f: FormState, patientId?: string): PatientSnapshot => ({
+    id: patientId,
+    name: f.name,
+    phone: f.phone,
+    procedure: f.procedure,
+    hospital: f.hospital,
+    surgery_date: toIso(f.surgery_date),
+    surgery_to_confirm: f.surgery_to_confirm,
+    status: f.status,
+    responsible_user_id: f.responsible_user_id || null,
+    is_oncology: f.is_oncology,
+    oncology_stage: f.oncology_stage,
+  });
 
-    setDeletingPatient(true);
-    try {
-      // Excluir evento do Google Agenda se existir
-      if (googleCalendarEventId && formData.responsible_user_id) {
-        try {
-          await supabase.functions.invoke("google-calendar-create-event", {
-            body: {
-              action: "delete",
-              existing_event_id: googleCalendarEventId,
-              patient_id: id,
-              target_user_id: formData.responsible_user_id,
-            },
-          });
-        } catch (err) {
-          console.warn("Could not delete Google Calendar event", err);
-        }
+  const handleSave = () => {
+    setSubmitted(true);
+    const fields = Object.keys(errors) as (keyof FormState)[];
+    if (fields.length > 0) {
+      const section = FIELD_SECTION[fields[0]];
+      if (section) {
+        setOpenSections((s) => new Set(s).add(section));
+        if (isNew && section !== "dados" && fields[0] !== "procedure") setMoreOpen(true);
       }
-
-      // Primeiro, excluir todos os arquivos do storage
-      const { data: filesData } = await supabase
-        .from("patient_files")
-        .select("file_path")
-        .eq("patient_id", id);
-
-      if (filesData && filesData.length > 0) {
-        const filePaths = filesData.map(f => f.file_path);
-        await supabase.storage
-          .from("patient-files")
-          .remove(filePaths);
-      }
-
-      // Excluir registros de arquivos
-      await supabase
-        .from("patient_files")
-        .delete()
-        .eq("patient_id", id);
-
-      // Excluir histórico do paciente
-      await supabase
-        .from("patient_history")
-        .delete()
-        .eq("patient_id", id);
-
-      // Excluir o paciente
-      const { error } = await supabase
-        .from("patients")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast.success("Paciente excluído com sucesso!");
-      navigate("/patients");
-    } catch (error) {
-      toast.error(describeError("Erro ao excluir paciente", error));
-    } finally {
-      setDeletingPatient(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    // Valida o formulário inteiro e, se houver erro, leva até a etapa do erro
-    const formErrors = collectFormErrors();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      const errorStep = STEP_FIELDS.findIndex((fields) => fields.some((f) => formErrors[f]));
-      if (errorStep >= 0 && errorStep !== currentStep) {
-        goToStep(errorStep);
-        toast.error(`Corrija os campos destacados na etapa "${steps[errorStep].title}"`);
-      } else {
-        toast.error("Corrija os campos destacados");
-      }
+      setTimeout(() => document.querySelector('[aria-invalid="true"]')?.scrollIntoView({ block: "center", behavior: "smooth" }), 100);
+      toast.error("Confira os campos marcados");
       return;
     }
+    // Mudança que dispara algo (mensagem, Google Agenda) → confirmar antes
+    const effects = detectSaveEffects(isNew || !baseline ? null : snapshot(baseline), snapshot(form));
+    if (effects.length > 0) setPendingEffects(effects);
+    else void doSave(new Set());
+  };
 
-    setErrors({});
-    setLoading(true);
-
+  const doSave = async (selected: Set<EffectKey>) => {
+    if (!user) return;
+    setSaveState("saving");
     try {
-      // Validate form data
-      const validatedData = patientSchema.parse(formData);
-
-      // Convert local datetime-local to UTC for storage
-      let utcSurgeryDate = null;
-      if (formData.surgery_date) {
-        // datetime-local gives us "YYYY-MM-DDTHH:mm" in local time
-        // Create date object from local time string
-        const localDate = new Date(formData.surgery_date);
-        utcSurgeryDate = localDate.toISOString();
-      }
-
-
-      // Garante que o hospital esteja cadastrado no banco antes de associar ao paciente
-      const hospitalFinal = validatedData.hospital
-        ? await ensureHospitalRegistered(validatedData.hospital, user?.id)
-        : "";
-
-      const patientData = {
-        name: validatedData.name,
-        phone: validatedData.phone || null,
-        birth_date: validatedData.birth_date || null,
-        gender: validatedData.gender || null,
-        procedure: validatedData.procedure,
+      const hospitalFinal = form.hospital ? await ensureHospitalRegistered(form.hospital, user.id) : "";
+      const surgeryIso = toIso(form.surgery_date) || null;
+      const payload = {
+        name: form.name.trim(),
+        phone: form.phone || null,
+        birth_date: form.birth_date || null,
+        gender: form.gender || null,
+        procedure: form.procedure,
         hospital: hospitalFinal || null,
-        insurance: validatedData.insurance || null,
-        status: validatedData.status as any,
-        surgery_date: utcSurgeryDate,
-        surgery_to_confirm: utcSurgeryDate ? formData.surgery_to_confirm : false,
+        insurance: form.insurance || null,
+        status: form.status,
+        surgery_date: surgeryIso,
+        surgery_to_confirm: surgeryIso ? form.surgery_to_confirm : false,
         exams_checklist: checkedExams,
-        guide_validity_date: formData.guide_validity_date || null,
-        origem: validatedData.origem || null,
-        responsible_user_id: formData.responsible_user_id,
-        is_oncology: formData.is_oncology,
-        oncology_stage: formData.is_oncology ? formData.oncology_stage || null : null,
+        guide_validity_date: form.guide_validity_date || null,
+        origem: form.origem || null,
+        responsible_user_id: form.responsible_user_id || (isAdmin ? DEFAULT_RESPONSIBLE_DOCTOR_ID : user.id),
+        is_oncology: form.is_oncology,
+        oncology_stage: form.is_oncology ? form.oncology_stage || null : null,
       };
 
-      // For non-admins creating patients, ensure their own ID is set
-      if (!isEditMode && !isAdmin && user) {
-        patientData.responsible_user_id = user.id;
-      }
-
-      let error;
-      let savedPatientId = id;
-
-      if (isEditMode && id) {
-        const result = await supabase
+      let patientId = id;
+      if (isNew) {
+        const { data, error } = await supabase
           .from("patients")
-          .update(patientData)
-          .eq("id", id);
-        error = result.error;
-      } else {
-        const result = await supabase
-          .from("patients")
-          .insert([{ ...patientData, created_by: user.id }])
-          .select()
+          .insert([{ ...payload, created_by: user.id }])
+          .select("id")
           .single();
-        error = result.error;
-        if (result.data) {
-          savedPatientId = result.data.id;
-        }
-      }
-
-      if (error) throw error;
-
-      // Criar tarefas automaticamente se houver data de cirurgia
-      if (utcSurgeryDate && savedPatientId) {
-        await createAutomaticTasks(savedPatientId, utcSurgeryDate, validatedData.name, validatedData.procedure);
-      }
-
-      // Sincronizar com Google Agenda do médico
-      // Reenvia ao Google Agenda se mudou a data ou a marcação "a confirmar"
-      const surgeryDateChanged =
-        utcSurgeryDate !== originalSurgeryDate || patientData.surgery_to_confirm !== originalToConfirm;
-      const targetCalendarUserId = formData.responsible_user_id || (!isAdmin ? user.id : null);
-
-      // Caso 1: Cirurgia removida (tinha data, agora não tem) → deletar evento
-      if (!utcSurgeryDate && originalSurgeryDate && googleCalendarEventId && targetCalendarUserId) {
-        try {
-          await supabase.functions.invoke("google-calendar-create-event", {
-            body: {
-              action: "delete",
-              existing_event_id: googleCalendarEventId,
-              patient_id: savedPatientId,
-              target_user_id: targetCalendarUserId,
-            },
-          });
-          toast.info("Evento removido do Google Agenda");
-        } catch (err) {
-          console.warn("Could not delete Google Calendar event", err);
-        }
-      }
-      // Caso 2: Cirurgia agendada/reagendada → criar ou atualizar evento
-      else if (utcSurgeryDate && surgeryDateChanged) {
-        if (!targetCalendarUserId) {
-          toast.warning("Paciente salvo, mas sem profissional responsável para sincronizar no Google Agenda.");
-        } else {
-          try {
-            const calAction = googleCalendarEventId ? "update" : "create";
-            const { data: calResult, error: calError } = await supabase.functions.invoke("google-calendar-create-event", {
-              body: {
-                action: calAction,
-                patient_name: validatedData.name,
-                procedure: validatedData.procedure,
-                hospital: hospitalFinal || null,
-                surgery_date: utcSurgeryDate,
-                to_confirm: patientData.surgery_to_confirm,
-                notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
-                patient_id: savedPatientId,
-                target_user_id: targetCalendarUserId,
-                existing_event_id: googleCalendarEventId,
-              },
-            });
-
-            const calendarResponse = calResult as { success?: boolean; connected?: boolean; error?: string; event_id?: string } | null;
-
-            if (calError) {
-              toast.warning("Paciente salvo, mas houve falha ao enviar para o Google Agenda.");
-              console.warn("Google Calendar invoke error:", calError.message);
-            } else if (calendarResponse?.success) {
-              toast.success(calAction === "update" ? "Evento atualizado no Google Agenda" : "Cirurgia adicionada ao Google Agenda");
-            } else if (calendarResponse?.connected === false) {
-              toast.warning("Paciente salvo, mas o profissional responsável não está com Google Agenda conectado.");
-            } else if (calendarResponse?.error) {
-              toast.warning(`Paciente salvo, mas não foi possível sincronizar: ${calendarResponse.error}`);
-            }
-          } catch (err) {
-            console.warn("Could not sync Google Calendar event", err);
-            toast.warning("Paciente salvo, mas ocorreu erro ao sincronizar com Google Agenda.");
-          }
-        }
-      }
-
-      if (files.length > 0 && savedPatientId) {
-        await uploadFiles(savedPatientId);
-      }
-
-      localStorage.removeItem(patientDraftStorageKey);
-      toast.success(isEditMode ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
-      goBack();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-        toast.error("Por favor, corrija os erros no formulário");
+        if (error) throw error;
+        patientId = data.id;
       } else {
-        console.error("Erro ao salvar paciente:", error);
-        const rawMessage = (error as { message?: string })?.message || "";
-        const cleanMessage = rawMessage.replace(/^[A-Z_]+:\s*/, "");
-        const baseMessage = isEditMode ? "Erro ao atualizar paciente" : "Erro ao cadastrar paciente";
-        toast.error(cleanMessage ? `${baseMessage}: ${cleanMessage}` : baseMessage);
+        const { error } = await supabase.from("patients").update(payload).eq("id", id!);
+        if (error) throw error;
       }
-    } finally {
-      setLoading(false);
+
+      if (files.length > 0) await uploadFiles(patientId!);
+
+      const dateChanged = surgeryIso && surgeryIso !== toIso(baseline?.surgery_date || "");
+      if (dateChanged) await createSurgeryTasks(patientId!, surgeryIso!, payload.name, payload.procedure, user.id);
+
+      // Só faz o que a usuária confirmou na folha
+      const res = await runSaveEffects(selected, { ...snapshot({ ...form, hospital: hospitalFinal }), id: patientId! }, eventId);
+      if (res.calendarWarning) toast.warning(`Salvo, mas ${res.calendarWarning}.`);
+
+      localStorage.removeItem(draftKey);
+      setPendingEffects(null);
+      const saved = { ...form, hospital: hospitalFinal };
+      setForm(saved);
+      setBaseline(saved);
+      setBaselineExams(checkedExams);
+      setSubmitted(false);
+      setTouched(new Set());
+      setImported(new Set());
+      setSaveState("saved");
+
+      if (isNew) {
+        toast.success("Paciente criado");
+        navigate(`/patients/${patientId}/exams`, { replace: true });
+      } else {
+        toast.success("Alterações salvas");
+        const { data } = await supabase.from("patients").select("google_calendar_event_id").eq("id", patientId!).single();
+        setEventId(data?.google_calendar_event_id || null);
+      }
+    } catch (error) {
+      setSaveState("idle");
+      setPendingEffects(null);
+      toast.error(describeError(isNew ? "Erro ao criar paciente" : "Erro ao salvar", error));
     }
   };
 
-  if (loadingData) {
+  // ------------------------------------------------------------ sair
+
+  const leave = () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate(isNew ? "/patients" : `/patients/${id}/exams`, { replace: true });
+  };
+  const handleBack = () => (dirty ? setDiscardOpen(true) : leave());
+
+  // ------------------------------------------------------------ render
+
+  if (loadingData || roleLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
+      <>
+        <PageHeader title={isNew ? "Novo paciente" : "Editar paciente"} largeTitle={false} back={{ label: "Voltar", onClick: leave }} />
+        <div className="px-4 space-y-3 pt-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6 text-center text-muted-foreground">
+        Apenas administradores podem criar ou editar pacientes.
+        <div className="mt-4">
+          <Button onClick={() => navigate("/patients")}>Voltar para Pacientes</Button>
         </div>
       </div>
     );
   }
 
-  // Apenas administradores podem criar/editar pacientes
-  const canManagePatients = isAdmin;
-  
-  if (!canManagePatients) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Acesso Restrito</CardTitle>
-            <CardDescription>
-              Apenas administradores podem criar ou editar pacientes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/patients")} className="w-full">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar para Pacientes
-            </Button>
-          </CardContent>
-        </Card>
+  const professionalOptions = professionals.map((p) => ({ value: p.id, label: p.full_name }));
+
+  // Blocos de campos reaproveitados entre "Novo" e "Editar"
+  const personalFields = (
+    <>
+      <TextField
+        label="Nome"
+        required
+        value={form.name}
+        onChange={(v) => set("name", v)}
+        error={visibleError("name")}
+        autoCapitalize="words"
+        autoComplete="off"
+        placeholder="Nome completo"
+        className={importedHighlight(imported.has("name"))}
+      />
+      <div className={importedHighlight(imported.has("phone"))}>
+        <PhoneField value={form.phone} onChange={(v) => set("phone", v)} required={isNew} error={visibleError("phone")} />
       </div>
-    );
-  }
+    </>
+  );
+
+  const extraPersonalFields = (
+    <>
+      <div className={importedHighlight(imported.has("birth_date"))}>
+        <BirthDateField value={form.birth_date} onChange={(v) => set("birth_date", v)} />
+      </div>
+      <SegmentedField
+        label="Gênero"
+        value={form.gender}
+        onChange={(v) => set("gender", v)}
+        options={[
+          { value: "feminino", label: "Feminino" },
+          { value: "masculino", label: "Masculino" },
+        ]}
+      />
+      <SelectSheetField
+        label="Origem"
+        value={form.origem}
+        onChange={(v) => set("origem", v)}
+        options={ORIGEM_OPTIONS.map((o) => ({ value: o, label: o }))}
+        placeholder="Não informada"
+      />
+    </>
+  );
+
+  const professionalField = (
+    <SelectSheetField
+      label="Profissional"
+      required
+      value={form.responsible_user_id}
+      onChange={(v) => set("responsible_user_id", v)}
+      options={professionalOptions}
+      error={visibleError("responsible_user_id")}
+    />
+  );
+
+  const procedureField = (
+    <div className={importedHighlight(imported.has("procedure"))}>
+      <ChoiceChips
+        label="Procedimento"
+        required
+        options={PROCEDURE_OPTIONS}
+        value={form.procedure}
+        onChange={(v) => set("procedure", v)}
+        error={visibleError("procedure")}
+        hint={examsChecklist.length > 0 ? `Exames sugeridos: ${examsChecklist.join(", ")}` : undefined}
+      />
+    </div>
+  );
+
+  const surgeryFields = (
+    <>
+      <div className={importedHighlight(imported.has("hospital"))}>
+        <SelectSheetField
+          label="Hospital"
+          value={form.hospital}
+          onChange={(v) => set("hospital", v)}
+          options={hospitalNames.map((h) => ({ value: h, label: h }))}
+          placeholder="Escolher"
+          searchable
+          onAddOption={(v) => setHospitalNames((l) => Array.from(new Set([...l, v])).sort())}
+          error={visibleError("hospital")}
+        />
+      </div>
+      <div className={importedHighlight(imported.has("surgery_date"))}>
+        <SurgeryDateTimeField
+          value={form.surgery_date}
+          onChange={(v) => set("surgery_date", v)}
+          error={visibleError("surgery_date")}
+          required={form.status === "surgery_scheduled"}
+        />
+        {commonTime && form.surgery_date && form.surgery_date.slice(11, 16) !== commonTime && (
+          <p className="px-4 md:px-0 -mt-1 pb-2 text-[13px] text-muted-foreground">
+            Horário mais comum em {form.hospital.replace(/^Hospital\s+/i, "")}: {commonTime}.{" "}
+            <button type="button" className="text-primary min-h-9" onClick={() => set("surgery_date", `${form.surgery_date.slice(0, 10)}T${commonTime}`)}>
+              Usar
+            </button>
+          </p>
+        )}
+      </div>
+      {form.surgery_date && (
+        <SwitchField
+          label="Data a confirmar"
+          checked={form.surgery_to_confirm}
+          onChange={(v) => set("surgery_to_confirm", v)}
+          hint="Data proposta, ainda aguardando hospital ou paciente"
+        />
+      )}
+      <SwitchField label="Paciente oncológico" checked={form.is_oncology} onChange={(v) => set("is_oncology", v)} />
+      {form.is_oncology && (
+        <SelectSheetField
+          label="Estágio"
+          value={form.oncology_stage}
+          onChange={(v) => set("oncology_stage", v)}
+          options={ONCOLOGY_STAGES}
+          placeholder="Não informado"
+        />
+      )}
+    </>
+  );
+
+  const authorizationFields = (
+    <>
+      <StatusField value={form.status} onChange={(v) => set("status", v as PatientStatusValue)} error={visibleError("status")} />
+      <div className={importedHighlight(imported.has("insurance"))}>
+        <SelectSheetField
+          label="Convênio"
+          value={form.insurance}
+          onChange={(v) => set("insurance", v)}
+          options={insurances.map((i) => ({ value: i, label: i }))}
+          placeholder="Escolher"
+          searchable
+          onAddOption={addInsurance}
+        />
+      </div>
+      <GuideValidityField value={form.guide_validity_date} onChange={(v) => set("guide_validity_date", v)} />
+    </>
+  );
+
+  const examsBlock = (
+    <div className="space-y-3 px-4 md:px-0">
+      {examsChecklist.length > 0 && (
+        <div className="rounded-lg bg-card p-3 space-y-1">
+          <p className="text-sm font-medium">Checklist de exames</p>
+          {examsChecklist.map((exam) => (
+            <label key={exam} className="flex items-center gap-3 min-h-11 cursor-pointer">
+              <Checkbox
+                checked={checkedExams.includes(exam)}
+                onCheckedChange={() => setCheckedExams((prev) => (prev.includes(exam) ? prev.filter((e) => e !== exam) : [...prev, exam]))}
+                className="h-5 w-5"
+              />
+              <span className="text-[15px]">{exam}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      <div className="rounded-lg bg-card p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Arquivos</p>
+          <Button type="button" variant="outline" size="sm" className="h-10" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-1.5" />
+            Anexar
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+        </div>
+        {existingFiles.length === 0 && files.length === 0 && <p className="text-sm text-muted-foreground">Nenhum arquivo enviado</p>}
+        {existingFiles.map((f) => (
+          <div key={f.id} className="flex items-center gap-2 min-h-11">
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <button type="button" className="flex-1 min-w-0 text-left text-sm truncate" onClick={() => viewFile(f.file_path, f.file_name)}>
+              {f.file_name}
+            </button>
+            <button
+              type="button"
+              aria-label={`Remover ${f.file_name}`}
+              className="h-11 w-11 flex items-center justify-center text-destructive"
+              onClick={() => deleteFile(f.id, f.file_path)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+        {files.map((f, i) => (
+          <div key={`${f.name}-${i}`} className="flex items-center gap-2 min-h-11 text-sm">
+            <Upload className="h-4 w-4 shrink-0 text-primary" />
+            <span className="flex-1 truncate">{f.name}</span>
+            <span className="text-xs text-muted-foreground">será enviado ao salvar</span>
+            <button
+              type="button"
+              aria-label={`Tirar ${f.name}`}
+              className="h-11 w-11 flex items-center justify-center"
+              onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const schedulingBlock =
+    !isNew && !form.surgery_date && (form.status === "pending_scheduling" || form.status === "authorized") ? (
+      <div className="px-4 md:px-0 py-2 space-y-2">
+        {!schedulingLink ? (
+          <Button type="button" variant="outline" className="w-full h-11" disabled={generatingLink} onClick={generateSchedulingLink}>
+            <Link2 className="h-4 w-4 mr-2" />
+            {generatingLink ? "Gerando…" : "Gerar link para o paciente escolher a data"}
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Input value={schedulingLink} readOnly className="h-11 text-sm" />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-11 p-0"
+              aria-label="Copiar link"
+              onClick={async () => {
+                await navigator.clipboard.writeText(schedulingLink);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+            >
+              {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
+      </div>
+    ) : null;
 
   return (
     <>
-    <PageHeader
-      title={isEditMode ? "Editar paciente" : "Novo paciente"}
-      largeTitle={false}
-      back={{ label: "Voltar", onClick: goBack }}
-    />
-    <div className="px-4 pt-2 md:p-6 max-w-4xl mx-auto space-y-6 pb-6">
-      <div className="hidden md:block">
-        <Button
-          variant="ghost"
-          onClick={goBack}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-        <h1 className="text-3xl font-bold text-foreground">
-          {isEditMode ? "Editar Paciente" : "Novo Paciente"}
-        </h1>
-        <p className="text-muted-foreground">
-          {isEditMode ? "Atualize as informações do paciente" : "Cadastre um novo paciente no sistema"}
-        </p>
+      <PageHeader
+        title={isNew ? "Novo paciente" : "Editar paciente"}
+        largeTitle={false}
+        back={{ label: isNew ? "Cancelar" : "Voltar", onClick: handleBack }}
+        actions={
+          isNew ? (
+            <HeaderAction icon={<MessageCircle className="h-5 w-5" />} label="Importar do WhatsApp" onClick={() => setImportOpen(true)} />
+          ) : undefined
+        }
+      />
+
+      <div data-form-root onFocusCapture={handleFocusCapture} className="max-w-3xl mx-auto pt-2 md:p-6 space-y-5">
+        {/* Computador: título e botão de importar */}
+        <div className="hidden md:flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">{isNew ? "Novo paciente" : `Editar ${baseline?.name ?? "paciente"}`}</h1>
+          {isNew && (
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <MessageCircle className="h-4 w-4 mr-2 text-[#25D366]" />
+              Importar do WhatsApp
+            </Button>
+          )}
+        </div>
+
+        {isNew ? (
+          <>
+            {/* Mínimo obrigatório no topo */}
+            <div className="px-4 md:px-0">
+              <FieldGroup>
+                {personalFields}
+                {isAdmin && professionalField}
+              </FieldGroup>
+            </div>
+            <div className="px-4 md:px-0">
+              <FieldGroup className="md:block">{procedureField}</FieldGroup>
+            </div>
+            <DuplicateWarning name={form.name} phone={form.phone} />
+
+            <FormSection
+              id="mais"
+              title="Mais detalhes"
+              open={moreOpen}
+              onToggle={() => setMoreOpen((o) => !o)}
+              summary="Nascimento, convênio, hospital, data da cirurgia… (pode completar depois)"
+            >
+              <div className="space-y-4 px-4 md:px-0">
+                <FieldGroup>{extraPersonalFields}</FieldGroup>
+                <FieldGroup>{authorizationFields}</FieldGroup>
+                <FieldGroup>{surgeryFields}</FieldGroup>
+              </div>
+            </FormSection>
+          </>
+        ) : (
+          <>
+            <DuplicateWarning name={form.name} phone={form.phone} excludeId={id} />
+
+            <FormSection
+              id="dados"
+              title="Dados pessoais"
+              open={openSections.has("dados")}
+              onToggle={() => toggleSection("dados")}
+              summary={[form.name, form.phone].filter(Boolean).join(" · ")}
+              alert={!!(visibleError("name") || visibleError("phone"))}
+            >
+              <div className="px-4 md:px-0">
+                <FieldGroup>
+                  {personalFields}
+                  {extraPersonalFields}
+                  {professionalField}
+                </FieldGroup>
+              </div>
+            </FormSection>
+
+            <FormSection
+              id="cirurgia"
+              title="Cirurgia"
+              open={openSections.has("cirurgia")}
+              onToggle={() => toggleSection("cirurgia")}
+              summary={[
+                PROCEDURE_OPTIONS.find((p) => p.value === form.procedure)?.label ?? form.procedure,
+                form.surgery_date ? longDateTime(new Date(form.surgery_date)) : "sem data",
+              ].join(" · ")}
+              alert={!!(visibleError("procedure") || visibleError("surgery_date") || visibleError("hospital"))}
+            >
+              <div className="space-y-3 px-4 md:px-0">
+                <FieldGroup className="md:block">{procedureField}</FieldGroup>
+                <FieldGroup>{surgeryFields}</FieldGroup>
+              </div>
+              {schedulingBlock}
+            </FormSection>
+
+            <FormSection
+              id="autorizacao"
+              title="Autorização e guia"
+              open={openSections.has("autorizacao")}
+              onToggle={() => toggleSection("autorizacao")}
+              summary={[
+                form.insurance || "Sem convênio",
+                form.guide_validity_date ? `guia até ${form.guide_validity_date.split("-").reverse().join("/")}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            >
+              <div className="px-4 md:px-0">
+                <FieldGroup>{authorizationFields}</FieldGroup>
+              </div>
+            </FormSection>
+
+            <FormSection
+              id="exames"
+              title="Exames e arquivos"
+              open={openSections.has("exames")}
+              onToggle={() => toggleSection("exames")}
+              summary={`${checkedExams.length}/${examsChecklist.length} exames · ${existingFiles.length} arquivo(s)`}
+            >
+              {examsBlock}
+            </FormSection>
+
+            <FormSection id="notas" title="Notas" open={openSections.has("notas")} onToggle={() => toggleSection("notas")}>
+              <div className="px-4 md:px-0">
+                <PatientNotesSection patientId={id!} />
+              </div>
+            </FormSection>
+
+            <FormSection id="feedback" title="Feedback" open={openSections.has("feedback")} onToggle={() => toggleSection("feedback")}>
+              <div className="px-4 md:px-0">
+                <PatientFeedbacksSection patientId={id!} />
+              </div>
+            </FormSection>
+
+            <FormSection id="historico" title="Histórico" open={openSections.has("historico")} onToggle={() => toggleSection("historico")}>
+              <div className="px-4 md:px-0 space-y-4">
+                <PatientSurgeryTimeline
+                  patientId={id!}
+                  currentProcedure={form.procedure}
+                  currentHospital={form.hospital}
+                  currentSurgeryDate={toIso(form.surgery_date) || null}
+                  currentStatus={form.status}
+                />
+                <PatientSurgeriesHistory
+                  patientId={id!}
+                  patientStatus={form.status}
+                  currentProcedure={form.procedure}
+                  currentHospital={form.hospital}
+                  currentSurgeryDate={toIso(form.surgery_date) || null}
+                  currentResponsibleUserId={form.responsible_user_id}
+                  canManage={isAdmin}
+                  onArchived={() => window.location.reload()}
+                />
+              </div>
+            </FormSection>
+          </>
+        )}
+
+        <div className="px-4 md:px-0">
+          <SaveBar label={isNew ? "Criar paciente" : "Salvar"} dirty={dirty} state={saveState} onSave={handleSave} />
+        </div>
       </div>
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        if (isEditMode || currentStep === steps.length - 1) {
-          handleSubmit(e);
-        }
-      }}>
-        <Card>
-          <CardHeader>
-            <PatientFormSteps
-              part="indicator"
-              currentStep={currentStep}
-              totalSteps={steps.length}
-              steps={steps}
-              onNext={handleNextStep}
-              onPrevious={handlePreviousStep}
-              onStepClick={handleStepClick}
-              onSubmit={(e) => handleSubmit(e)}
-              isSubmitting={loading || uploadingFiles}
-              isEditMode={isEditMode}
-            />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Etapa 1: Dados Pessoais */}
-            {currentStep === 0 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo *</Label>
-                  <Input
-                    id="name"
-                    required
-                    value={formData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                    className={errors.name ? "border-destructive" : ""}
-                  />
-                  {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                </div>
+      <SaveEffectsSheet
+        open={!!pendingEffects}
+        effects={pendingEffects ?? []}
+        saving={saveState === "saving"}
+        onCancel={() => setPendingEffects(null)}
+        onConfirm={(sel) => void doSave(sel)}
+      />
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <InputMask
-                    mask="(99) 99999-9999"
-                    value={formData.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                  >
-                    {(inputProps: any) => (
-                      <Input
-                        {...inputProps}
-                        id="phone"
-                        type="tel"
-                        placeholder="(XX) XXXXX-XXXX"
-                        className={errors.phone ? "border-destructive" : ""}
-                      />
-                    )}
-                  </InputMask>
-                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-                </div>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onOpenChange={setDiscardOpen}
+        onDiscard={() => {
+          localStorage.removeItem(draftKey);
+          setDiscardOpen(false);
+          leave();
+        }}
+      />
 
-                <YearMonthDatePicker
-                  date={formData.birth_date ? new Date(formData.birth_date) : undefined}
-                  onDateChange={(date) => handleChange("birth_date", date ? date.toISOString().split('T')[0] : "")}
-                  label="Data de Nascimento"
-                  placeholder="Selecione a data de nascimento"
-                />
+      <ResumeDraftDialog
+        open={!!resumeDraft}
+        savedAt={resumeDraft?.savedAt}
+        onResume={() => {
+          if (resumeDraft) {
+            setForm(resumeDraft.form);
+            setCheckedExams(resumeDraft.checkedExams || []);
+          }
+          setResumeDraft(null);
+        }}
+        onDiscard={() => {
+          localStorage.removeItem(draftKey);
+          setResumeDraft(null);
+        }}
+      />
 
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gênero (opcional)</Label>
-                  <Select
-                    value={formData.gender}
-                    onValueChange={(value) => handleChange("gender", value)}
-                  >
-                    <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Selecione o gênero" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="masculino">Masculino</SelectItem>
-                      <SelectItem value="feminino">Feminino</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
-                </div>
-
-                {/* Professional selector - only visible for admins */}
-                {isAdmin && (
-                  <ProfessionalSelect
-                    value={formData.responsible_user_id}
-                    onChange={(value) => handleChange("responsible_user_id", value)}
-                    error={errors.responsible_user_id}
-                  />
-                )}
-
-              </div>
-            )}
-
-            {/* Etapa 2: Dados da Cirurgia */}
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="procedure">Procedimento *</Label>
-                  <Select
-                    value={formData.procedure}
-                    onValueChange={(value) => handleChange("procedure", value)}
-                  >
-                    <SelectTrigger className={errors.procedure ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Selecione o procedimento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="simpatectomia">Simpatectomia</SelectItem>
-                      <SelectItem value="lobectomia">Lobectomia</SelectItem>
-                      <SelectItem value="broncoscopia">Broncoscopia</SelectItem>
-                      <SelectItem value="rinoplastia">Rinoplastia</SelectItem>
-                      <SelectItem value="troca de cânula">Troca de Cânula</SelectItem>
-                      <SelectItem value="controle">Controle</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.procedure && <p className="text-sm text-destructive">{errors.procedure}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <HospitalField
-                      value={formData.hospital}
-                      onChange={(value) => handleChange("hospital", value)}
-                      error={errors.hospital}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="insurance">Convênio</Label>
-                    <Select
-                      value={formData.insurance}
-                      onValueChange={(value) => handleChange("insurance", value)}
-                    >
-                      <SelectTrigger className={errors.insurance ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Selecione o convênio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ASSEFAZ">ASSEFAZ</SelectItem>
-                        <SelectItem value="FUSEX">FUSEX</SelectItem>
-                        <SelectItem value="INAS (GDF Saúde)">INAS (GDF Saúde)</SelectItem>
-                        <SelectItem value="PLENUM SAÚDE">PLENUM SAÚDE</SelectItem>
-                        <SelectItem value="PORTO SEGURO - SEGURO SAUDE S/A">PORTO SEGURO - SEGURO SAUDE S/A</SelectItem>
-                        <SelectItem value="POSTAL SAUDE">POSTAL SAUDE</SelectItem>
-                        <SelectItem value="QUALLITY">QUALLITY</SelectItem>
-                        <SelectItem value="SULAMERICA">SULAMERICA</SelectItem>
-                        <SelectItem value="PMDF">PMDF</SelectItem>
-                        <SelectItem value="GEAP">GEAP</SelectItem>
-                        <SelectItem value="Particular">Particular</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.insurance && <p className="text-sm text-destructive">{errors.insurance}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => handleChange("status", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="awaiting_authorization">
-                          Aguardando Autorização
-                        </SelectItem>
-                        <SelectItem value="awaiting_consultation">
-                          Aguardando Consulta
-                        </SelectItem>
-                        <SelectItem value="authorized">Autorizado</SelectItem>
-                        <SelectItem value="pending_scheduling">Aguardando Agendamento</SelectItem>
-                        <SelectItem value="surgery_scheduled">Cirurgia Agendada</SelectItem>
-                        <SelectItem value="surgery_completed">Cirurgia Realizada (Pós-Op)</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="surgery_date">Data da Cirurgia</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="surgery_date"
-                      type="datetime-local"
-                      value={formData.surgery_date}
-                      onChange={(e) => handleChange("surgery_date", e.target.value)}
-                      className={`flex-1 ${errors.surgery_date ? "border-destructive" : ""}`}
-                    />
-                    {formData.surgery_date && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleChange("surgery_date", "")}
-                        title="Redefinir data da cirurgia"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {errors.surgery_date && <p className="text-sm text-destructive">{errors.surgery_date}</p>}
-                  {formData.surgery_date && (
-                    <div className="flex items-start gap-2 pt-1">
-                      <Checkbox
-                        id="surgery_to_confirm"
-                        checked={formData.surgery_to_confirm}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, surgery_to_confirm: checked === true }))
-                        }
-                        className="mt-0.5"
-                      />
-                      <Label htmlFor="surgery_to_confirm" className="text-sm font-normal cursor-pointer leading-snug">
-                        Data a confirmar
-                        <span className="block text-xs text-muted-foreground">
-                          Data proposta, ainda aguardando confirmação do hospital ou do paciente
-                        </span>
-                      </Label>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="guide_validity_date">Validade da Guia</Label>
-                  <Input
-                    id="guide_validity_date"
-                    type="date"
-                    value={formData.guide_validity_date}
-                    onChange={(e) => handleChange("guide_validity_date", e.target.value)}
-                  />
-                </div>
-
-                {/* Oncology Section */}
-                <div className="rounded-lg border p-4 space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="is_oncology"
-                      checked={formData.is_oncology}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({ ...prev, is_oncology: checked === true }))
-                      }
-                    />
-                    <div className="flex flex-col">
-                      <Label htmlFor="is_oncology" className="cursor-pointer font-semibold">
-                        Paciente Oncológico
-                      </Label>
-                      <span className="text-xs text-muted-foreground">
-                        Ativa timeline detalhada de acompanhamento
-                      </span>
-                    </div>
-                  </div>
-
-                  {formData.is_oncology && (
-                    <div className="space-y-2 pl-6 border-l-2 border-primary/20">
-                      <Label htmlFor="oncology_stage">Estágio do Câncer</Label>
-                      <Select
-                        value={formData.oncology_stage}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, oncology_stage: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o estágio (opcional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="I">Estágio I - Inicial</SelectItem>
-                          <SelectItem value="II">Estágio II - Localizado</SelectItem>
-                          <SelectItem value="III">Estágio III - Avançado Local</SelectItem>
-                          <SelectItem value="IV">Estágio IV - Metastático</SelectItem>
-                          <SelectItem value="Recidiva">Recidiva</SelectItem>
-                          <SelectItem value="Remissão">Remissão</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="optional">
-                    <AccordionTrigger>Campos Opcionais</AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="origem">Origem</Label>
-                        <Select
-                          value={formData.origem}
-                          onValueChange={(value) => handleChange("origem", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a origem" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Sistema">Sistema</SelectItem>
-                            <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-
-                <div className="space-y-2">
-                  {formData.surgery_date && formData.phone.trim() !== "" && formData.hospital && (
-                    <Button
-                      type="button"
-                      variant="default"
-                      className="w-full"
-                      onClick={() => {
-                        const phoneNumber = formData.phone.replace(/\D/g, '');
-                        const surgeryDate = new Date(formData.surgery_date);
-                        const formattedDate = surgeryDate.toLocaleDateString('pt-BR');
-                        const formattedTime = surgeryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                        
-                        const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
-                        const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
-                        safeWindowOpen(whatsappUrl);
-                        // Mensagem enviada pelo sistema → conclui a tarefa de confirmação ao paciente
-                        if (isEditMode && id) void autoCompleteAfterMessage(id, ["surgery_confirmation_patient"]);
-                      }}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Enviar confirmação ao paciente
-                    </Button>
-                  )}
-                  
-                  {formData.surgery_date && formData.hospital && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => sendDoctorWhatsApp(formData.surgery_date, formData.name, formData.procedure, formData.hospital)}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Notificar médico (Google Calendar)
-                    </Button>
-                  )}
-                </div>
-
-                {formData.status === "authorized" && formData.phone.trim() !== "" && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      const phoneNumber = formData.phone.replace(/\D/g, '');
-                      const treatment = formData.gender === "masculino" ? "o senhor" : formData.gender === "feminino" ? "a senhora" : "o(a) senhor(a)";
-                      const examCount = examsChecklist.length;
-                      const examWord = examCount === 1 ? "o exame" : "os exames";
-                      const examsWithCheckmarks = examsChecklist.map(exam => `✅ ${exam}`).join('\n');
-                      const examsSection = examsWithCheckmarks || 'exames necessários';
-                      const message = `Olá, ${formData.name}, como vai?\nMe chamo Júlia, sou da equipe do Dr. André Alves.\n\nEstou passando para informar que a sua cirurgia foi autorizada!\nAntes de seguirmos com o agendamento no ${formData.hospital || 'Hospital Brasília'}, gostaria de confirmar se ${treatment} já realizou ${examWord}:\n${examsSection}\n\nQualquer dúvida estou à disposição.\nObrigada.`;
-                      const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
-                      safeWindowOpen(whatsappUrl);
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Enviar mensagem
-                  </Button>
-                )}
-
-                {/* Scheduling link for eligible patients */}
-                {isEditMode && id && !formData.surgery_date && 
-                  (formData.status === "pending_scheduling" || formData.status === "authorized") && (
-                  <div className="space-y-3 rounded-lg border border-primary/20 bg-primary-light p-4">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Link2 className="h-4 w-4" />
-                      Link de Agendamento para o Paciente
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Gere um link para o paciente escolher o horário da cirurgia. O link expira em 7 dias.
-                    </p>
-                    {!schedulingLink ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={generateSchedulingLink}
-                        disabled={generatingLink}
-                      >
-                        <Link2 className="h-4 w-4 mr-2" />
-                        {generatingLink ? "Gerando..." : "Gerar Link de Agendamento"}
-                      </Button>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            readOnly
-                            value={schedulingLink}
-                            className="flex-1 text-xs bg-background border rounded-md px-3 py-2 text-muted-foreground"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={copySchedulingLink}
-                          >
-                            {linkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Etapa 3: Exames e Finalizações */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                {examsChecklist.length > 0 && (
-                  <div className="space-y-3">
-                    <Label>Checklist de Exames</Label>
-                    <div className="space-y-2 border rounded-lg p-4">
-                      {examsChecklist.map((exam) => (
-                        <div key={exam} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={exam}
-                            checked={checkedExams.includes(exam)}
-                            onCheckedChange={() => toggleExam(exam)}
-                          />
-                          <label
-                            htmlFor={exam}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {exam}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isEditMode && id && (
-                  <div className="pt-4">
-                    <PatientNotesSection patientId={id} />
-                  </div>
-                )}
-
-                {isEditMode && id && (
-                  <div className="pt-4">
-                    <PatientFeedbacksSection patientId={id} />
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <Label>Exames (Arquivos)</Label>
-                  
-                  {existingFiles.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Arquivos já enviados:</p>
-                      {existingFiles.map((file) => (
-                        <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-                          <button
-                            type="button"
-                            onClick={() => viewFile(file.file_path, file.file_name)}
-                            className="flex items-center gap-2 flex-1 text-left hover:opacity-70 transition-opacity"
-                          >
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{file.file_name}</span>
-                          </button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteExistingFile(file.id, file.file_path)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="file-upload"
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById("file-upload")?.click()}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Adicionar Exames
-                      </Button>
-                    </div>
-
-                    {files.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Novos arquivos a serem enviados:</p>
-                        {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{file.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                ({(file.size / 1024).toFixed(1)} KB)
-                              </span>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            <PatientFormSteps
-              part="navigation"
-              currentStep={currentStep}
-              totalSteps={steps.length}
-              steps={steps}
-              onNext={handleNextStep}
-              onPrevious={handlePreviousStep}
-              onStepClick={handleStepClick}
-              onSubmit={(e) => handleSubmit(e)}
-              isSubmitting={loading || uploadingFiles}
-              isEditMode={isEditMode}
-            />
-          </CardContent>
-        </Card>
-      </form>
-
-      {/* Exclusão fica separada dos botões de salvar para evitar toque acidental */}
-      {isEditMode && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-destructive/30 p-4">
-          <p className="text-sm text-muted-foreground">
-            Excluir apaga o paciente, os arquivos e o histórico. Não dá para desfazer.
-          </p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={deletingPatient}
-                className="text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground shrink-0"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir Paciente
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. Isso irá excluir permanentemente o paciente
-                  <strong> {formData.name}</strong>, todos os seus arquivos e histórico.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeletePatient}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  {deletingPatient ? "Excluindo..." : "Excluir"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      )}
+      {isNew && <ImportWhatsAppSheet open={importOpen} onOpenChange={setImportOpen} onImported={applyImport} />}
 
       <Dialog open={!!viewingFile} onOpenChange={() => setViewingFile(null)}>
         <DialogContent className="max-w-5xl max-h-[95vh] h-[95vh] flex flex-col p-0">
@@ -1668,17 +1102,10 @@ const PatientForm = () => {
             <DialogTitle>{viewingFile?.name}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 px-6 pb-6 overflow-hidden">
-            {viewingFile && (
-              <iframe
-                src={viewingFile.url}
-                className="w-full h-full border-0 rounded-lg"
-                title={viewingFile.name}
-              />
-            )}
+            {viewingFile && <iframe src={viewingFile.url} className="w-full h-full border-0 rounded-lg" title={viewingFile.name} />}
           </div>
         </DialogContent>
       </Dialog>
-    </div>
     </>
   );
 };

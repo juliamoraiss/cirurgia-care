@@ -100,6 +100,10 @@ function formatChange(row: HistoryRow): { label: string; from: string; to: strin
       to: fmtDateTime(row.new_value),
     };
   }
+  if (row.field_changed === "mensagem") {
+    // Mensagens/avisos enviados pelo app (ver src/lib/patientActions.ts)
+    return { label: "Enviado", from: "—", to: row.new_value ?? "—" };
+  }
   return {
     label: row.field_changed,
     from: row.old_value ?? "—",
