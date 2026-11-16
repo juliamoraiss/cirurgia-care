@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Activity, Stethoscope } from "lucide-react";
+import { Activity } from "lucide-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 
@@ -15,7 +14,6 @@ const signUpSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres"),
   confirmPassword: z.string(),
-  userType: z.enum(["medico", "dentista"], { required_error: "Selecione sua profissão" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -45,7 +43,6 @@ const Auth = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    userType: "" as "medico" | "dentista" | "",
   });
   const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
 
@@ -93,7 +90,7 @@ const Auth = () => {
     
     setIsLoading(true);
     try {
-      await signUp(signupData.email, signupData.password, signupData.fullName, signupData.userType as "medico" | "dentista");
+      await signUp(signupData.email, signupData.password, signupData.fullName);
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error("Signup error:", error);
@@ -156,57 +153,12 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-3">
-                  <Label>Profissão *</Label>
-                  <RadioGroup
-                    value={signupData.userType}
-                    onValueChange={(value) => setSignupData(prev => ({ ...prev, userType: value as "medico" | "dentista" }))}
-                    className="grid grid-cols-2 gap-3"
-                  >
-                    <Label
-                      htmlFor="medico"
-                      className={`flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        signupData.userType === "medico" 
-                          ? "border-primary bg-primary/5" 
-                          : "border-muted hover:border-primary/50"
-                      }`}
-                    >
-                      <RadioGroupItem value="medico" id="medico" className="sr-only" />
-                      <Stethoscope className={`h-8 w-8 mb-2 ${signupData.userType === "medico" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`font-medium ${signupData.userType === "medico" ? "text-primary" : ""}`}>Médico</span>
-                    </Label>
-                    <Label
-                      htmlFor="dentista"
-                      className={`flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        signupData.userType === "dentista" 
-                          ? "border-primary bg-primary/5" 
-                          : "border-muted hover:border-primary/50"
-                      }`}
-                    >
-                      <RadioGroupItem value="dentista" id="dentista" className="sr-only" />
-                      <svg 
-                        className={`h-8 w-8 mb-2 ${signupData.userType === "dentista" ? "text-primary" : "text-muted-foreground"}`}
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2"
-                      >
-                        <path d="M12 2C8.5 2 6 4.5 6 7.5c0 2 1 3.5 2 4.5-.5 2-1.5 6-1 8 .5 2 2 2.5 3 2.5s2-.5 2-2v-3c0-.5.5-1 1-1s1 .5 1 1v3c0 1.5 1 2 2 2s2.5-.5 3-2.5c.5-2-.5-6-1-8 1-1 2-2.5 2-4.5C20 4.5 17.5 2 14 2h-2z" />
-                      </svg>
-                      <span className={`font-medium ${signupData.userType === "dentista" ? "text-primary" : ""}`}>Dentista</span>
-                    </Label>
-                  </RadioGroup>
-                  {signupErrors.userType && (
-                    <p className="text-sm text-destructive">{signupErrors.userType}</p>
-                  )}
-                </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Nome Completo</Label>
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder={signupData.userType === "dentista" ? "Dr(a). Maria Santos" : "Dr(a). João Silva"}
+                    placeholder="Dr(a). João Silva"
                     value={signupData.fullName}
                     onChange={(e) => setSignupData(prev => ({ ...prev, fullName: e.target.value }))}
                     required

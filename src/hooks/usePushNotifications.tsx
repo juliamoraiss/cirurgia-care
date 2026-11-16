@@ -7,7 +7,7 @@ import { describeError } from "@/lib/errors";
 
 export function usePushNotifications() {
   const { user } = useAuth();
-  const { isAdmin, isDentist, loading: roleLoading } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -25,11 +25,11 @@ export function usePushNotifications() {
   useEffect(() => {
     if (!user || roleLoading || !isSupported) return;
     
-    // Only subscribe for admins and dentists
-    if (!isAdmin && !isDentist) return;
+    // Only subscribe for admins
+    if (!isAdmin) return;
 
     checkSubscription();
-  }, [user, isAdmin, isDentist, roleLoading, isSupported]);
+  }, [user, isAdmin, roleLoading, isSupported]);
 
   async function checkSubscription() {
     if (!user) return;
@@ -205,7 +205,7 @@ export function usePushNotifications() {
     permission,
     subscribe,
     unsubscribe,
-    canSubscribe: isSupported && (isAdmin || isDentist),
+    canSubscribe: isSupported && isAdmin,
   };
 }
 

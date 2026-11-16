@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { WhatsAppTemplates } from "@/components/WhatsAppTemplates";
 import { useUserRole } from "@/hooks/useUserRole";
 import { describeError } from "@/lib/errors";
+import { completeTaskWithUndo, isMessageTask } from "@/lib/tasks";
 
 interface Task {
   id: string;
@@ -36,17 +37,17 @@ interface Task {
 
 const Tasks = () => {
   const navigate = useNavigate();
-  const { isAdmin, isDentist, loading: roleLoading } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [doctorPhones, setDoctorPhones] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
 
-  const canAccessTasks = isAdmin || isDentist;
+  const canAccessTasks = isAdmin;
 
   useEffect(() => {
     if (!roleLoading && !canAccessTasks) {
-      toast.error("Acesso negado. Apenas administradores e dentistas podem acessar esta página.");
+      toast.error("Acesso negado. Apenas administradores podem acessar esta página.");
       navigate("/");
       return;
     }
@@ -265,7 +266,27 @@ const Tasks = () => {
                         ? doctorPhones[task.patient.responsible_user_id]
                         : undefined
                     }
+                    // Enviou pelo sistema → conclui a tarefa (com opção de desfazer)
+                    onSent={task.completed ? undefined : () => completeTaskWithUndo(task.id, loadTasks)}
                   />
+                )}
+                {!task.completed && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
+                    onClick={() =>
+                      completeTaskWithUndo(
+                        task.id,
+                        loadTasks,
+                        isMessageTask(task.task_type) ? "Tarefa marcada como enviada" : "Tarefa concluída"
+                      )
+                    }
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+                    {isMessageTask(task.task_type) ? "Marcar como enviada" : "Concluir"}
+                  </Button>
                 )}
 
               </div>

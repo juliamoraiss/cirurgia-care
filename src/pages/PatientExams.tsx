@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientTasksSection } from "@/components/PatientTasksSection";
+import { ToConfirmBadge } from "@/components/ToConfirmBadge";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
@@ -25,6 +26,7 @@ interface Patient {
   procedure: string;
   hospital: string | null;
   surgery_date: string | null;
+  surgery_to_confirm?: boolean;
   birth_date: string | null;
   status: string;
   is_oncology: boolean;
@@ -44,8 +46,8 @@ interface PatientFile {
 const PatientExams = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, isDentist } = useUserRole();
-  const canManagePatient = isAdmin || isDentist;
+  const { isAdmin } = useUserRole();
+  const canManagePatient = isAdmin;
   const { user } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
@@ -73,7 +75,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, birth_date, status, is_oncology, oncology_stage, responsible_user_id")
+        .select("id, name, procedure, hospital, surgery_date, surgery_to_confirm, birth_date, status, is_oncology, oncology_stage, responsible_user_id")
         .eq("id", id)
         .single();
 
@@ -247,6 +249,7 @@ const PatientExams = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold">Data da Cirurgia:</span>{" "}
                 <span>{new Date(patient.surgery_date).toLocaleString('pt-BR')}</span>
+                {patient.surgery_to_confirm && <ToConfirmBadge />}
                 <Button
                   variant="outline"
                   size="sm"

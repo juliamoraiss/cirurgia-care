@@ -497,6 +497,7 @@ export type Database = {
           responsible_user_id: string
           status: Database["public"]["Enums"]["patient_status"]
           surgery_date: string | null
+          surgery_to_confirm: boolean
           updated_at: string
         }
         Insert: {
@@ -526,6 +527,7 @@ export type Database = {
           responsible_user_id: string
           status?: Database["public"]["Enums"]["patient_status"]
           surgery_date?: string | null
+          surgery_to_confirm?: boolean
           updated_at?: string
         }
         Update: {
@@ -555,6 +557,7 @@ export type Database = {
           responsible_user_id?: string
           status?: Database["public"]["Enums"]["patient_status"]
           surgery_date?: string | null
+          surgery_to_confirm?: boolean
           updated_at?: string
         }
         Relationships: []

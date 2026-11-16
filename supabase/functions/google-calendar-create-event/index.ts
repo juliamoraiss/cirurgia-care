@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
       patient_id,
       target_user_id,
       existing_event_id, // Google Calendar event ID for update/delete
+      to_confirm, // true = data proposta, ainda a confirmar
     } = body;
 
     const effectiveAction = action || "create";
@@ -244,7 +245,7 @@ Deno.serve(async (req) => {
     const endDate = new Date(startDate);
     endDate.setHours(endDate.getHours() + 2);
 
-    const summary = `Cirurgia - ${patient_name} - ${procedure || "Procedimento"}`;
+    const summary = `${to_confirm ? "[A confirmar] " : ""}Cirurgia - ${patient_name} - ${procedure || "Procedimento"}`;
     const location = hospital || undefined;
 
     const descriptionParts: string[] = [];

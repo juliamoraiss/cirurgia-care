@@ -37,6 +37,7 @@ interface Patient {
   status?: string;
   responsible_user_id?: string;
   created_at?: string;
+  surgery_to_confirm?: boolean;
 }
 interface SystemActivity {
   id: string;
@@ -112,7 +113,7 @@ const Dashboard = () => {
         // Patients with surgery dates
         const {
           data: patientsWithSurgery
-        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id").not("surgery_date", "is", null).order("surgery_date", {
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id, surgery_to_confirm").not("surgery_date", "is", null).order("surgery_date", {
           ascending: true
         });
 
@@ -336,7 +337,7 @@ const Dashboard = () => {
                     <SelectItem value="all">Todos os profissionais</SelectItem>
                     {professionals.map((prof) => (
                       <SelectItem key={prof.id} value={prof.id}>
-                        {prof.full_name} ({prof.user_type === "dentista" ? "Dentista" : "Médico"})
+                        {prof.full_name}
                       </SelectItem>
                     ))}
                   </SelectContent>

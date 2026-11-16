@@ -7,7 +7,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
   Stethoscope,
-  Smile,
   LayoutDashboard,
   Users,
   Calendar,
@@ -43,7 +42,7 @@ export function Layout({ children, onRefresh }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
-  const { role, loading: roleLoading, isAdmin, isDentist } = useUserRole();
+  const { role, loading: roleLoading, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -106,8 +105,6 @@ export function Layout({ children, onRefresh }: LayoutProps) {
         return "Administrador";
       case "doctor":
         return "Médico";
-      case "dentist":
-        return "Dentista";
       default:
         return "Sem permissão";
     }
@@ -119,8 +116,6 @@ export function Layout({ children, onRefresh }: LayoutProps) {
         return "destructive";
       case "doctor":
         return "default";
-      case "dentist":
-        return "secondary";
       default:
         return "outline";
     }
@@ -138,18 +133,14 @@ export function Layout({ children, onRefresh }: LayoutProps) {
           }}
         >
           <div className="p-2 bg-primary rounded-lg">
-            {isDentist ? (
-              <Smile className="h-6 w-6 text-primary-foreground" />
-            ) : (
-              <Stethoscope className="h-6 w-6 text-primary-foreground" />
-            )}
+            <Stethoscope className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-sidebar-foreground">
-              {isDentist ? "DentSystem" : "MedSystem"}
+              MedSystem
             </h1>
             <p className="text-xs text-muted-foreground">
-              {isDentist ? "Gestão de Pacientes" : "Gestão Cirúrgica"}
+              Gestão Cirúrgica
             </p>
           </div>
         </div>
@@ -158,8 +149,8 @@ export function Layout({ children, onRefresh }: LayoutProps) {
       {/* Menu de navegação */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
-          // Esconde "Tarefas" para doctors (médicos) - dentistas e admins podem ver
-          if (item.path === "/tasks" && !isAdmin && !isDentist) {
+          // "Tarefas" é só para admins
+          if (item.path === "/tasks" && !isAdmin) {
             return null;
           }
           
@@ -267,14 +258,10 @@ export function Layout({ children, onRefresh }: LayoutProps) {
             onClick={() => navigate("/")}
           >
             <div className="p-1.5 bg-primary/10 rounded-lg">
-              {isDentist ? (
-                <Smile className="h-4 w-4 text-primary" />
-              ) : (
-                <Stethoscope className="h-4 w-4 text-primary" />
-              )}
+              <Stethoscope className="h-4 w-4 text-primary" />
             </div>
             <span className="font-semibold text-sm text-foreground">
-              {isDentist ? "DentSystem" : "MedSystem"}
+              MedSystem
             </span>
           </div>
           

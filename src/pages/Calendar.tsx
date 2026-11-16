@@ -16,6 +16,7 @@ import { useGoogleCalendarAvailability } from "@/hooks/useGoogleCalendarAvailabi
 import { useSurgeryAvailability } from "@/hooks/useSurgeryAvailability";
 import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
 import { CalendarDayView } from "@/components/CalendarDayView";
+import { ToConfirmBadge } from "@/components/ToConfirmBadge";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { describeError } from "@/lib/errors";
@@ -27,6 +28,7 @@ interface Surgery {
   surgery_date: string;
   hospital: string | null;
   responsible_user_id?: string;
+  surgery_to_confirm?: boolean;
 }
 
 const Calendar = () => {
@@ -104,7 +106,7 @@ const Calendar = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, surgery_date, hospital, responsible_user_id")
+        .select("id, name, procedure, surgery_date, hospital, responsible_user_id, surgery_to_confirm")
         .not("surgery_date", "is", null)
         .order("surgery_date", { ascending: true });
 
@@ -404,13 +406,18 @@ const Calendar = () => {
                                 className="w-1 h-1 rounded-full bg-success/70"
                               />
                             )}
-                            {daySurgeries.length > 0 && daySurgeries.length <= 3 && daySurgeries.map((_, i) => (
+                            {daySurgeries.length > 0 && daySurgeries.length <= 3 && daySurgeries.map((s, i) => (
                               <motion.span
                                 key={i}
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: i * 0.04 }}
-                                className="w-1 h-1 rounded-full bg-primary"
+                                // "A confirmar": bolinha vazada; confirmada: bolinha cheia
+                                className={
+                                  s.surgery_to_confirm
+                                    ? "w-1.5 h-1.5 rounded-full border border-amber-500 bg-transparent"
+                                    : "w-1 h-1 rounded-full bg-primary"
+                                }
                               />
                             ))}
                             {daySurgeries.length > 0 && hasBusySlots && (
@@ -588,7 +595,11 @@ const Calendar = () => {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.04, duration: 0.18 }}
                           whileTap={{ scale: 0.98 }}
-                          className={`w-full text-left px-4 py-3 flex items-center gap-3 active:bg-muted/40 transition-colors border-l-[3px] ${getColorForIndex(index)}`}
+                          className={`w-full text-left px-4 py-3 flex items-center gap-3 active:bg-muted/40 transition-colors border-l-[3px] ${
+                            surgery.surgery_to_confirm
+                              ? "border-l-amber-500 border-dashed bg-amber-500/5"
+                              : getColorForIndex(index)
+                          }`}
                           onClick={() => navigate(`/patients/${surgery.id}/exams`)}
                         >
                           {/* Time badge */}
@@ -603,7 +614,12 @@ const Calendar = () => {
 
                           {/* Info */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">{surgery.name}</p>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className={`text-sm font-semibold truncate ${surgery.surgery_to_confirm ? "text-muted-foreground" : "text-foreground"}`}>
+                                {surgery.name}
+                              </p>
+                              {surgery.surgery_to_confirm && <ToConfirmBadge />}
+                            </div>
                             <p className="text-xs text-muted-foreground capitalize truncate">{surgery.procedure}</p>
                             {surgery.hospital && (
                               <p className="text-xs text-muted-foreground/70 truncate">{surgery.hospital}</p>

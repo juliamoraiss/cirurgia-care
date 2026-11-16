@@ -35,8 +35,8 @@ function useDueTasksCount(enabled: boolean, pathname: string) {
 export function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin, isDentist } = useUserRole();
-  const canSeeTasks = isAdmin || isDentist;
+  const { isAdmin } = useUserRole();
+  const canSeeTasks = isAdmin;
   const dueTasks = useDueTasksCount(canSeeTasks, location.pathname);
 
   const navItems = [

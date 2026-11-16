@@ -40,6 +40,8 @@ import {
 } from "@/lib/shareIntent";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID as DEFAULT_DOCTOR_ID } from "@/lib/defaults";
 import { HospitalField } from "@/components/HospitalField";
+import { BatchSurgeryImport } from "@/components/BatchSurgeryImport";
+import { looksLikeSurgeryList, nameSimilarity, normalizeName as normalize, toTitleCaseName } from "@/lib/surgeryList";
 
 type Confidence = "high" | "medium" | "low" | "none";
 
@@ -60,47 +62,6 @@ interface PatientMatch {
   status: string | null;
   score: number; // 0..1 similarity
 }
-
-function normalize(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function nameSimilarity(a: string, b: string): number {
-  const ta = new Set(normalize(a).split(" ").filter((t) => t.length >= 2));
-  const tb = new Set(normalize(b).split(" ").filter((t) => t.length >= 2));
-  if (ta.size === 0 || tb.size === 0) return 0;
-  let inter = 0;
-  ta.forEach((t) => { if (tb.has(t)) inter++; });
-  // Jaccard-ish but biased to smaller set so "Maria Silva" matches "Maria Silva Souza" strongly
-  const minSize = Math.min(ta.size, tb.size);
-  const containment = inter / minSize;
-  const union = ta.size + tb.size - inter;
-  const jaccard = inter / union;
-  return Math.max(containment * 0.9, jaccard);
-}
-
-const LOWER_PARTICLES = new Set(["de", "da", "do", "das", "dos", "e", "di", "del", "della", "van", "von", "la", "le"]);
-
-function toTitleCaseName(input: string): string {
-  if (!input) return "";
-  return input
-    .trim()
-    .replace(/\s+/g, " ")
-    .split(" ")
-    .map((word, idx) => {
-      const lower = word.toLowerCase();
-      if (idx > 0 && LOWER_PARTICLES.has(lower)) return lower;
-      return lower.charAt(0).toUpperCase() + lower.slice(1);
-    })
-    .join(" ");
-}
-
 
 function toLocalDateTimeInput(iso: string | null): string {
   if (!iso) return "";
@@ -146,11 +107,17 @@ export default function ShareCirurgia() {
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  // Texto de uma LISTA de cirurgias (uma por linha) em importação em lote
+  const [batchText, setBatchText] = useState<string | null>(null);
+  const [batchRun, setBatchRun] = useState(0); // força reler a lista ao clicar de novo
+  const isList = looksLikeSurgeryList(rawText);
+  const listLineCount = isList ? rawText.split(/\r?\n/).filter((l) => /\d{1,2}\/\d{1,2}/.test(l)).length : 0;
 
   // Auto-parse if text was shared, e limpa o storage assim que consumimos.
   useEffect(() => {
     if (sharedText && sharedText.trim().length > 5) {
-      handleParse(sharedText);
+      if (looksLikeSurgeryList(sharedText)) setBatchText(sharedText);
+      else handleParse(sharedText);
     }
     clearPendingShareIntent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -450,12 +417,30 @@ export default function ShareCirurgia() {
             id="raw-text"
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}
-            placeholder="Cole aqui a mensagem com os dados da cirurgia..."
+            placeholder={"Cole a mensagem de uma cirurgia, ou uma lista com uma cirurgia por linha:\nNOME - cirurgia DD/MM/AA - 07h - Hospital - Convênio"}
             rows={5}
             className="text-sm"
           />
+          {isList ? (
+            <Button
+              onClick={() => {
+                setExtracted(null);
+                setBatchText(rawText);
+                setBatchRun((n) => n + 1);
+              }}
+              disabled={!rawText.trim()}
+              className="w-full"
+              variant="outline"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              {batchText ? "Ler a lista de novo" : `Ler lista (${listLineCount} ${listLineCount === 1 ? "linha" : "linhas"})`}
+            </Button>
+          ) : (
           <Button
-            onClick={() => handleParse(rawText)}
+            onClick={() => {
+              setBatchText(null);
+              handleParse(rawText);
+            }}
             disabled={parsing || !rawText.trim()}
             className="w-full"
             variant="outline"
@@ -472,9 +457,14 @@ export default function ShareCirurgia() {
               </>
             )}
           </Button>
+          )}
         </Card>
 
-        {extracted && (
+        {batchText && (
+          <BatchSurgeryImport key={batchRun} text={batchText} onCancel={() => setBatchText(null)} />
+        )}
+
+        {extracted && !batchText && (
           <Card className="p-4 space-y-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="h-4 w-4 text-success" />

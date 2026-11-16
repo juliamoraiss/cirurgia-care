@@ -118,7 +118,7 @@ function useSessionState<T>(key: string, initialValue: T) {
 const Patients = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin, isDentist } = useUserRole();
+  const { isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -273,7 +273,7 @@ const Patients = () => {
             Gerencie todos os pacientes e procedimentos
           </p>
         </div>
-        {(isAdmin || isDentist) && (
+        {isAdmin && (
           <div className="flex w-full sm:w-auto gap-2">
             {/* No celular esse atalho fica no botão "+" */}
             <Button variant="outline" onClick={() => navigate("/share-cirurgia")} className="hidden md:inline-flex">

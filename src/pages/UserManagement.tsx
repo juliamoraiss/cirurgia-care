@@ -18,7 +18,7 @@ const UserManagement = () => {
     username: "",
     password: "",
     fullName: "",
-    role: "doctor" as "admin" | "doctor" | "dentist",
+    role: "doctor" as "admin" | "doctor",
   });
 
   // Show loading while checking role
@@ -156,7 +156,7 @@ const UserManagement = () => {
               <Label htmlFor="role">Papel</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: "admin" | "doctor" | "dentist") =>
+                onValueChange={(value: "admin" | "doctor") =>
                   setFormData((prev) => ({ ...prev, role: value }))
                 }
               >
@@ -166,7 +166,6 @@ const UserManagement = () => {
                 <SelectContent>
                   <SelectItem value="admin">Administrador</SelectItem>
                   <SelectItem value="doctor">Médico</SelectItem>
-                  <SelectItem value="dentist">Dentista</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, AlertCircle, Trash2 } from "lucide-react";
+import { Plus, AlertCircle, Trash2, CheckCircle2 } from "lucide-react";
+import { completeTaskWithUndo, isMessageTask } from "@/lib/tasks";
 import { toast } from "sonner";
 import { format, isPast, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -363,9 +364,27 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
                                     : "pre_op"
                                 } 
                                 examName={task.task_type === "exam_followup" ? task.title : undefined}
+                                // Enviou pelo sistema → conclui a tarefa (com opção de desfazer)
+                                onSent={() => completeTaskWithUndo(task.id, loadTasks)}
                               />
                             </div>
                           )}
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="mt-3 h-8 text-xs sm:text-sm"
+                            onClick={() =>
+                              completeTaskWithUndo(
+                                task.id,
+                                loadTasks,
+                                isMessageTask(task.task_type) ? "Tarefa marcada como enviada" : "Tarefa concluída"
+                              )
+                            }
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                            {isMessageTask(task.task_type) ? "Marcar como enviada" : "Concluir"}
+                          </Button>
                         </div>
                         <Button
                           variant="ghost"

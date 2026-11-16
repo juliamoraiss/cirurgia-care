@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type UserRole = "admin" | "doctor" | "dentist" | null;
+export type UserRole = "admin" | "doctor" | null;
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -27,7 +27,9 @@ export function useUserRole() {
         if (error) {
           setRole(null);
         } else {
-          setRole(data?.role as UserRole);
+          // Perfis antigos/desconhecidos (ex.: "dentist") ficam sem permissão
+          const fetchedRole = data?.role;
+          setRole(fetchedRole === "admin" || fetchedRole === "doctor" ? fetchedRole : null);
         }
       } catch (error) {
         setRole(null);
@@ -41,8 +43,7 @@ export function useUserRole() {
 
   const isAdmin = role === "admin";
   const isDoctor = role === "doctor";
-  const isDentist = role === "dentist";
-  const isProfessional = isDoctor || isDentist; // médico ou dentista
+  const isProfessional = isDoctor;
   const canEdit = isAdmin; // apenas admin pode criar/editar usuários
   const canDelete = isAdmin; // apenas admin pode deletar
 
@@ -51,7 +52,6 @@ export function useUserRole() {
     loading,
     isAdmin,
     isDoctor,
-    isDentist,
     isProfessional,
     canEdit,
     canDelete,

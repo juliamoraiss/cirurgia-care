@@ -35,7 +35,6 @@ function HomeOrShareCapture({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 import { AuthProvider, useAuth } from "./hooks/useAuth";
-import { ThemeProvider } from "./components/ThemeProvider";
 import { Layout } from "./components/Layout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -252,9 +251,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <ThemeProvider>
-            <AppRoutes />
-          </ThemeProvider>
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

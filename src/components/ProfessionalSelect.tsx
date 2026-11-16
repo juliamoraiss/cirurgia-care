@@ -17,10 +17,7 @@ interface ProfessionalSelectProps {
 export function ProfessionalSelect({ value, onChange, error }: ProfessionalSelectProps) {
   const { professionals, loading } = useProfessionals();
 
-  const getProfessionalLabel = (professional: { full_name: string; user_type: string | null }) => {
-    const type = professional.user_type === "dentista" ? "Dentista" : "Médico";
-    return `${professional.full_name} (${type})`;
-  };
+  const getProfessionalLabel = (professional: { full_name: string }) => professional.full_name;
 
   return (
     <div className="space-y-2">

@@ -18,9 +18,11 @@ interface WhatsAppTemplatesProps {
   type: "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor" | "cannula_reminder";
   examName?: string;
   doctorPhone?: string;
+  /** Chamado depois de abrir o WhatsApp com a mensagem (ex.: concluir a tarefa). */
+  onSent?: () => void;
 }
 
-export function WhatsAppTemplates({ patient, type, examName, doctorPhone }: WhatsAppTemplatesProps) {
+export function WhatsAppTemplates({ patient, type, examName, doctorPhone, onSent }: WhatsAppTemplatesProps) {
   const firstName = (patient.name || "").split(" ")[0] || "";
   const treatment = patient.gender === "masculino" ? "o senhor" : patient.gender === "feminino" ? "a senhora" : "você";
   const phoneNumber = (patient.phone || "").replace(/\D/g, "");
@@ -170,6 +172,7 @@ ${googleCalendarLink}`;
     }
     const whatsappUrl = createWhatsAppUrl(targetPhone, message);
     safeWindowOpen(whatsappUrl);
+    onSent?.();
   }
 
   if (!targetPhone) {

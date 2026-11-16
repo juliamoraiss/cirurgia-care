@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
+import { autoCompleteAfterMessage } from "@/lib/tasks";
 import {
   Accordion,
   AccordionContent,
@@ -78,6 +79,7 @@ type PatientFormState = {
   insurance: string;
   status: PatientStatus;
   surgery_date: string;
+  surgery_to_confirm: boolean;
   guide_validity_date: string;
   origem: string;
   responsible_user_id: string;
@@ -119,7 +121,7 @@ const PatientForm = () => {
     }
   };
   const { id } = useParams();
-  const { isAdmin, isDentist, isDoctor, loading: roleLoading } = useUserRole();
+  const { isAdmin, isDoctor, loading: roleLoading } = useUserRole();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!id);
@@ -136,6 +138,7 @@ const PatientForm = () => {
     insurance: "",
     status: "awaiting_authorization",
     surgery_date: "",
+    surgery_to_confirm: false,
     guide_validity_date: "",
     origem: "",
     responsible_user_id: "",
@@ -151,6 +154,7 @@ const PatientForm = () => {
   const [deletingPatient, setDeletingPatient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
+  const [originalToConfirm, setOriginalToConfirm] = useState(false);
   const [patientUpdatedAt, setPatientUpdatedAt] = useState<string | null>(null);
   const [googleCalendarEventId, setGoogleCalendarEventId] = useState<string | null>(null);
 
@@ -285,6 +289,7 @@ const PatientForm = () => {
           insurance: data.insurance || "",
     status: (data.status as PatientStatus) || "awaiting_authorization",
           surgery_date: localSurgeryDate,
+          surgery_to_confirm: !!data.surgery_to_confirm,
           guide_validity_date: data.guide_validity_date || "",
           origem: data.origem || "",
           responsible_user_id: data.responsible_user_id || "",
@@ -292,6 +297,7 @@ const PatientForm = () => {
           oncology_stage: data.oncology_stage || "",
         });
         setOriginalSurgeryDate(data.surgery_date || null);
+        setOriginalToConfirm(!!data.surgery_to_confirm);
         setPatientUpdatedAt((data as any).updated_at || (data as any).created_at || null);
         setGoogleCalendarEventId((data as any).google_calendar_event_id || null);
 
@@ -449,6 +455,10 @@ const PatientForm = () => {
       if (field === 'surgery_date' && !formattedValue && (prev.status === 'surgery_scheduled' || prev.status === 'pending_scheduling')) {
         updated.status = 'authorized';
       }
+      // Sem data não há o que confirmar
+      if (field === 'surgery_date' && !formattedValue) {
+        updated.surgery_to_confirm = false;
+      }
       
       return updated;
     });
@@ -604,6 +614,8 @@ const PatientForm = () => {
       
       const whatsappUrl = createWhatsAppUrl(doctorPhone, message);
       safeWindowOpen(whatsappUrl);
+      // Mensagem enviada pelo sistema → conclui a tarefa de confirmação ao médico
+      if (isEditMode && id) void autoCompleteAfterMessage(id, ["surgery_confirmation_doctor"]);
     } catch (error) {
       console.error("Erro ao enviar WhatsApp ao médico:", error);
     }
@@ -869,6 +881,7 @@ const PatientForm = () => {
         insurance: validatedData.insurance || null,
         status: validatedData.status as any,
         surgery_date: utcSurgeryDate,
+        surgery_to_confirm: utcSurgeryDate ? formData.surgery_to_confirm : false,
         exams_checklist: checkedExams,
         guide_validity_date: formData.guide_validity_date || null,
         origem: validatedData.origem || null,
@@ -911,7 +924,9 @@ const PatientForm = () => {
       }
 
       // Sincronizar com Google Agenda do médico
-      const surgeryDateChanged = utcSurgeryDate !== originalSurgeryDate;
+      // Reenvia ao Google Agenda se mudou a data ou a marcação "a confirmar"
+      const surgeryDateChanged =
+        utcSurgeryDate !== originalSurgeryDate || patientData.surgery_to_confirm !== originalToConfirm;
       const targetCalendarUserId = formData.responsible_user_id || (!isAdmin ? user.id : null);
 
       // Caso 1: Cirurgia removida (tinha data, agora não tem) → deletar evento
@@ -944,6 +959,7 @@ const PatientForm = () => {
                 procedure: validatedData.procedure,
                 hospital: hospitalFinal || null,
                 surgery_date: utcSurgeryDate,
+                to_confirm: patientData.surgery_to_confirm,
                 notes: formData.is_oncology ? `Oncologia - Estágio: ${formData.oncology_stage || 'N/A'}` : null,
                 patient_id: savedPatientId,
                 target_user_id: targetCalendarUserId,
@@ -1010,8 +1026,8 @@ const PatientForm = () => {
     );
   }
 
-  // Verificar se o usuário pode criar/editar pacientes (admin ou dentist)
-  const canManagePatients = isAdmin || isDentist;
+  // Apenas administradores podem criar/editar pacientes
+  const canManagePatients = isAdmin;
   
   if (!canManagePatients) {
     return (
@@ -1020,7 +1036,7 @@ const PatientForm = () => {
           <CardHeader>
             <CardTitle>Acesso Restrito</CardTitle>
             <CardDescription>
-              Apenas administradores e dentistas podem criar ou editar pacientes.
+              Apenas administradores podem criar ou editar pacientes.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1255,6 +1271,24 @@ const PatientForm = () => {
                     )}
                   </div>
                   {errors.surgery_date && <p className="text-sm text-destructive">{errors.surgery_date}</p>}
+                  {formData.surgery_date && (
+                    <div className="flex items-start gap-2 pt-1">
+                      <Checkbox
+                        id="surgery_to_confirm"
+                        checked={formData.surgery_to_confirm}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, surgery_to_confirm: checked === true }))
+                        }
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="surgery_to_confirm" className="text-sm font-normal cursor-pointer leading-snug">
+                        Data a confirmar
+                        <span className="block text-xs text-muted-foreground">
+                          Data proposta, ainda aguardando confirmação do hospital ou do paciente
+                        </span>
+                      </Label>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1348,6 +1382,8 @@ const PatientForm = () => {
                         const message = `Olá, ${formData.name}! Tudo bem?\nPassando para confirmar que sua cirurgia foi agendada com sucesso.\n\n🗓 Data: ${formattedDate}\n⏰ Horário: ${formattedTime}\n🏥 Local: ${formData.hospital}\n\nQualquer dúvida ou necessidade de ajuste, estou à disposição por aqui.`;
                         const whatsappUrl = createWhatsAppUrl(phoneNumber, message);
                         safeWindowOpen(whatsappUrl);
+                        // Mensagem enviada pelo sistema → conclui a tarefa de confirmação ao paciente
+                        if (isEditMode && id) void autoCompleteAfterMessage(id, ["surgery_confirmation_patient"]);
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />

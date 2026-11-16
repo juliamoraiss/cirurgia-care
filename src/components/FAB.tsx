@@ -9,7 +9,7 @@ const HIDDEN_ROUTES = [/^\/patients\/new$/, /^\/patients\/[^/]+$/, /^\/share-cir
 export function FAB() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin, isDentist } = useUserRole();
+  const { isAdmin } = useUserRole();
   const [open, setOpen] = useState(false);
 
   // Fecha o menu ao trocar de tela
@@ -17,7 +17,7 @@ export function FAB() {
     setOpen(false);
   }, [location.pathname]);
 
-  if (!isAdmin && !isDentist) return null;
+  if (!isAdmin) return null;
   if (HIDDEN_ROUTES.some((re) => re.test(location.pathname))) return null;
 
   return (

@@ -26,7 +26,7 @@ async function pickUserId(): Promise<string> {
   const { data, error } = await admin
     .from("user_roles")
     .select("user_id")
-    .in("role", ["admin", "doctor", "dentist"])
+    .in("role", ["admin", "doctor"])
     .limit(1);
   if (error) throw error;
   assert(data && data.length > 0, "No user available to use as responsible_user_id");

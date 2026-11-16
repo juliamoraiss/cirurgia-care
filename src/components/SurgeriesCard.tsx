@@ -3,12 +3,14 @@ import { Calendar, Clock, MapPin, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { isToday, isTomorrow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ToConfirmBadge } from "@/components/ToConfirmBadge";
 interface Surgery {
   id: string;
   name: string;
   procedure: string;
   surgery_date: string;
   hospital: string | null;
+  surgery_to_confirm?: boolean;
 }
 interface SurgeriesCardProps {
   surgeries: Surgery[];
@@ -97,6 +99,7 @@ export function SurgeriesCard({
                       {urgencyLabel && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isTodaySurgery ? 'bg-destructive/20 text-destructive' : 'bg-warning/20 text-warning'}`}>
                           {urgencyLabel}
                         </span>}
+                      {surgery.surgery_to_confirm && <ToConfirmBadge />}
                     </div>
                     <p className="text-xs text-muted-foreground capitalize truncate">
                       {surgery.procedure}

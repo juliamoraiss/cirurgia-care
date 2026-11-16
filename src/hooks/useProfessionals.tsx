@@ -14,7 +14,7 @@ export function useProfessionals() {
   useEffect(() => {
     async function fetchProfessionals() {
       try {
-        // Fetch users who have roles (doctors, dentists, admins)
+        // Fetch users who have roles (doctors, admins)
         const { data: roleUsers, error: rolesError } = await supabase
           .from("user_roles")
           .select("user_id, role");
@@ -31,10 +31,10 @@ export function useProfessionals() {
 
           if (profilesError) throw profilesError;
 
-          // Filter to only include doctors and dentists (exclude admin-only users)
+          // Filter to only include doctors (exclude admin-only users)
           const professionalsData = (profiles || []).filter((p) => {
             const userRoles = roleUsers.filter((r) => r.user_id === p.id);
-            return userRoles.some((r) => r.role === "doctor" || r.role === "dentist");
+            return userRoles.some((r) => r.role === "doctor");
           });
 
           setProfessionals(professionalsData);

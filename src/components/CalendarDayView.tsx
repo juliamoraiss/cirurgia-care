@@ -7,6 +7,7 @@ import { Clock, MapPin, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { BusySlot } from "@/hooks/useGoogleCalendarAvailability";
 import type { SurgeryAvailabilitySlot } from "@/hooks/useSurgeryAvailability";
+import { ToConfirmBadge } from "@/components/ToConfirmBadge";
 
 interface Surgery {
   id: string;
@@ -14,6 +15,7 @@ interface Surgery {
   procedure: string;
   surgery_date: string;
   hospital: string | null;
+  surgery_to_confirm?: boolean;
 }
 
 interface CalendarDayViewProps {
@@ -222,7 +224,13 @@ export function CalendarDayView({
 
           {/* Divider */}
           <div className={`w-1 self-stretch rounded-full ${
-            slot.type === "booked" ? "bg-primary" : slot.type === "busy" ? "bg-amber-500" : "bg-border"
+            slot.type === "booked"
+              ? slot.surgery?.surgery_to_confirm
+                ? "bg-transparent border-2 border-dashed border-amber-500"
+                : "bg-primary"
+              : slot.type === "busy"
+              ? "bg-amber-500"
+              : "bg-border"
           }`} />
 
           {/* Content */}
@@ -232,6 +240,7 @@ export function CalendarDayView({
                 <div className="flex items-center gap-1.5">
                   <User className="h-3.5 w-3.5 text-primary" />
                   <span className="text-sm font-semibold truncate">{slot.surgery.name}</span>
+                  {slot.surgery.surgery_to_confirm && <ToConfirmBadge />}
                 </div>
                 <p className="text-xs text-muted-foreground capitalize mt-0.5">{slot.surgery.procedure}</p>
                 {slot.surgery.hospital && (

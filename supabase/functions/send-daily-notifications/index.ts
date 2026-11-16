@@ -97,11 +97,11 @@ Deno.serve(async (req) => {
     const notificationBody = parts.join(' • ');
     const notificationTitle = '📋 Tarefas do Dia';
 
-    // Get all push tokens for admins and dentists
+    // Get all push tokens for admins
     const { data: adminRoles } = await supabase
       .from('user_roles')
       .select('user_id')
-      .in('role', ['admin', 'dentist']);
+      .in('role', ['admin']);
 
     const userIds = adminRoles?.map(r => r.user_id) || [];
 
