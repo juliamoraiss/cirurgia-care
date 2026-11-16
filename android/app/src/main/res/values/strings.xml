@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">medsystem</string>
+    <string name="title_activity_main">medsystem</string>
+    <string name="package_name">com.lovable.medsystem</string>
+    <string name="custom_url_scheme">com.lovable.medsystem</string>
+</resources>

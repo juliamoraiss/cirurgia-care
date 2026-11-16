@@ -924,7 +924,11 @@ const PatientForm = () => {
         setErrors(fieldErrors);
         toast.error("Por favor, corrija os erros no formulário");
       } else {
-        toast.error("Erro ao cadastrar paciente");
+        console.error("Erro ao salvar paciente:", error);
+        const rawMessage = (error as { message?: string })?.message || "";
+        const cleanMessage = rawMessage.replace(/^[A-Z_]+:\s*/, "");
+        const baseMessage = isEditMode ? "Erro ao atualizar paciente" : "Erro ao cadastrar paciente";
+        toast.error(cleanMessage ? `${baseMessage}: ${cleanMessage}` : baseMessage);
       }
     } finally {
       setLoading(false);

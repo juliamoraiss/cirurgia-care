@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyB8q32kVcWv6FMRQddlt4M9OTVgUJCRqwg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>751456718275</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.lovable.medsystem</string>
+	<key>PROJECT_ID</key>
+	<string>medsystem-9d8f4</string>
+	<key>STORAGE_BUCKET</key>
+	<string>medsystem-9d8f4.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:751456718275:ios:77953a1b6f588783958176</string>
+</dict>
+</plist>
