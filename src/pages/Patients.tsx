@@ -16,15 +16,19 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Clock, AlertCircle, X, MessageCircle } from "lucide-react";
-import { PatientCardSwipeable } from "@/components/PatientCardSwipeable";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, X, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn, normalizeSearch } from "@/lib/utils";
+import { getExamsForProcedure } from "@/lib/patientAlerts";
 import { PatientFiltersSheet } from "@/components/PatientFiltersSheet";
+import { PatientListMobile, type PatientSection } from "@/components/PatientListMobile";
+import { PageHeader, HeaderAction } from "@/components/PageHeader";
+import { FAB } from "@/components/FAB";
+import { isIOS } from "@/lib/platform";
 import {
   DEFAULT_STATUS_FILTER,
   HOSPITAL_FILTER_OPTIONS,
@@ -46,61 +50,9 @@ interface Patient {
   created_at: string;
   exams_checklist: string[] | null;
   phone?: string | null;
+  guide_validity_date?: string | null;
+  surgery_to_confirm?: boolean;
 }
-
-const getExamsForProcedure = (procedure: string): string[] => {
-  const examsMap: Record<string, string[]> = {
-    simpatectomia: ["Risco Cirúrgico Cardiológico"],
-    lobectomia: [
-      "PET - CT",
-      "Risco cardiológico",
-      "Risco Pneumologico",
-      "Ressonância Magnética de Crânio",
-      "Resultado de biopsia",
-      "Última tomografia do tórax (opcional)"
-    ],
-    rinoplastia: [],
-    broncoscopia: ["Risco cardiológico (opcional)"]
-  };
-  return examsMap[procedure] || [];
-};
-
-const getNextAction = (patient: Patient): { text: string; variant: "default" | "warning" | "success" | "destructive" } => {
-  const requiredExams = getExamsForProcedure(patient.procedure);
-  const checkedExams = patient.exams_checklist || [];
-  const allExamsChecked = requiredExams.length > 0 && requiredExams.every(exam => checkedExams.includes(exam));
-
-  if (patient.status === "awaiting_consultation") {
-    return { text: "Aguardando consulta", variant: "default" };
-  }
-  
-  if (patient.status === "awaiting_authorization") {
-    return { text: "Aguardando autorização do convênio", variant: "warning" };
-  }
-  
-  if (!allExamsChecked && requiredExams.length > 0) {
-    return { text: "Aguardando envio de exames", variant: "warning" };
-  }
-  
-  if (patient.status === "authorized" && !patient.surgery_date) {
-    return { text: "Aguardando agendamento", variant: "warning" };
-  }
-  
-  if (patient.surgery_date) {
-    const surgeryDate = new Date(patient.surgery_date);
-    const now = new Date();
-    if (surgeryDate > now) {
-      return { text: `Cirurgia agendada para ${format(surgeryDate, "dd/MM/yyyy", { locale: ptBR })}`, variant: "success" };
-    }
-  }
-  
-  if (patient.status === "completed") {
-    return { text: "Cirurgia realizada", variant: "default" };
-  }
-  
-  return { text: "Status atualizado", variant: "default" };
-};
-
 
 function useSessionState<T>(key: string, initialValue: T) {
   const [value, setValue] = useState<T>(() => {
@@ -177,7 +129,7 @@ const Patients = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, status, surgery_date, created_at, exams_checklist, phone")
+        .select("id, name, procedure, hospital, status, surgery_date, created_at, exams_checklist, phone, guide_validity_date, surgery_to_confirm")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -274,20 +226,158 @@ const Patients = () => {
     setFilterStatuses([]);
   };
 
-  // Group patients by category
+  // Filtros ativos como etiquetas removíveis (celular e computador)
+  const filterChips: { key: string; label: string; remove: () => void }[] = [
+    ...(searchTerm.trim() ? [{ key: "search", label: `"${searchTerm.trim()}"`, remove: () => setSearchTerm("") }] : []),
+    ...filterProcedures.map((v) => ({
+      key: `p-${v}`,
+      label: v.charAt(0).toUpperCase() + v.slice(1),
+      remove: () => setFilterProcedures(filterProcedures.filter((x) => x !== v)),
+    })),
+    ...filterHospitals.map((v) => ({
+      key: `h-${v}`,
+      label: shortHospital(v),
+      remove: () => setFilterHospitals(filterHospitals.filter((x) => x !== v)),
+    })),
+    ...filterStatuses.map((v) => ({
+      key: `s-${v}`,
+      label: statusLabel(v),
+      remove: () => setFilterStatuses(filterStatuses.filter((x) => x !== v)),
+    })),
+  ];
+
+  // Seções da lista do celular (cabeçalho fixo ao rolar)
   const now = new Date();
-  const upcomingSurgeries = filteredPatients.filter(p => 
-    p.surgery_date && new Date(p.surgery_date) > now && p.status !== "completed" && p.status !== "cancelled"
-  );
-  const completedSurgeries = filteredPatients.filter(p => 
-    p.status === "completed" || (p.surgery_date && new Date(p.surgery_date) <= now && p.status !== "awaiting_consultation")
-  );
-  const consultations = filteredPatients.filter(p => 
-    p.status === "awaiting_consultation"
-  );
-  const others = filteredPatients.filter(p => 
-    !upcomingSurgeries.includes(p) && !completedSurgeries.includes(p) && !consultations.includes(p)
-  );
+  const byDateAsc = (x: Patient, y: Patient) =>
+    new Date(x.surgery_date || 0).getTime() - new Date(y.surgery_date || 0).getTime();
+  const isFuture = (p: Patient) =>
+    !!p.surgery_date && new Date(p.surgery_date) > now && p.status !== "completed" && p.status !== "cancelled";
+  const sectionOf = (p: Patient): string => {
+    if (isFuture(p)) return "upcoming";
+    if (p.status === "cancelled") return "cancelled";
+    if (p.status === "completed" || p.status === "surgery_completed" || (p.surgery_date && new Date(p.surgery_date) <= now))
+      return "done";
+    if (p.status === "awaiting_authorization") return "authorization";
+    if (p.status === "authorized" || p.status === "pending_scheduling") return "scheduling";
+    if (p.status === "awaiting_consultation") return "consultation";
+    return "other";
+  };
+  const SECTION_TITLES: [string, string][] = [
+    ["upcoming", "Cirurgias futuras"],
+    ["authorization", "Aguardando autorização"],
+    ["scheduling", "Aguardando agendamento"],
+    ["consultation", "Consultas"],
+    ["done", "Realizadas"],
+    ["cancelled", "Cancelados"],
+    ["other", "Outros"],
+  ];
+  const mobileSections: PatientSection[] = SECTION_TITLES.map(([key, title]) => {
+    const list = filteredPatients.filter((p) => sectionOf(p) === key);
+    return { key, title, patients: key === "upcoming" ? [...list].sort(byDateAsc) : list };
+  });
+
+  if (isMobile) {
+    return (
+      <>
+        <PageHeader
+          title="Pacientes"
+          actions={
+            isAdmin ? (
+              <>
+                <HeaderAction
+                  icon={<MessageCircle className="h-[22px] w-[22px]" />}
+                  label="Importar do WhatsApp"
+                  onClick={() => navigate("/share-cirurgia")}
+                />
+                {isIOS && (
+                  <HeaderAction
+                    icon={<Plus className="h-6 w-6" strokeWidth={2.2} />}
+                    label="Novo paciente"
+                    onClick={() => navigate("/patients/new")}
+                  />
+                )}
+              </>
+            ) : undefined
+          }
+        >
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="search"
+                inputMode="search"
+                placeholder="Buscar"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={cn(
+                  "pl-8 h-10 text-base border-0",
+                  isIOS ? "rounded-[10px] bg-muted/80" : "rounded-full bg-secondary dark:bg-card"
+                )}
+              />
+            </div>
+            <PatientFiltersSheet
+              value={currentFilters}
+              onApply={applyFilters}
+              previewCount={(filters) => patients.filter((p) => matchesFilters(p, filters)).length}
+            />
+          </div>
+          {/* Chips numa linha só, com rolagem horizontal; "Limpar" por último */}
+          {filterChips.length > 0 && (
+            <div className="-mx-4 px-4 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Filtros ativos">
+              {filterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={chip.remove}
+                  aria-label={`Remover filtro ${chip.label}`}
+                  className="shrink-0 inline-flex items-center gap-1 h-8 rounded-full border bg-card pl-3 pr-2 text-xs font-medium whitespace-nowrap active:bg-muted"
+                >
+                  {chip.label}
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="shrink-0 h-8 rounded-full px-3 text-xs font-medium text-primary whitespace-nowrap active:bg-muted"
+              >
+                Limpar
+              </button>
+            </div>
+          )}
+          {!loading && hasActiveFilters && (
+            <p className="text-xs text-muted-foreground">
+              Mostrando {filteredPatients.length} de {patients.length} pacientes
+            </p>
+          )}
+        </PageHeader>
+
+        <PatientListMobile
+          sections={mobileSections}
+          loading={loading}
+          onOpen={(id) => navigate(`/patients/${id}/exams`)}
+          empty={
+            <div className="mx-4 rounded-xl bg-card px-4 py-6 text-center text-sm text-muted-foreground space-y-3">
+              {patients.length === 0 ? (
+                <p>Nenhum paciente cadastrado</p>
+              ) : (
+                <>
+                  <p>Nenhum paciente com a busca e os filtros atuais.</p>
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Limpar filtros
+                  </Button>
+                </>
+              )}
+            </div>
+          }
+        />
+
+        {isAdmin && (
+          <FAB icon={<Plus />} label="Novo paciente" onClick={() => navigate("/patients/new")} />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
@@ -316,28 +406,8 @@ const Patients = () => {
       <Card>
         <CardHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <div className="space-y-4">
-            {/* Mobile: busca + botão "Filtros (N)" que abre o painel de baixo para cima */}
-            {isMobile ? (
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    type="search"
-                    placeholder="Nome, procedimento ou telefone"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 h-10 text-base"
-                  />
-                </div>
-                <PatientFiltersSheet
-                  value={currentFilters}
-                  onApply={applyFilters}
-                  previewCount={(filters) => patients.filter((p) => matchesFilters(p, filters)).length}
-                />
-              </div>
-            ) : (
-              /* Desktop: Search + Filter Popovers */
-              <>
+            {/* Computador: busca + filtros em menus */}
+            <>
                 <div className="flex items-center space-x-2">
                   <Search className="h-5 w-5 text-muted-foreground" />
                   <Input
@@ -414,33 +484,13 @@ const Patients = () => {
                     </Popover>
                   ))}
                 </div>
-              </>
-            )}
+            </>
 
             {/* Filtros ativos como etiquetas removíveis + contagem */}
             {hasActiveFilters && (
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-1.5" aria-label="Filtros ativos">
-                  {[
-                    ...(searchTerm.trim()
-                      ? [{ key: "search", label: `"${searchTerm.trim()}"`, remove: () => setSearchTerm("") }]
-                      : []),
-                    ...filterProcedures.map((v) => ({
-                      key: `p-${v}`,
-                      label: v.charAt(0).toUpperCase() + v.slice(1),
-                      remove: () => setFilterProcedures(filterProcedures.filter((x) => x !== v)),
-                    })),
-                    ...filterHospitals.map((v) => ({
-                      key: `h-${v}`,
-                      label: shortHospital(v),
-                      remove: () => setFilterHospitals(filterHospitals.filter((x) => x !== v)),
-                    })),
-                    ...filterStatuses.map((v) => ({
-                      key: `s-${v}`,
-                      label: statusLabel(v),
-                      remove: () => setFilterStatuses(filterStatuses.filter((x) => x !== v)),
-                    })),
-                  ].map((chip) => (
+                  {filterChips.map((chip) => (
                     <button
                       key={chip.key}
                       type="button"
@@ -488,116 +538,6 @@ const Patients = () => {
                     Limpar filtros
                   </Button>
                 </>
-              )}
-            </div>
-          ) : isMobile ? (
-            <div className="space-y-6">
-              {upcomingSurgeries.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="h-4 w-4 text-success" />
-                    <h3 className="font-semibold text-success">Cirurgias Futuras</h3>
-                    <Badge variant="outline" className="ml-auto">{upcomingSurgeries.length}</Badge>
-                  </div>
-                  <div className="space-y-4">
-                    {upcomingSurgeries.map((patient) => {
-                      const requiredExams = getExamsForProcedure(patient.procedure);
-                      const nextAction = getNextAction(patient);
-                      return (
-                        <PatientCardSwipeable
-                          key={patient.id}
-                          patient={patient}
-                          requiredExams={requiredExams}
-                          isAdmin={isAdmin}
-                          onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
-                          nextAction={nextAction}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {consultations.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold text-primary">Consultas</h3>
-                    <Badge variant="outline" className="ml-auto">{consultations.length}</Badge>
-                  </div>
-                  <div className="space-y-4">
-                    {consultations.map((patient) => {
-                      const requiredExams = getExamsForProcedure(patient.procedure);
-                      const nextAction = getNextAction(patient);
-                      return (
-                        <PatientCardSwipeable
-                          key={patient.id}
-                          patient={patient}
-                          requiredExams={requiredExams}
-                          isAdmin={isAdmin}
-                          onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
-                          nextAction={nextAction}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {others.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="h-4 w-4 text-warning" />
-                    <h3 className="font-semibold text-warning">Outros</h3>
-                    <Badge variant="outline" className="ml-auto">{others.length}</Badge>
-                  </div>
-                  <div className="space-y-4">
-                    {others.map((patient) => {
-                      const requiredExams = getExamsForProcedure(patient.procedure);
-                      const nextAction = getNextAction(patient);
-                      return (
-                        <PatientCardSwipeable
-                          key={patient.id}
-                          patient={patient}
-                          requiredExams={requiredExams}
-                          isAdmin={isAdmin}
-                          onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
-                          nextAction={nextAction}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {completedSurgeries.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Check className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="font-semibold text-muted-foreground">Cirurgias Realizadas</h3>
-                    <Badge variant="outline" className="ml-auto">{completedSurgeries.length}</Badge>
-                  </div>
-                  <div className="space-y-4">
-                    {completedSurgeries.map((patient) => {
-                      const requiredExams = getExamsForProcedure(patient.procedure);
-                      const nextAction = getNextAction(patient);
-                      return (
-                        <PatientCardSwipeable
-                          key={patient.id}
-                          patient={patient}
-                          requiredExams={requiredExams}
-                          isAdmin={isAdmin}
-                          onEdit={() => navigate(`/patients/${patient.id}`)}
-                          onClick={() => navigate(`/patients/${patient.id}/exams`)}
-                          nextAction={nextAction}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
               )}
             </div>
           ) : (

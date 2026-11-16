@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2, Calendar, Pencil } from "lucide-react";
+import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2, Calendar, Pencil, Phone, MessageCircle, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
@@ -14,7 +14,12 @@ import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
 import { useUserRole } from "@/hooks/useUserRole";
 import { capitalizeFirst } from "@/lib/utils";
-import { safeWindowOpen } from "@/lib/urlSecurity";
+import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
+import { PageHeader, HeaderAction } from "@/components/PageHeader";
+import { StatusBadge } from "@/components/StatusBadge";
+import { longDate, longDateTime } from "@/lib/dates";
+import { isIOS } from "@/lib/platform";
+import { cn } from "@/lib/utils";
 import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
 import { PatientSurgeryTimeline } from "@/components/PatientSurgeryTimeline";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +31,9 @@ interface Patient {
   procedure: string;
   hospital: string | null;
   surgery_date: string | null;
+  insurance?: string | null;
+  phone?: string | null;
+  guide_validity_date?: string | null;
   surgery_to_confirm?: boolean;
   birth_date: string | null;
   status: string;
@@ -41,6 +49,38 @@ interface PatientFile {
   file_type: string;
   file_size: number;
   created_at: string;
+}
+
+/** Seção agrupada do celular (some no computador): título pequeno em cinza. */
+function GroupedSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="md:hidden space-y-1.5">
+      <div className="flex items-center justify-between px-4">
+        <h3
+          className={cn(
+            "text-[13px] font-normal",
+            isIOS ? "uppercase tracking-wide text-muted-foreground" : "text-sm font-medium text-primary"
+          )}
+        >
+          {title}
+        </h3>
+        {action}
+      </div>
+      <div className={cn("bg-card overflow-hidden [&>*:last-child_.row-sep]:border-b-0 [&>*:last-child]:border-b-0", isIOS ? "rounded-xl" : "rounded-lg")}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** Linha "rótulo à esquerda, valor à direita". */
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="ml-4 flex items-start justify-between gap-4 py-3 pr-4 border-b border-border/60 min-h-11">
+      <span className="text-[15px] text-foreground shrink-0">{label}</span>
+      <span className="text-[15px] text-muted-foreground text-right min-w-0 break-words">{value}</span>
+    </div>
+  );
 }
 
 const PatientExams = () => {
@@ -75,7 +115,7 @@ const PatientExams = () => {
     try {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, procedure, hospital, surgery_date, surgery_to_confirm, birth_date, status, is_oncology, oncology_stage, responsible_user_id")
+        .select("id, name, procedure, hospital, surgery_date, surgery_to_confirm, birth_date, status, is_oncology, oncology_stage, responsible_user_id, insurance, phone, guide_validity_date")
         .eq("id", id)
         .single();
 
@@ -167,6 +207,26 @@ const PatientExams = () => {
     setIsFullscreen(false);
   };
 
+  const goBack = () => {
+    if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) navigate(-1);
+    else navigate("/patients");
+  };
+
+  const openInGoogleCalendar = () => {
+    if (!patient?.surgery_date) return;
+    const surgeryDate = new Date(patient.surgery_date);
+    const endDate = new Date(surgeryDate);
+    endDate.setHours(endDate.getHours() + 2);
+    const fmt = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const title = `Cirurgia: ${patient.procedure} - ${patient.name}`;
+    const details = `Paciente: ${patient.name}\nProcedimento: ${patient.procedure}`;
+    const location = patient.hospital || "";
+    safeWindowOpen(
+      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmt(surgeryDate)}/${fmt(endDate)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`,
+      "_blank"
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -186,9 +246,153 @@ const PatientExams = () => {
     );
   }
 
+  const phoneDigits = (patient.phone || "").replace(/\D/g, "");
+  const age = (() => {
+    if (!patient.birth_date) return null;
+    const today = new Date();
+    const birth = new Date(patient.birth_date);
+    let years = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
+    return years;
+  })();
+
   return (
-    <div className="p-3 md:p-6 max-w-4xl mx-auto space-y-4 md:space-y-6">
-      <div>
+    <>
+    <PageHeader
+      title={patient.name}
+      largeTitle={false}
+      back={{ label: "Voltar", onClick: goBack }}
+      actions={
+        isAdmin ? (
+          <HeaderAction
+            icon={<Pencil className="h-5 w-5" />}
+            label="Editar"
+            iosText
+            onClick={() => navigate(`/patients/${id}`)}
+          />
+        ) : undefined
+      }
+    />
+    <div className="px-4 pt-2 md:p-6 max-w-4xl mx-auto space-y-5 md:space-y-6">
+      {/* Celular: topo com nome, status, convênio e ações rápidas */}
+      <div className="md:hidden text-center space-y-2">
+        <h2 className="text-[22px] font-bold leading-tight text-foreground">{patient.name}</h2>
+        <div className="flex items-center justify-center flex-wrap gap-1.5 text-sm text-muted-foreground">
+          <StatusBadge status={patient.status as never} />
+          {patient.insurance && <span>{patient.insurance}</span>}
+          {age !== null && <span>· {age} anos</span>}
+        </div>
+        <div className="flex justify-center gap-6 pt-2">
+          {[
+            {
+              key: "call",
+              label: "Ligar",
+              icon: <Phone className="h-5 w-5" />,
+              disabled: !phoneDigits,
+              onClick: () => (window.location.href = `tel:${phoneDigits}`),
+            },
+            {
+              key: "whatsapp",
+              label: "WhatsApp",
+              icon: <MessageCircle className="h-5 w-5" />,
+              disabled: !phoneDigits,
+              onClick: () => safeWindowOpen(createWhatsAppUrl(phoneDigits, "")),
+            },
+            {
+              key: "calendar",
+              label: "Agenda",
+              icon: <Calendar className="h-5 w-5" />,
+              disabled: !patient.surgery_date,
+              onClick: openInGoogleCalendar,
+            },
+          ].map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={action.onClick}
+              disabled={action.disabled}
+              className="flex flex-col items-center gap-1 text-xs font-medium text-primary disabled:text-muted-foreground disabled:opacity-60"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">{action.icon}</span>
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Celular: lista agrupada "rótulo à esquerda, valor à direita" */}
+      <GroupedSection title="Cirurgia">
+        <InfoRow label="Procedimento" value={capitalizeFirst(patient.procedure)} />
+        <InfoRow label="Hospital" value={patient.hospital || "—"} />
+        <InfoRow
+          label="Data"
+          value={
+            patient.surgery_date ? (
+              <span className="inline-flex flex-col items-end gap-1">
+                <span>{longDateTime(patient.surgery_date)}</span>
+                {patient.surgery_to_confirm && <ToConfirmBadge />}
+              </span>
+            ) : (
+              "Sem data"
+            )
+          }
+        />
+        {patient.guide_validity_date && (
+          <InfoRow label="Validade da guia" value={longDate(`${patient.guide_validity_date}T12:00:00`)} />
+        )}
+        {patient.phone && <InfoRow label="Telefone" value={patient.phone} />}
+      </GroupedSection>
+
+      <GroupedSection
+        title="Exames"
+        action={
+          isAdmin ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/patients/${id}?step=2`)}
+              className="inline-flex items-center gap-0.5 text-[13px] font-medium text-primary normal-case tracking-normal min-h-11 -my-3"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </button>
+          ) : undefined
+        }
+      >
+        {files.length === 0 ? (
+          <p className="px-4 py-3 text-[15px] text-muted-foreground">Nenhum exame enviado</p>
+        ) : (
+          files.map((file) => (
+            <div key={file.id} className="flex items-center gap-3 pl-4 min-h-12">
+              <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <button
+                type="button"
+                onClick={() => viewFile(file.file_path, file.file_name)}
+                className="row-sep flex-1 min-w-0 flex items-center gap-2 py-2.5 pr-2 border-b border-border/60 text-left"
+              >
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[15px] truncate">{file.file_name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {(file.file_size / 1024).toFixed(0)} KB · {longDate(file.created_at)}
+                  </span>
+                </span>
+                {isIOS && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadFile(file.file_path, file.file_name)}
+                aria-label={`Baixar ${file.file_name}`}
+                className="h-11 w-11 shrink-0 flex items-center justify-center text-primary"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+            </div>
+          ))
+        )}
+      </GroupedSection>
+
+      {/* Computador: cabeçalho e cartões originais */}
+      <div className="hidden md:block">
         <div className="flex items-center justify-between mb-4">
           <Button
             variant="ghost"
@@ -231,7 +435,7 @@ const PatientExams = () => {
         )}
       </div>
 
-      <Card>
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>Informações da Cirurgia</CardTitle>
         </CardHeader>
@@ -281,7 +485,7 @@ const PatientExams = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>Exames Enviados</CardTitle>
           <CardDescription>
@@ -470,6 +674,7 @@ const PatientExams = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

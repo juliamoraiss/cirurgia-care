@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -82,8 +83,10 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div>
+    <>
+    <PageHeader title="Criar usuário" largeTitle={false} back={{ label: "Mais", onClick: () => navigate("/more") }} />
+    <div className="px-4 pt-2 md:p-6 max-w-2xl mx-auto space-y-6">
+      <div className="hidden md:block">
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
@@ -186,6 +189,7 @@ const UserManagement = () => {
         </Card>
       </form>
     </div>
+    </>
   );
 };
 

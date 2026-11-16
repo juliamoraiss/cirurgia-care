@@ -3,6 +3,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { hasShareIntent, readShareIntentFromSearch } from "@/lib/shareIntent";
+import { applyPlatformClasses } from "@/lib/platform";
+
+// iOS/Android + modo escuro do sistema (antes do primeiro render, sem "piscar")
+applyPlatformClasses();
 
 // Preserve Google OAuth code BEFORE Supabase client can consume it
 (() => {

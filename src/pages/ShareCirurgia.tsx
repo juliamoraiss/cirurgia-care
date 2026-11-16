@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Layout } from "@/components/Layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -399,9 +399,10 @@ export default function ShareCirurgia() {
   const conf = extracted?.confidence;
 
   return (
-    <Layout>
-      <div className="max-w-2xl mx-auto p-4 space-y-4 pb-24">
-        <div className="flex items-center gap-2">
+    <>
+      <PageHeader title="Importar do WhatsApp" largeTitle={false} back={{ label: "Voltar", onClick: () => navigate(-1) }} />
+      <div className="max-w-2xl mx-auto px-4 pt-2 md:p-4 space-y-4 pb-6">
+        <div className="hidden md:flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -655,6 +656,6 @@ export default function ShareCirurgia() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </Layout>
+    </>
   );
 }

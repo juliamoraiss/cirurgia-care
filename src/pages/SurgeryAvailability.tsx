@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,7 @@ const DURATION_OPTIONS = [
 ];
 
 const SurgeryAvailability = () => {
+  const navigate = useNavigate();
   const { slots, loading, addSlot, updateSlot, deleteSlot } = useSurgeryAvailability();
   const { blocks, loading: blocksLoading, addBlock, deleteBlock } = useScheduleBlocks();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -88,9 +91,11 @@ const SurgeryAvailability = () => {
   const pastBlocks = blocks.filter(b => b.end_date < today);
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24">
+    <>
+    <PageHeader title="Disponibilidade" largeTitle={false} back={{ label: "Voltar", onClick: () => navigate(-1) }} />
+    <div className="px-4 pt-2 md:p-6 space-y-4 md:space-y-6 pb-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
             <Settings2 className="h-7 w-7" />
             Disponibilidade para Cirurgias
@@ -422,6 +427,7 @@ const SurgeryAvailability = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

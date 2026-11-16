@@ -35,7 +35,7 @@ All colors MUST be HSL.
 
     /* Muted grays for secondary text */
     --muted: 40 10% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted-foreground: 215 15% 39%;
 
     --accent: 215 30% 94%;
     --accent-foreground: 215 50% 20%;
@@ -203,8 +203,17 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* Fonte do sistema: SF Pro no iPhone, Roboto no Android */
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  html.platform-android {
+    font-family: Roboto, "Google Sans", "Segoe UI", -apple-system, sans-serif;
+  }
+
   body {
     @apply bg-page-background text-foreground antialiased;
+    -webkit-tap-highlight-color: transparent;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -234,12 +243,10 @@ All colors MUST be HSL.
   /* Text utilities */
   .text-subtitle {
     @apply text-muted-foreground text-sm;
-    opacity: 0.8;
   }
 
   .text-caption {
     @apply text-xs text-muted-foreground;
-    opacity: 0.7;
   }
 
   .text-label {
@@ -273,5 +280,16 @@ All colors MUST be HSL.
     .safe-top {
       padding-top: max(env(safe-area-inset-top), 64px);
     }
+  }
+}
+
+@layer utilities {
+  /* Rolagem horizontal sem barra visível (chips, faixa da semana) */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

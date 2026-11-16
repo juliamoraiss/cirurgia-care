@@ -1,14 +1,16 @@
-import { useTheme } from "next-themes";
+import { isIOS } from "@/lib/platform";
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      // Segue o modo claro/escuro do sistema
+      theme="system"
+      // iOS: banner no topo; Android: snackbar embaixo (acima da barra de abas)
+      position={isIOS ? "top-center" : "bottom-center"}
+      offset={isIOS ? "calc(env(safe-area-inset-top) + 8px)" : "calc(env(safe-area-inset-bottom) + 76px)"}
       className="toaster group"
       toastOptions={{
         classNames: {

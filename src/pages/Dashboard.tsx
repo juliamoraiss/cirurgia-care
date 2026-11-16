@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { PendingPatients } from "@/components/PendingPatients";
 import { SurgeriesCard } from "@/components/SurgeriesCard";
 import { QuickIndicators } from "@/components/QuickIndicators";
+import { PageHeader } from "@/components/PageHeader";
 import { OncologyPatientsCard } from "@/components/OncologyPatientsCard";
 import { CannulaPatientsCard } from "@/components/CannulaPatientsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -113,7 +114,7 @@ const Dashboard = () => {
         // Patients with surgery dates
         const {
           data: patientsWithSurgery
-        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id, surgery_to_confirm").not("surgery_date", "is", null).order("surgery_date", {
+        } = await supabase.from("patients").select("id, name, procedure, surgery_date, insurance, hospital, status, responsible_user_id, surgery_to_confirm, exams_checklist, guide_validity_date").not("surgery_date", "is", null).order("surgery_date", {
           ascending: true
         });
 
@@ -267,7 +268,35 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-24">
+      {/* Celular: cabeçalho nativo "Início" com seletor compacto de profissional */}
+      <PageHeader
+        title="Início"
+        actions={
+          isAdmin && professionals.length > 0 ? (
+            <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
+              <SelectTrigger
+                className="h-9 w-auto max-w-[150px] gap-1 rounded-full border-0 bg-muted/70 px-3 text-sm font-medium"
+                aria-label="Filtrar por profissional"
+              >
+                <SelectValue>
+                  {selectedProfessional === "all"
+                    ? "Todos"
+                    : professionals.find((p) => p.id === selectedProfessional)?.full_name.split(" ")[0] ?? "Todos"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="all">Todos os profissionais</SelectItem>
+                {professionals.map((prof) => (
+                  <SelectItem key={prof.id} value={prof.id}>
+                    {prof.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : undefined
+        }
+      />
+      <div className="px-4 pt-1 md:p-6 space-y-5 md:space-y-8 pb-6 md:pb-24">
         {/* Notification banner for professionals */}
         {!isAdmin && recentNotifications.length > 0 && (
           <button
@@ -316,7 +345,8 @@ const Dashboard = () => {
         )}
 
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* Computador: mantém a saudação e o filtro de profissional */}
+          <div className="hidden md:flex md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="md:text-4xl font-bold text-foreground tracking-tight text-2xl">
                 Bem-vindo, {userName || "..."}

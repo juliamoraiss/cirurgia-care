@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -100,8 +101,10 @@ const PendingUsers = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div>
+    <>
+    <PageHeader title="Usuários pendentes" largeTitle={false} back={{ label: "Mais", onClick: () => navigate("/more") }} />
+    <div className="px-4 pt-2 md:p-6 max-w-4xl mx-auto space-y-6">
+      <div className="hidden md:block">
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
@@ -192,6 +195,7 @@ const PendingUsers = () => {
         </Card>
       )}
     </div>
+    </>
   );
 };
 

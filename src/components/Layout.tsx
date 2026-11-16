@@ -11,26 +11,14 @@ import {
   Users,
   Calendar,
   LogOut,
-  Menu,
   UserPlus,
   CheckSquare,
   TrendingUp,
   UserCheck,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/BottomNav";
 import { isNavItemActive } from "@/lib/navigation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { FAB } from "@/components/FAB";
-import { NotificationToggle } from "@/components/NotificationToggle";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface LayoutProps {
@@ -237,70 +225,10 @@ export function Layout({ children, onRefresh }: LayoutProps) {
         <SidebarContent />
       </aside>
 
-      {/* Mobile Header - Native Style */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md z-50 pt-[env(safe-area-inset-top)]">
-        <div className="h-14 flex items-center justify-between px-3">
-          {/* Left: Menu */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-sidebar">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-          
-          {/* Center: Logo */}
-          <div 
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate("/")}
-          >
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Stethoscope className="h-4 w-4 text-primary" />
-            </div>
-            <span className="font-semibold text-sm text-foreground">
-              MedSystem
-            </span>
-          </div>
-          
-          {/* Right: Notifications + Profile */}
-          <div className="flex items-center gap-1">
-            <NotificationToggle />
-            {/* Perfil: mostra quem está logado e o atalho para sair
-                (o menu de navegação fica só no botão da esquerda) */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-muted/50"
-                  aria-label="Perfil"
-                >
-                  <span className="text-xs font-bold text-muted-foreground uppercase">
-                    {user?.email?.charAt(0) || "U"}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 z-[70]">
-                <DropdownMenuLabel className="space-y-1">
-                  <p className="text-sm font-medium truncate">{user?.email}</p>
-                  <Badge variant={getRoleBadgeVariant()}>{getRoleLabel()}</Badge>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 pb-20 md:pb-0">
+      {/* No celular cada tela traz o próprio cabeçalho (PageHeader), que já
+          respeita a barra de status; embaixo, espaço para a barra de abas e o FAB */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain pb-[calc(env(safe-area-inset-bottom)+4.5rem)] android:pb-[calc(env(safe-area-inset-bottom)+9.5rem)] md:pb-0 md:android:pb-0">
         {isMobile && !isFormRoute ? (
           <PullToRefresh onRefresh={handleRefresh} className="min-h-full">
             <Fragment key={refreshKey}>{children}</Fragment>
@@ -312,7 +240,6 @@ export function Layout({ children, onRefresh }: LayoutProps) {
 
       {/* Mobile Navigation */}
       <BottomNav />
-      <FAB />
     </div>
   );
 }

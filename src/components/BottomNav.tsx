@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Users, CalendarDays, CheckSquare } from "lucide-react";
+import { CalendarDays, CheckSquare, Ellipsis, House, Users } from "lucide-react";
 import { endOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isNavItemActive } from "@/lib/navigation";
+import { isIOS } from "@/lib/platform";
+import { cn } from "@/lib/utils";
 
 /** Quantidade de tarefas abertas com prazo até o fim de hoje (atrasadas + hoje). */
 function useDueTasksCount(enabled: boolean, pathname: string) {
@@ -32,25 +34,35 @@ function useDueTasksCount(enabled: boolean, pathname: string) {
   return count;
 }
 
+/**
+ * Barra de abas do celular.
+ *  - iOS: sem "pílula"; o item ativo só muda de cor (tint), rótulo 10pt.
+ *  - Android (Material 3): pílula atrás do ícone ativo.
+ */
 export function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin } = useUserRole();
-  const canSeeTasks = isAdmin;
-  const dueTasks = useDueTasksCount(canSeeTasks, location.pathname);
+  const dueTasks = useDueTasksCount(isAdmin, location.pathname);
 
   const navItems = [
-    { icon: Home, label: "Home", path: "/" },
+    { icon: House, label: "Início", path: "/" },
     { icon: Users, label: "Pacientes", path: "/patients" },
     { icon: CalendarDays, label: "Agenda", path: "/calendar" },
-    ...(canSeeTasks
-      ? [{ icon: CheckSquare, label: "Tarefas", path: "/tasks", badge: dueTasks }]
-      : []),
+    ...(isAdmin ? [{ icon: CheckSquare, label: "Tarefas", path: "/tasks", badge: dueTasks }] : []),
+    { icon: Ellipsis, label: "Mais", path: "/more" },
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border/50 z-50 pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav
+      className={cn(
+        "md:hidden fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]",
+        isIOS
+          ? "bg-page-background/85 backdrop-blur-xl backdrop-saturate-150 border-t border-border/60"
+          : "bg-secondary dark:bg-card"
+      )}
+    >
+      <div className={cn("flex items-stretch justify-around px-1", isIOS ? "h-[49px]" : "h-20")}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = isNavItemActive(item.path, location.pathname);
@@ -61,33 +73,38 @@ export function BottomNav() {
               onClick={() => navigate(item.path)}
               aria-current={isActive ? "page" : undefined}
               aria-label={badge ? `${item.label} (${badge} pendentes)` : item.label}
-              className={`flex flex-col items-center justify-center flex-1 h-full py-2 transition-all duration-200 ${
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground active:scale-95"
-              }`}
+              className={cn(
+                "flex flex-col items-center justify-center flex-1 min-w-0",
+                isIOS
+                  ? cn("pt-1 gap-0.5", isActive ? "text-primary" : "text-muted-foreground")
+                  : cn("gap-1", isActive ? "text-foreground" : "text-muted-foreground")
+              )}
             >
-              <div className={`relative flex items-center justify-center transition-all duration-200 ${
-                isActive ? "scale-110" : ""
-              }`}>
-                {isActive && (
-                  <div className="absolute inset-0 -m-2 rounded-xl bg-primary/10" />
+              <span
+                className={cn(
+                  "relative flex items-center justify-center",
+                  !isIOS && "h-8 w-16 rounded-full transition-colors",
+                  !isIOS && isActive && "bg-primary/15"
                 )}
-                <Icon
-                  className={`h-6 w-6 relative z-10 transition-all ${
-                    isActive ? "fill-primary/20" : ""
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 1.75}
-                />
+              >
+                <Icon className={isIOS ? "h-[26px] w-[26px]" : "h-6 w-6"} strokeWidth={isActive ? 2.2 : 1.8} />
                 {!!badge && (
-                  <span className="absolute -top-2 -right-3 z-20 min-w-5 h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center">
+                  <span
+                    className={cn(
+                      "absolute z-10 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF3B30] text-white text-[11px] font-semibold leading-[18px] text-center",
+                      isIOS ? "-top-1 -right-2.5" : "top-0 right-3"
+                    )}
+                  >
                     {badge > 99 ? "99+" : badge}
                   </span>
                 )}
-              </div>
-              <span className={`text-xs mt-1.5 ${
-                isActive ? "font-bold" : "font-medium"
-              }`}>
+              </span>
+              <span
+                className={cn(
+                  "truncate max-w-full",
+                  isIOS ? "text-[10px] font-medium" : cn("text-xs", isActive ? "font-semibold" : "font-medium")
+                )}
+              >
                 {item.label}
               </span>
             </button>

@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: ["class"],
@@ -118,5 +119,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // Variantes por plataforma: ios:... / android:... (classe no <html>, ver src/lib/platform.ts)
+    plugin(({ addVariant }) => {
+      addVariant("ios", ".platform-ios &");
+      addVariant("android", ".platform-android &");
+    }),
+  ],
 } satisfies Config;

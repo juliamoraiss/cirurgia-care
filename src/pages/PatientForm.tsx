@@ -47,6 +47,7 @@ import { z } from "zod";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientFormSteps } from "@/components/PatientFormSteps";
+import { PageHeader } from "@/components/PageHeader";
 import { YearMonthDatePicker } from "@/components/YearMonthDatePicker";
 import { ProfessionalSelect } from "@/components/ProfessionalSelect";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
@@ -128,6 +129,11 @@ const PatientForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isEditMode = !!id;
   
+  // ?surgery_date=AAAA-MM-DDTHH:mm (ex.: "+" da Agenda) já preenche a data da cirurgia
+  const presetSurgeryDate = (() => {
+    const v = new URLSearchParams(window.location.search).get("surgery_date") || "";
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? v : "";
+  })();
   const [formData, setFormData] = useState<PatientFormState>({
     name: "",
     phone: "",
@@ -136,8 +142,8 @@ const PatientForm = () => {
     procedure: "",
     hospital: "",
     insurance: "",
-    status: "awaiting_authorization",
-    surgery_date: "",
+    status: presetSurgeryDate ? "surgery_scheduled" : "awaiting_authorization",
+    surgery_date: presetSurgeryDate,
     surgery_to_confirm: false,
     guide_validity_date: "",
     origem: "",
@@ -152,7 +158,11 @@ const PatientForm = () => {
   const [examsChecklist, setExamsChecklist] = useState<string[]>([]);
   const [checkedExams, setCheckedExams] = useState<string[]>([]);
   const [deletingPatient, setDeletingPatient] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  // ?step=2 abre direto numa etapa (ex.: "Adicionar exame" na ficha)
+  const [currentStep, setCurrentStep] = useState(() => {
+    const step = Number(new URLSearchParams(window.location.search).get("step"));
+    return Number.isInteger(step) && step >= 0 && step <= 2 ? step : 0;
+  });
   const [originalSurgeryDate, setOriginalSurgeryDate] = useState<string | null>(null);
   const [originalToConfirm, setOriginalToConfirm] = useState(false);
   const [patientUpdatedAt, setPatientUpdatedAt] = useState<string | null>(null);
@@ -1051,8 +1061,14 @@ const PatientForm = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6 pb-24 md:pb-6">
-      <div>
+    <>
+    <PageHeader
+      title={isEditMode ? "Editar paciente" : "Novo paciente"}
+      largeTitle={false}
+      back={{ label: "Voltar", onClick: goBack }}
+    />
+    <div className="px-4 pt-2 md:p-6 max-w-4xl mx-auto space-y-6 pb-6">
+      <div className="hidden md:block">
         <Button
           variant="ghost"
           onClick={goBack}
@@ -1663,6 +1679,7 @@ const PatientForm = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

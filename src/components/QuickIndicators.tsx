@@ -33,7 +33,7 @@ export const QuickIndicators = ({
       bgColor: "bg-success-light",
       textColor: "text-success",
       borderColor: "border-success/20",
-      onClick: () => navigate("/calendar"),
+      onClick: () => navigate("/patients", { state: { filterStatus: "surgery_scheduled" } }),
     },
     {
       icon: Clock,
@@ -67,7 +67,7 @@ export const QuickIndicators = ({
           <button
             key={indicator.label}
             onClick={indicator.onClick}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-xl border ${indicator.bgColor} ${indicator.borderColor} transition-all hover:scale-[1.02] active:scale-95`}
+            className={`flex-1 min-h-14 flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-xl border ${indicator.bgColor} ${indicator.borderColor} transition-all hover:scale-[1.02] active:scale-95`}
           >
             <div className="flex items-center gap-1.5">
               <Icon className={`h-4 w-4 ${indicator.textColor}`} />
@@ -75,7 +75,7 @@ export const QuickIndicators = ({
                 {indicator.value}
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               {indicator.label}
             </span>
           </button>

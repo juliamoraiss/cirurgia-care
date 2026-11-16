@@ -10,10 +10,13 @@
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <!-- Conteúdo vai até atrás da barra de status; cada tela pinta o próprio fundo nela -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MedSystem">
     <meta name="application-name" content="MedSystem">
-    <meta name="theme-color" content="#1e3a5f">
+    <!-- Barra de status/navegador com a mesma cor do fundo das telas -->
+    <meta name="theme-color" content="#f5f3f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0a0e15" media="(prefers-color-scheme: dark)">
     <meta name="msapplication-TileColor" content="#1e3a5f">
     
     <!-- Manifest -->

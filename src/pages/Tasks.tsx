@@ -6,7 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, Clock, User } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Clock, Plus, User } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { PageHeader, HeaderAction } from "@/components/PageHeader";
+import { SegmentedControl } from "@/components/SegmentedControl";
+import { NewTaskDialog } from "@/components/NewTaskDialog";
+import { FAB } from "@/components/FAB";
+import { shortDateTime } from "@/lib/dates";
+import { isIOS } from "@/lib/platform";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, isPast, isToday, isFuture } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,6 +42,17 @@ interface Task {
     responsible_user_id: string | null;
   };
 }
+
+/** Tipo de tarefa → modelo de mensagem do WhatsApp (ação principal do cartão). */
+const TASK_TEMPLATE: Record<string, "pre_op" | "post_op" | "post_op_30_days" | "exam_followup" | "surgery_confirmation_patient" | "surgery_confirmation_doctor" | "cannula_reminder"> = {
+  pre_op_instructions: "pre_op",
+  post_op_instructions: "post_op",
+  post_op_30_days: "post_op_30_days",
+  exam_followup: "exam_followup",
+  cannula_reminder: "cannula_reminder",
+  surgery_confirmation_patient: "surgery_confirmation_patient",
+  surgery_confirmation_doctor: "surgery_confirmation_doctor",
+};
 
 const Tasks = () => {
   const navigate = useNavigate();
@@ -170,8 +189,94 @@ const Tasks = () => {
 
   // Abre na primeira aba que tem algo a fazer (atrasadas → hoje → próximas)
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const isMobile = useIsMobile();
   const defaultTab =
     overdueTasks.length > 0 ? "overdue" : todayTasks.length > 0 ? "today" : futureTasks.length > 0 ? "future" : "today";
+
+  /** Linha de tarefa no celular: título = paciente, subtítulo = tarefa, data à direita. */
+  const MobileTaskRow = ({ task }: { task: Task }) => {
+    const dueDate = new Date(task.due_date);
+    const isOverdue = !task.completed && isPast(dueDate) && !isToday(dueDate);
+    const templateType = TASK_TEMPLATE[task.task_type];
+    const subtitle = [
+      // Para tarefas automáticas o tipo já diz o que fazer; nas personalizadas, o título
+      task.task_type === "custom" ? task.title : getTaskTypeLabel(task.task_type),
+      task.patient.procedure,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    return (
+      <li className="flex items-start gap-1 pl-1 pr-4 py-2">
+        {/* Única forma de concluir: a bolinha (com "Desfazer" no aviso) */}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={task.completed}
+          aria-label={task.completed ? "Reabrir tarefa" : "Concluir tarefa"}
+          onClick={() =>
+            task.completed ? toggleTaskCompletion(task.id, true) : completeTaskWithUndo(task.id, loadTasks, "Tarefa concluída")
+          }
+          className="h-11 w-11 shrink-0 flex items-center justify-center"
+        >
+          <span
+            className={cn(
+              "h-[22px] w-[22px] rounded-full border-2 flex items-center justify-center",
+              task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/50"
+            )}
+          >
+            {task.completed && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+          </span>
+        </button>
+
+        <div className="flex-1 min-w-0 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate(`/patients/${task.patient_id}/exams`)}
+            className="w-full text-left"
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <span className={cn("text-[16px] font-medium truncate", task.completed && "text-muted-foreground line-through")}>
+                {task.patient.name}
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 text-[13px] tabular-nums",
+                  isOverdue ? "text-destructive font-medium" : "text-muted-foreground"
+                )}
+              >
+                {shortDateTime(dueDate)}
+              </span>
+            </div>
+            <p className="text-[13px] text-muted-foreground truncate first-letter:uppercase">{subtitle}</p>
+          </button>
+
+          {!task.completed && templateType && (
+            <div className="mt-1.5">
+              <WhatsAppTemplates
+                patient={{
+                  name: task.patient.name,
+                  phone: task.patient.phone || "",
+                  procedure: task.patient.procedure,
+                  hospital: task.patient.hospital || "",
+                  surgery_date: task.patient.surgery_date || "",
+                  gender: task.patient.gender || "",
+                }}
+                type={templateType}
+                doctorPhone={
+                  task.task_type === "surgery_confirmation_doctor" && task.patient.responsible_user_id
+                    ? doctorPhones[task.patient.responsible_user_id]
+                    : undefined
+                }
+                onSent={() => completeTaskWithUndo(task.id, loadTasks)}
+              />
+            </div>
+          )}
+        </div>
+      </li>
+    );
+  };
 
   const TaskCard = ({ task }: { task: Task }) => {
     const dueDate = new Date(task.due_date);
@@ -297,6 +402,26 @@ const Tasks = () => {
     );
   };
 
+  if ((loading || roleLoading) && isMobile) {
+    // Carregando: esqueleto da lista em vez de spinner
+    return (
+      <>
+        <PageHeader title="Tarefas" />
+        <div className={cn("bg-card", isIOS && "mx-4 rounded-xl overflow-hidden")}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/60 last:border-b-0">
+              <div className="h-[22px] w-[22px] rounded-full bg-muted animate-pulse" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
   if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -310,6 +435,64 @@ const Tasks = () => {
 
   if (!canAccessTasks) {
     return null;
+  }
+
+  // ---------------- Celular: visual nativo ----------------
+  if (isMobile) {
+    const tab = activeTab ?? defaultTab;
+    const listByTab: Record<string, Task[]> = {
+      overdue: overdueTasks,
+      today: todayTasks,
+      future: futureTasks,
+      completed: [...completedTasks].sort(
+        (a, b) => new Date(b.completed_at || b.due_date).getTime() - new Date(a.completed_at || a.due_date).getTime()
+      ),
+    };
+    const list = listByTab[tab] ?? [];
+    const emptyText: Record<string, string> = {
+      overdue: "Nenhuma tarefa atrasada 🎉",
+      today: "Nada para hoje",
+      future: "Nenhuma tarefa futura",
+      completed: "Nenhuma tarefa concluída",
+    };
+
+    return (
+      <>
+        <PageHeader
+          title="Tarefas"
+          actions={
+            isIOS ? (
+              <HeaderAction icon={<Plus className="h-6 w-6" strokeWidth={2.2} />} label="Nova tarefa" onClick={() => setNewTaskOpen(true)} />
+            ) : undefined
+          }
+        >
+          <SegmentedControl
+            ariaLabel="Filtrar tarefas"
+            value={tab}
+            onChange={setActiveTab}
+            segments={[
+              { value: "overdue", label: "Atrasadas", count: overdueTasks.length, alert: true },
+              { value: "today", label: "Hoje", count: todayTasks.length },
+              { value: "future", label: "Futuras", count: futureTasks.length },
+              { value: "completed", label: "Feitas" },
+            ]}
+          />
+        </PageHeader>
+
+        {list.length === 0 ? (
+          <p className="mx-4 rounded-xl bg-card px-4 py-4 text-center text-[15px] text-muted-foreground">{emptyText[tab]}</p>
+        ) : (
+          <ul className={cn("bg-card divide-y divide-border/60", isIOS && "mx-4 rounded-xl overflow-hidden")}>
+            {list.map((task) => (
+              <MobileTaskRow key={task.id} task={task} />
+            ))}
+          </ul>
+        )}
+
+        <FAB icon={<Plus />} label="Nova tarefa" onClick={() => setNewTaskOpen(true)} />
+        <NewTaskDialog open={newTaskOpen} onOpenChange={setNewTaskOpen} onCreated={loadTasks} />
+      </>
+    );
   }
 
   return (

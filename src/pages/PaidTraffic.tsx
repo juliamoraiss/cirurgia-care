@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
@@ -318,7 +319,9 @@ const PDFUploadComponent = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-8 max-w-7xl">
+    <>
+    <PageHeader title="Tráfego Pago" largeTitle={false} back={{ label: "Mais", onClick: () => navigate("/more") }} />
+    <div className="container mx-auto px-4 pt-2 md:p-6 space-y-8 max-w-7xl">
       <Tabs defaultValue="upload" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="upload">Upload de Relatórios</TabsTrigger>
@@ -679,6 +682,7 @@ const PDFUploadComponent = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 };
 
