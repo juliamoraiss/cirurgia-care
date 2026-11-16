@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, X, Image, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 
 interface Feedback {
   id: string;
@@ -149,7 +150,7 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
       loadFeedbacks();
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
-      toast.error("Erro ao salvar feedback");
+      toast.error(describeError("Erro ao salvar feedback", error));
     } finally {
       setUploading(false);
     }
@@ -172,7 +173,7 @@ export function PatientFeedbacksSection({ patientId }: PatientFeedbacksSectionPr
       toast.success("Feedback removido");
       loadFeedbacks();
     } catch (error) {
-      toast.error("Erro ao remover feedback");
+      toast.error(describeError("Erro ao remover feedback", error));
     }
   }
 

@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUserRole } from "@/hooks/useUserRole";
+import { describeError } from "@/lib/errors";
 
 interface OncologyEvent {
   id: string;
@@ -162,7 +163,7 @@ export function OncologyTimeline({ patientId, patientName }: OncologyTimelinePro
       setIsDialogOpen(false);
       loadEvents();
     } catch (error) {
-      toast.error("Erro ao adicionar evento");
+      toast.error(describeError("Erro ao adicionar evento", error));
       console.error(error);
     }
   }
@@ -179,7 +180,7 @@ export function OncologyTimeline({ patientId, patientName }: OncologyTimelinePro
       setEvents(prev => prev.filter(e => e.id !== eventId));
       toast.success("Evento removido");
     } catch (error) {
-      toast.error("Erro ao remover evento");
+      toast.error(describeError("Erro ao remover evento", error));
       console.error(error);
     }
   }

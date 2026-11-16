@@ -6,6 +6,7 @@ import { Navigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 
 const PendingApproval = () => {
   const { user, loading, isApproved, signOut, getPostAuthRedirectPath } = useAuth();
@@ -35,7 +36,7 @@ const PendingApproval = () => {
         toast.info("Sua conta ainda está aguardando aprovação.");
       }
     } catch (error) {
-      toast.error("Erro ao verificar status.");
+      toast.error(describeError("Erro ao verificar status.", error));
     } finally {
       setChecking(false);
     }

@@ -11,6 +11,7 @@ import { ArrowLeft, Check, X, Users, Clock, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { describeError } from "@/lib/errors";
 
 interface PendingUser {
   id: string;
@@ -60,8 +61,8 @@ const PendingUsers = () => {
       toast.success("Usuário aprovado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["pending-users"] });
     },
-    onError: () => {
-      toast.error("Erro ao aprovar usuário.");
+    onError: (error) => {
+      toast.error(describeError("Erro ao aprovar usuário", error));
     },
   });
 
@@ -79,8 +80,8 @@ const PendingUsers = () => {
       toast.success("Usuário rejeitado e removido.");
       queryClient.invalidateQueries({ queryKey: ["pending-users"] });
     },
-    onError: () => {
-      toast.error("Erro ao rejeitar usuário.");
+    onError: (error) => {
+      toast.error(describeError("Erro ao rejeitar usuário", error));
     },
   });
 

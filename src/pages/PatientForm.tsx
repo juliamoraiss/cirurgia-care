@@ -43,7 +43,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Upload, X, FileText, MessageCircle, Trash2, Link2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { PatientTasksSection } from "@/components/PatientTasksSection";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientFormSteps } from "@/components/PatientFormSteps";
@@ -52,6 +51,7 @@ import { ProfessionalSelect } from "@/components/ProfessionalSelect";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
 import { HospitalField } from "@/components/HospitalField";
 import InputMask from "react-input-mask";
+import { describeError } from "@/lib/errors";
 
 // Validation schema with enhanced security
 const patientSchema = z.object({
@@ -107,6 +107,17 @@ const readPatientFormDraft = (storageKey: string): PatientFormDraft | null => {
 
 const PatientForm = () => {
   const navigate = useNavigate();
+
+  // Volta para a tela de onde o usuário veio (ficha, agenda, tarefas, lista...).
+  // Se o formulário foi aberto direto por link, cai na lista de pacientes.
+  const goBack = () => {
+    const historyIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (historyIdx > 0) {
+      navigate(-1);
+    } else {
+      navigate("/patients", { replace: true });
+    }
+  };
   const { id } = useParams();
   const { isAdmin, isDentist, isDoctor, loading: roleLoading } = useUserRole();
   const { user } = useAuth();
@@ -291,7 +302,7 @@ const PatientForm = () => {
         setCheckedExams(savedExams);
       }
     } catch (error) {
-      toast.error("Erro ao carregar dados do paciente");
+      toast.error(describeError("Erro ao carregar dados do paciente", error));
       navigate("/patients");
     } finally {
       setLoadingData(false);
@@ -502,7 +513,7 @@ const PatientForm = () => {
         setViewingFile({ url: data.signedUrl, name: fileName });
       }
     } catch (error) {
-      toast.error("Erro ao carregar arquivo");
+      toast.error(describeError("Erro ao carregar arquivo", error));
     }
   };
 
@@ -524,7 +535,7 @@ const PatientForm = () => {
       setExistingFiles(prev => prev.filter(f => f.id !== fileId));
       toast.success("Arquivo removido com sucesso");
     } catch (error) {
-      toast.error("Erro ao remover arquivo");
+      toast.error(describeError("Erro ao remover arquivo", error));
     }
   };
 
@@ -727,7 +738,7 @@ const PatientForm = () => {
       toast.success("Link de agendamento gerado!");
     } catch (error) {
       console.error("Erro ao gerar link de agendamento:", error);
-      toast.error("Erro ao gerar link de agendamento");
+      toast.error(describeError("Erro ao gerar link de agendamento", error));
     } finally {
       setGeneratingLink(false);
     }
@@ -802,7 +813,7 @@ const PatientForm = () => {
       toast.success("Paciente excluído com sucesso!");
       navigate("/patients");
     } catch (error) {
-      toast.error("Erro ao excluir paciente");
+      toast.error(describeError("Erro ao excluir paciente", error));
     } finally {
       setDeletingPatient(false);
     }
@@ -965,7 +976,7 @@ const PatientForm = () => {
 
       localStorage.removeItem(patientDraftStorageKey);
       toast.success(isEditMode ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
-      navigate("/patients");
+      goBack();
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -1028,7 +1039,7 @@ const PatientForm = () => {
       <div>
         <Button
           variant="ghost"
-          onClick={() => navigate("/patients")}
+          onClick={goBack}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1050,12 +1061,18 @@ const PatientForm = () => {
       }}>
         <Card>
           <CardHeader>
-            <CardTitle>
-              {steps[currentStep].title}
-            </CardTitle>
-            <CardDescription>
-              {steps[currentStep].description}
-            </CardDescription>
+            <PatientFormSteps
+              part="indicator"
+              currentStep={currentStep}
+              totalSteps={steps.length}
+              steps={steps}
+              onNext={handleNextStep}
+              onPrevious={handlePreviousStep}
+              onStepClick={handleStepClick}
+              onSubmit={(e) => handleSubmit(e)}
+              isSubmitting={loading || uploadingFiles}
+              isEditMode={isEditMode}
+            />
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Etapa 1: Dados Pessoais */}
@@ -1534,45 +1551,11 @@ const PatientForm = () => {
                   </div>
                 </div>
 
-                {isEditMode && (
-                  <div className="pt-4 border-t">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          disabled={deletingPatient}
-                          className="w-full"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Excluir Paciente
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. Isso irá excluir permanentemente o paciente
-                            <strong> {formData.name}</strong>, todos os seus arquivos e histórico.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleDeletePatient}
-                            className="bg-destructive hover:bg-destructive/90"
-                          >
-                            {deletingPatient ? "Excluindo..." : "Excluir"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )}
               </div>
             )}
 
             <PatientFormSteps
+              part="navigation"
               currentStep={currentStep}
               totalSteps={steps.length}
               steps={steps}
@@ -1587,9 +1570,43 @@ const PatientForm = () => {
         </Card>
       </form>
 
-      {isEditMode && id && (
-        <div className="mt-6">
-          <PatientTasksSection patientId={id} />
+      {/* Exclusão fica separada dos botões de salvar para evitar toque acidental */}
+      {isEditMode && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-destructive/30 p-4">
+          <p className="text-sm text-muted-foreground">
+            Excluir apaga o paciente, os arquivos e o histórico. Não dá para desfazer.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={deletingPatient}
+                className="text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground shrink-0"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir Paciente
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. Isso irá excluir permanentemente o paciente
+                  <strong> {formData.name}</strong>, todos os seus arquivos e histórico.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeletePatient}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {deletingPatient ? "Excluindo..." : "Excluir"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 

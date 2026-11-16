@@ -21,6 +21,15 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/BottomNav";
+import { isNavItemActive } from "@/lib/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { FAB } from "@/components/FAB";
 import { NotificationToggle } from "@/components/NotificationToggle";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -160,7 +169,7 @@ export function Layout({ children, onRefresh }: LayoutProps) {
           }
           
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = isNavItemActive(item.path, location.pathname);
           return (
             <Button
               key={item.path}
@@ -272,16 +281,33 @@ export function Layout({ children, onRefresh }: LayoutProps) {
           {/* Right: Notifications + Profile */}
           <div className="flex items-center gap-1">
             <NotificationToggle />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-10 w-10 rounded-full bg-muted/50"
-              onClick={() => setIsOpen(true)}
-            >
-              <span className="text-xs font-bold text-muted-foreground uppercase">
-                {user?.email?.charAt(0) || "U"}
-              </span>
-            </Button>
+            {/* Perfil: mostra quem está logado e o atalho para sair
+                (o menu de navegação fica só no botão da esquerda) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-muted/50"
+                  aria-label="Perfil"
+                >
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    {user?.email?.charAt(0) || "U"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 z-[70]">
+                <DropdownMenuLabel className="space-y-1">
+                  <p className="text-sm font-medium truncate">{user?.email}</p>
+                  <Badge variant={getRoleBadgeVariant()}>{getRoleLabel()}</Badge>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useUserRole } from "./useUserRole";
 import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 
 export function usePushNotifications() {
   const { user } = useAuth();
@@ -145,7 +146,7 @@ export function usePushNotifications() {
 
       if (error) {
         console.error("Error saving push token:", error);
-        toast.error("Erro ao salvar configuração de notificações");
+        toast.error(describeError("Erro ao salvar configuração de notificações", error));
         return false;
       }
 
@@ -157,7 +158,7 @@ export function usePushNotifications() {
       return true;
     } catch (error) {
       console.error("Error subscribing to push:", error);
-      toast.error("Erro ao ativar notificações");
+      toast.error(describeError("Erro ao ativar notificações", error));
       return false;
     }
   }
@@ -193,7 +194,7 @@ export function usePushNotifications() {
       return true;
     } catch (error) {
       console.error("Error unsubscribing:", error);
-      toast.error("Erro ao desativar notificações");
+      toast.error(describeError("Erro ao desativar notificações", error));
       return false;
     }
   }

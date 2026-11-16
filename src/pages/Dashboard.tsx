@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatDistanceToNow, startOfMonth, endOfMonth } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { PendingPatients } from "@/components/PendingPatients";
@@ -19,6 +19,7 @@ import { CannulaPatientsCard } from "@/components/CannulaPatientsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { capitalizeFirst } from "@/lib/utils";
+import { describeError } from "@/lib/errors";
 
 interface DashboardStats {
   totalPatients: number;
@@ -69,9 +70,6 @@ const Dashboard = () => {
   const [completedPatients, setCompletedPatients] = useState<Patient[]>([]);
   const [pendingPatients, setPendingPatients] = useState<Patient[]>([]);
   const [activities, setActivities] = useState<SystemActivity[]>([]);
-  const [monthlySurgeries, setMonthlySurgeries] = useState(0);
-  const [activePatients, setActivePatients] = useState(0);
-  const [pendingTasks, setPendingTasks] = useState(0);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [showNotifications, setShowNotifications] = useState(false);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
@@ -102,8 +100,6 @@ const Dashboard = () => {
     async function fetchStats() {
       try {
         const now = new Date();
-        const monthStart = startOfMonth(now);
-        const monthEnd = endOfMonth(now);
 
         // Total patients with details
         const {
@@ -140,26 +136,6 @@ const Dashboard = () => {
           count: "exact"
         }).eq("status", "awaiting_authorization");
 
-        // Monthly surgeries count
-        const {
-          count: monthlyCount
-        } = await supabase.from("patients").select("id", {
-          count: "exact"
-        }).not("surgery_date", "is", null).gte("surgery_date", monthStart.toISOString()).lte("surgery_date", monthEnd.toISOString());
-
-        // Active patients (not completed or cancelled)
-        const {
-          count: activeCount
-        } = await supabase.from("patients").select("id", {
-          count: "exact"
-        }).not("status", "in", '("completed","cancelled","surgery_completed")');
-
-        // Pending tasks
-        const {
-          count: tasksCount
-        } = await supabase.from("patient_tasks").select("id", {
-          count: "exact"
-        }).eq("completed", false);
         const filteredPending = (pendingData || [])
           .filter(p => !/troca de c[âa]nula|controle/i.test(p.procedure || ""))
           .sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
@@ -169,9 +145,6 @@ const Dashboard = () => {
           completedSurgeries: completedData.length,
           pendingAuthorization: filteredPending.length
         });
-        setMonthlySurgeries(monthlyCount || 0);
-        setActivePatients(activeCount || 0);
-        setPendingTasks(tasksCount || 0);
         setAllPatients(allPatientsData || []);
         setScheduledPatients(scheduledData);
         setCompletedPatients(completedData);
@@ -207,7 +180,7 @@ const Dashboard = () => {
       setActivities(prev => prev.filter(activity => activity.id !== activityId));
       toast.success("Registro excluído com sucesso");
     } catch (error) {
-      toast.error("Erro ao excluir registro");
+      toast.error(describeError("Erro ao excluir registro", error));
       console.error("Error deleting activity:", error);
     }
   };
@@ -347,7 +320,7 @@ const Dashboard = () => {
               <h1 className="md:text-4xl font-bold text-foreground tracking-tight text-2xl">
                 Bem-vindo, {userName || "..."}
               </h1>
-              <p className="text-sm md:text-base text-muted-foreground/50 mt-1">
+              <p className="text-sm md:text-base text-muted-foreground mt-1">
                 Visão geral do sistema de gestão
               </p>
             </div>

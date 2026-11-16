@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Download, X, ZoomIn, ZoomOut, Maximize2, Calendar,
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
+import { PatientTasksSection } from "@/components/PatientTasksSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { OncologyTimeline } from "@/components/OncologyTimeline";
 import PdfViewer from "@/components/PdfViewer";
@@ -16,6 +17,7 @@ import { safeWindowOpen } from "@/lib/urlSecurity";
 import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
 import { PatientSurgeryTimeline } from "@/components/PatientSurgeryTimeline";
 import { useAuth } from "@/hooks/useAuth";
+import { describeError } from "@/lib/errors";
 
 interface Patient {
   id: string;
@@ -42,7 +44,8 @@ interface PatientFile {
 const PatientExams = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDentist } = useUserRole();
+  const canManagePatient = isAdmin || isDentist;
   const { user } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [files, setFiles] = useState<PatientFile[]>([]);
@@ -77,7 +80,7 @@ const PatientExams = () => {
       if (error) throw error;
       setPatient(data);
     } catch (error) {
-      toast.error("Erro ao carregar dados do paciente");
+      toast.error(describeError("Erro ao carregar dados do paciente", error));
       navigate(-1);
     } finally {
       setLoading(false);
@@ -95,7 +98,7 @@ const PatientExams = () => {
       if (error) throw error;
       setFiles(data || []);
     } catch (error) {
-      toast.error("Erro ao carregar exames do paciente");
+      toast.error(describeError("Erro ao carregar exames do paciente", error));
     }
   }
 
@@ -110,7 +113,7 @@ const PatientExams = () => {
         setViewingFile({ url: data.signedUrl, name: fileName });
       }
     } catch (error) {
-      toast.error("Erro ao carregar arquivo");
+      toast.error(describeError("Erro ao carregar arquivo", error));
     }
   };
 
@@ -133,7 +136,7 @@ const PatientExams = () => {
         toast.success("Download iniciado");
       }
     } catch (error) {
-      toast.error("Erro ao fazer download do arquivo");
+      toast.error(describeError("Erro ao fazer download do arquivo", error));
     }
   };
 
@@ -188,7 +191,7 @@ const PatientExams = () => {
           <Button
             variant="ghost"
             onClick={() => {
-              if (window.history.length > 1) {
+              if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) {
                 navigate(-1);
               } else {
                 navigate("/patients");
@@ -352,6 +355,9 @@ const PatientExams = () => {
         currentStatus={patient.status}
       />
 
+
+      {/* Tarefas do paciente ficam na ficha (antes só apareciam na tela de edição) */}
+      {canManagePatient && <PatientTasksSection patientId={id!} />}
 
       <PatientNotesSection patientId={id!} />
 

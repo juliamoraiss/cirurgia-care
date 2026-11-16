@@ -18,6 +18,7 @@ import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
 import { CalendarDayView } from "@/components/CalendarDayView";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProfessionals } from "@/hooks/useProfessionals";
+import { describeError } from "@/lib/errors";
 
 interface Surgery {
   id: string;
@@ -109,8 +110,8 @@ const Calendar = () => {
 
       if (error) throw error;
       setSurgeries(data || []);
-    } catch {
-      toast.error("Erro ao carregar cirurgias agendadas");
+    } catch (error) {
+      toast.error(describeError("Erro ao carregar cirurgias agendadas", error));
     } finally {
       setLoading(false);
     }

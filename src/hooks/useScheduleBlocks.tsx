@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 
 export interface ScheduleBlock {
   id: string;
@@ -29,8 +30,8 @@ export function useScheduleBlocks() {
 
       if (error) throw error;
       setBlocks((data as ScheduleBlock[]) || []);
-    } catch {
-      toast.error("Erro ao carregar bloqueios");
+    } catch (error) {
+      toast.error(describeError("Erro ao carregar bloqueios", error));
     } finally {
       setLoading(false);
     }
@@ -52,8 +53,8 @@ export function useScheduleBlocks() {
       if (error) throw error;
       toast.success("Bloqueio adicionado");
       await fetchBlocks();
-    } catch {
-      toast.error("Erro ao adicionar bloqueio");
+    } catch (error) {
+      toast.error(describeError("Erro ao adicionar bloqueio", error));
     }
   };
 
@@ -66,8 +67,8 @@ export function useScheduleBlocks() {
       if (error) throw error;
       toast.success("Bloqueio removido");
       await fetchBlocks();
-    } catch {
-      toast.error("Erro ao remover bloqueio");
+    } catch (error) {
+      toast.error(describeError("Erro ao remover bloqueio", error));
     }
   };
 

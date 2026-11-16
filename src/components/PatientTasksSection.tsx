@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { format, isPast, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { WhatsAppTemplates } from "./WhatsAppTemplates";
+import { describeError } from "@/lib/errors";
 
 interface Task {
   id: string;
@@ -138,7 +139,7 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
       toast.success(completed ? "Tarefa reaberta" : "Tarefa concluída!");
       loadTasks();
     } catch (error) {
-      toast.error("Erro ao atualizar tarefa");
+      toast.error(describeError("Erro ao atualizar tarefa", error));
     }
   }
 
@@ -153,7 +154,7 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
       toast.success("Tarefa excluída com sucesso!");
       loadTasks();
     } catch (error) {
-      toast.error("Erro ao excluir tarefa");
+      toast.error(describeError("Erro ao excluir tarefa", error));
     }
   }
 
@@ -186,7 +187,7 @@ export function PatientTasksSection({ patientId }: PatientTasksSectionProps) {
       loadTasks();
     } catch (error) {
       console.error("Error creating task:", error);
-      toast.error("Erro ao criar tarefa");
+      toast.error(describeError("Erro ao criar tarefa", error));
     }
   }
 

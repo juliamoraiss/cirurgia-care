@@ -12,6 +12,7 @@ import { format, isPast, isToday, isFuture } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { WhatsAppTemplates } from "@/components/WhatsAppTemplates";
 import { useUserRole } from "@/hooks/useUserRole";
+import { describeError } from "@/lib/errors";
 
 interface Task {
   id: string;
@@ -106,7 +107,7 @@ const Tasks = () => {
 
     } catch (error) {
       console.error("Error loading tasks:", error);
-      toast.error("Erro ao carregar tarefas");
+      toast.error(describeError("Erro ao carregar tarefas", error));
     } finally {
       setLoading(false);
     }
@@ -129,7 +130,7 @@ const Tasks = () => {
       loadTasks();
     } catch (error) {
       console.error("Error toggling task:", error);
-      toast.error("Erro ao atualizar tarefa");
+      toast.error(describeError("Erro ao atualizar tarefa", error));
     }
   }
 
@@ -166,6 +167,11 @@ const Tasks = () => {
   const futureTasks = tasks.filter((t) => !t.completed && isFuture(new Date(t.due_date)) && !isToday(new Date(t.due_date)));
   const completedTasks = tasks.filter((t) => t.completed);
 
+  // Abre na primeira aba que tem algo a fazer (atrasadas → hoje → próximas)
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const defaultTab =
+    overdueTasks.length > 0 ? "overdue" : todayTasks.length > 0 ? "today" : futureTasks.length > 0 ? "future" : "today";
+
   const TaskCard = ({ task }: { task: Task }) => {
     const dueDate = new Date(task.due_date);
     const isOverdue = !task.completed && isPast(dueDate) && !isToday(dueDate);
@@ -183,11 +189,11 @@ const Tasks = () => {
             <div className="flex-1 min-w-0 space-y-2">
               {/* Badges row */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <Badge className={`${getTaskTypeColor(task.task_type)} text-[10px] sm:text-xs px-1.5 py-0.5`}>
+                <Badge className={`${getTaskTypeColor(task.task_type)} text-xs px-1.5 py-0.5`}>
                   {getTaskTypeLabel(task.task_type)}
                 </Badge>
                 {isOverdue && (
-                  <Badge variant="destructive" className="text-[10px] sm:text-xs px-1.5 py-0.5">
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
                     <AlertCircle className="h-3 w-3 mr-0.5" />
                     Atrasada
                   </Badge>
@@ -209,7 +215,7 @@ const Tasks = () => {
               {/* Patient & Date - compact row */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-1 border-t border-border/50">
                 <button
-                  onClick={() => navigate(`/patients/${task.patient_id}`)}
+                  onClick={() => navigate(`/patients/${task.patient_id}/exams`)}
                   className="flex items-center gap-1 hover:text-primary transition-colors"
                 >
                   <User className="h-3.5 w-3.5" />
@@ -281,7 +287,7 @@ const Tasks = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!canAccessTasks) {
     return null;
   }
 
@@ -294,9 +300,9 @@ const Tasks = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="overdue" className="w-full">
+      <Tabs value={activeTab ?? defaultTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 h-auto p-1">
-          <TabsTrigger value="overdue" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+          <TabsTrigger value="overdue" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-xs px-1 sm:px-2 py-1.5">
             <span>Atrasadas</span>
             {overdueTasks.length > 0 && (
               <Badge variant="destructive" className="text-[9px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5">
@@ -304,17 +310,17 @@ const Tasks = () => {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="today" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+          <TabsTrigger value="today" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-xs px-1 sm:px-2 py-1.5">
             <span>Hoje</span>
             {todayTasks.length > 0 && (
               <Badge className="text-[9px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5">{todayTasks.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="future" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+          <TabsTrigger value="future" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-xs px-1 sm:px-2 py-1.5">
             <span>Futuras</span>
             <span className="text-[9px] sm:text-[10px]">({futureTasks.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1 sm:px-2 py-1.5">
+          <TabsTrigger value="completed" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 text-xs px-1 sm:px-2 py-1.5">
             <span>Concluídas</span>
             <span className="text-[9px] sm:text-[10px]">({completedTasks.length})</span>
           </TabsTrigger>

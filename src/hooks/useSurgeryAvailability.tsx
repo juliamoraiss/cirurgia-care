@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 
 export interface SurgeryAvailabilitySlot {
   id: string;
@@ -49,8 +50,8 @@ export function useSurgeryAvailability(doctorId?: string) {
 
       if (error) throw error;
       setSlots((data as SurgeryAvailabilitySlot[]) || []);
-    } catch {
-      toast.error("Erro ao carregar disponibilidade");
+    } catch (error) {
+      toast.error(describeError("Erro ao carregar disponibilidade", error));
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ export function useSurgeryAvailability(doctorId?: string) {
       if (err.message?.includes("duplicate")) {
         toast.error("Esse horário já está configurado");
       } else {
-        toast.error("Erro ao adicionar horário");
+        toast.error(describeError("Erro ao adicionar horário", err));
       }
     }
   };
@@ -88,8 +89,8 @@ export function useSurgeryAvailability(doctorId?: string) {
       if (error) throw error;
       toast.success("Horário atualizado");
       await fetchSlots();
-    } catch {
-      toast.error("Erro ao atualizar horário");
+    } catch (error) {
+      toast.error(describeError("Erro ao atualizar horário", error));
     }
   };
 
@@ -102,8 +103,8 @@ export function useSurgeryAvailability(doctorId?: string) {
       if (error) throw error;
       toast.success("Horário removido");
       await fetchSlots();
-    } catch {
-      toast.error("Erro ao remover horário");
+    } catch (error) {
+      toast.error(describeError("Erro ao remover horário", error));
     }
   };
 

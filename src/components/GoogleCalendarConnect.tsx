@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Calendar, Check, Loader2, Unlink } from "lucide-react";
+import { describeError } from "@/lib/errors";
 
 interface GoogleCalendarConnectProps {
   onConnectionChange?: (connected: boolean, connectedUserId?: string) => void;
@@ -127,7 +128,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
         }
       } catch (err) {
         console.error("[GoogleCalendar] Exception:", err);
-        toast.error("Erro inesperado ao conectar Google Agenda");
+        toast.error(describeError("Erro inesperado ao conectar Google Agenda", err));
       } finally {
         setConnecting(false);
       }
@@ -145,7 +146,7 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
       });
 
       if (error || !data?.url) {
-        toast.error("Erro ao gerar link de autorização");
+        toast.error(describeError("Erro ao gerar link de autorização", error));
         return;
       }
 
@@ -153,8 +154,8 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
       const url = new URL(data.url);
       url.searchParams.set("state", "google_calendar");
       window.location.href = url.toString();
-    } catch {
-      toast.error("Erro ao conectar");
+    } catch (error) {
+      toast.error(describeError("Erro ao conectar", error));
     } finally {
       setConnecting(false);
     }
@@ -168,15 +169,15 @@ const GoogleCalendarConnect = ({ onConnectionChange }: GoogleCalendarConnectProp
       });
 
       if (error) {
-        toast.error("Erro ao desconectar");
+        toast.error(describeError("Erro ao desconectar", error));
         return;
       }
 
       toast.success("Google Agenda desconectada");
       setConnected(false);
       onConnectionChange?.(false);
-    } catch {
-      toast.error("Erro ao desconectar");
+    } catch (error) {
+      toast.error(describeError("Erro ao desconectar", error));
     } finally {
       setConnecting(false);
     }

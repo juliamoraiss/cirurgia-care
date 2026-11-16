@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { buildShareRedirectPath, peekPendingShareIntent } from "@/lib/shareIntent";
+import { describeError } from "@/lib/errors";
 
 interface AuthContextType {
   user: User | null;
@@ -217,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Logout realizado com sucesso!");
       navigate("/auth");
     } catch (error: any) {
-      toast.error("Erro ao fazer logout");
+      toast.error(describeError("Erro ao fazer logout", error));
       setSession(null);
       setUser(null);
       setIsApproved(false);

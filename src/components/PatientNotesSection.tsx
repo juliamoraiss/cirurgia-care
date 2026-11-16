@@ -19,6 +19,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { describeError } from "@/lib/errors";
 
 interface Note {
   id: string;
@@ -83,7 +84,7 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
       loadNotes();
     } catch (error) {
       console.error("Error saving note:", error);
-      toast.error("Erro ao salvar nota");
+      toast.error(describeError("Erro ao salvar nota", error));
     } finally {
       setSaving(false);
     }
@@ -100,7 +101,7 @@ export function PatientNotesSection({ patientId }: PatientNotesSectionProps) {
       toast.success("Nota excluída com sucesso!");
       loadNotes();
     } catch (error) {
-      toast.error("Erro ao excluir nota");
+      toast.error(describeError("Erro ao excluir nota", error));
     }
   }
 

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter, Clock, AlertCircle, X } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter, Clock, AlertCircle, X, MessageCircle } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { PatientCardSwipeable } from "@/components/PatientCardSwipeable";
 import { format } from "date-fns";
@@ -24,7 +24,8 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { cn, normalizeSearch } from "@/lib/utils";
+import { describeError } from "@/lib/errors";
 
 interface Patient {
   id: string;
@@ -171,7 +172,7 @@ const Patients = () => {
       if (error) throw error;
       setPatients(data || []);
     } catch (error) {
-      toast.error("Erro ao carregar pacientes");
+      toast.error(describeError("Erro ao carregar pacientes", error));
     } finally {
       setLoading(false);
     }
@@ -199,9 +200,15 @@ const Patients = () => {
 
   const filteredPatients = patients
     .filter((patient) => {
-      const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.procedure.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (patient.hospital && patient.hospital.toLowerCase().includes(searchTerm.toLowerCase()));
+      // Busca sem diferenciar acentos/maiúsculas; telefone pelos dígitos
+      const query = normalizeSearch(searchTerm);
+      const queryDigits = searchTerm.replace(/\D/g, "");
+      const matchesSearch =
+        !query ||
+        normalizeSearch(patient.name).includes(query) ||
+        normalizeSearch(patient.procedure).includes(query) ||
+        normalizeSearch(patient.hospital).includes(query) ||
+        (queryDigits.length >= 4 && (patient.phone || "").replace(/\D/g, "").includes(queryDigits));
       
       const matchesProcedure = filterProcedures.length === 0 || filterProcedures.includes(patient.procedure);
       const matchesHospital = filterHospitals.length === 0 || (patient.hospital && filterHospitals.includes(patient.hospital));
@@ -267,10 +274,17 @@ const Patients = () => {
           </p>
         </div>
         {(isAdmin || isDentist) && (
-          <Button onClick={() => navigate("/patients/new")} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Paciente
-          </Button>
+          <div className="flex w-full sm:w-auto gap-2">
+            {/* No celular esse atalho fica no botão "+" */}
+            <Button variant="outline" onClick={() => navigate("/share-cirurgia")} className="hidden md:inline-flex">
+              <MessageCircle className="h-4 w-4 mr-2 text-[#25D366]" />
+              Importar do WhatsApp
+            </Button>
+            <Button onClick={() => navigate("/patients/new")} className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Paciente
+            </Button>
+          </div>
         )}
       </div>
 
@@ -283,7 +297,7 @@ const Patients = () => {
                 <div className="flex items-center flex-1 space-x-2">
                   <Search className="h-5 w-5 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar paciente..."
+                    placeholder="Nome, procedimento ou telefone..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="flex-1"
@@ -412,7 +426,7 @@ const Patients = () => {
                 <div className="flex items-center space-x-2">
                   <Search className="h-5 w-5 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nome, procedimento ou hospital..."
+                    placeholder="Buscar por nome, procedimento, hospital ou telefone..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="flex-1"
