@@ -79,7 +79,7 @@ export function NotificationToggle() {
         <p>
           {isSubscribed 
             ? "Notificações ativas - clique para desativar" 
-            : "Ativar notificações diárias de tarefas"
+            : "Ativar notificações das tarefas"
           }
         </p>
       </TooltipContent>

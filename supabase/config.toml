@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.parse-surgery-message]
 verify_jwt = false
+
+[functions.send-task-notifications]
+verify_jwt = true

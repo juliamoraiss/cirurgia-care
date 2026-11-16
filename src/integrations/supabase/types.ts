@@ -426,6 +426,7 @@ export type Database = {
           description: string | null
           due_date: string
           id: string
+          notified_at: string | null
           patient_id: string
           task_type: string
           title: string
@@ -440,6 +441,7 @@ export type Database = {
           description?: string | null
           due_date: string
           id?: string
+          notified_at?: string | null
           patient_id: string
           task_type: string
           title: string
@@ -454,6 +456,7 @@ export type Database = {
           description?: string | null
           due_date?: string
           id?: string
+          notified_at?: string | null
           patient_id?: string
           task_type?: string
           title?: string

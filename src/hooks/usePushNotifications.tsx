@@ -4,7 +4,15 @@ import { useAuth } from "./useAuth";
 import { useUserRole } from "./useUserRole";
 import { toast } from "sonner";
 import { describeError } from "@/lib/errors";
+import { VAPID_PUBLIC_KEY } from "@/lib/push";
 
+/**
+ * Notificações push (Web Push) para o app instalado na tela inicial.
+ *
+ * Cada aparelho que ativa o sininho cria uma inscrição real no serviço de push
+ * do navegador (Apple/Google), salva em user_push_tokens. A função
+ * send-task-notifications envia para essas inscrições na hora de cada tarefa.
+ */
 export function usePushNotifications() {
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
@@ -13,77 +21,76 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
 
   useEffect(() => {
-    // Check if push notifications are supported
+    // No iPhone, só existe PushManager quando o app foi aberto pelo ícone da tela inicial
     const supported = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
     setIsSupported(supported);
-    
-    if (supported) {
-      setPermission(Notification.permission);
-    }
+    if (supported) setPermission(Notification.permission);
   }, []);
 
   useEffect(() => {
-    if (!user || roleLoading || !isSupported) return;
-    
-    // Only subscribe for admins
-    if (!isAdmin) return;
-
+    if (!user || roleLoading || !isSupported || !isAdmin) return;
     checkSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAdmin, roleLoading, isSupported]);
 
+  async function getRegistration() {
+    // O service worker do PWA (sw.js) já inclui o tratamento de push
+    const existing = await navigator.serviceWorker.getRegistration();
+    if (existing) return existing;
+    await navigator.serviceWorker.register("/sw.js");
+    return navigator.serviceWorker.ready;
+  }
+
+  /** Ativo = este aparelho tem inscrição real E ela está salva no banco. */
   async function checkSubscription() {
     if (!user) return;
-
     try {
-      // First check localStorage for quick UI feedback
-      const localSubscribed = localStorage.getItem("push_subscribed") === "true";
-      if (localSubscribed) {
-        setIsSubscribed(true);
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (!subscription) {
+        setIsSubscribed(false);
+        return;
       }
-
-      // Then verify with database
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("user_push_tokens")
         .select("id")
         .eq("user_id", user.id)
-        .eq("platform", "web")
+        .eq("token", JSON.stringify(subscription.toJSON()))
         .maybeSingle();
 
-      if (error) {
-        console.error("Error checking subscription:", error);
-        return;
-      }
-
-      const hasToken = !!data;
-      setIsSubscribed(hasToken);
-      
-      // Sync localStorage with database
-      if (hasToken) {
-        localStorage.setItem("push_subscribed", "true");
+      if (data) {
+        setIsSubscribed(true);
       } else {
-        localStorage.removeItem("push_subscribed");
+        // Inscrição existe no aparelho mas não no banco: salva de novo
+        await saveSubscription(subscription);
+        setIsSubscribed(true);
       }
     } catch (error) {
       console.error("Error checking subscription:", error);
     }
   }
 
+  async function saveSubscription(subscription: PushSubscription) {
+    if (!user) return;
+    const { error } = await supabase
+      .from("user_push_tokens")
+      .upsert(
+        { user_id: user.id, token: JSON.stringify(subscription.toJSON()), platform: "web", updated_at: new Date().toISOString() },
+        { onConflict: "user_id,token" }
+      );
+    if (error) throw error;
+  }
+
   async function requestPermission(): Promise<boolean> {
     if (!isSupported) {
-      toast.error("Notificações não são suportadas neste navegador");
+      toast.error("Notificações não são suportadas aqui. No iPhone, abra o app pelo ícone da tela inicial.");
       return false;
     }
-
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-      
-      if (result === "granted") {
-        return true;
-      } else if (result === "denied") {
-        toast.error("Permissão para notificações foi negada");
-        return false;
-      }
+      if (result === "granted") return true;
+      if (result === "denied") toast.error("Permissão para notificações foi negada");
       return false;
     } catch (error) {
       console.error("Error requesting permission:", error);
@@ -95,66 +102,24 @@ export function usePushNotifications() {
     if (!user || !isSupported) return false;
 
     try {
-      // Request permission first
-      if (permission !== "granted") {
+      if (Notification.permission !== "granted") {
         const granted = await requestPermission();
         if (!granted) return false;
       }
 
-      // Register service worker
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
+      const registration = await getRegistration();
+      // Reaproveita a inscrição do aparelho, se houver; senão cria uma nova
+      const subscription =
+        (await registration.pushManager.getSubscription()) ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        }));
 
-      // Generate a unique device identifier for this browser
-      let deviceId = localStorage.getItem("push_device_id");
-      if (!deviceId) {
-        deviceId = `web_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        localStorage.setItem("push_device_id", deviceId);
-      }
+      await saveSubscription(subscription);
 
-      // Store the device registration in the database
-      // We use a simple token that includes the device ID since we can't use full Web Push without VAPID
-      const token = JSON.stringify({
-        deviceId,
-        registeredAt: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-      });
-      
-      // Check if token already exists for this user and platform
-      const { data: existing } = await supabase
-        .from("user_push_tokens")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("platform", "web")
-        .maybeSingle();
-
-      let error;
-      if (existing) {
-        const result = await supabase
-          .from("user_push_tokens")
-          .update({ token, updated_at: new Date().toISOString() })
-          .eq("id", existing.id);
-        error = result.error;
-      } else {
-        const result = await supabase.from("user_push_tokens").insert({
-          user_id: user.id,
-          token,
-          platform: "web",
-        });
-        error = result.error;
-      }
-
-      if (error) {
-        console.error("Error saving push token:", error);
-        toast.error(describeError("Erro ao salvar configuração de notificações", error));
-        return false;
-      }
-
-      // Also save subscription status to localStorage for quick UI feedback
-      localStorage.setItem("push_subscribed", "true");
-      
       setIsSubscribed(true);
-      toast.success("Notificações ativadas com sucesso!");
+      toast.success("Notificações ativadas! Você será avisada na hora de cada tarefa.");
       return true;
     } catch (error) {
       console.error("Error subscribing to push:", error);
@@ -168,29 +133,19 @@ export function usePushNotifications() {
 
     try {
       const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          await subscription.unsubscribe();
-        }
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        // Remove só a inscrição DESTE aparelho
+        await supabase
+          .from("user_push_tokens")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("token", JSON.stringify(subscription.toJSON()));
+        await subscription.unsubscribe();
       }
-
-      const { error } = await supabase
-        .from("user_push_tokens")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("platform", "web");
-
-      if (error) {
-        console.error("Error deleting push token:", error);
-      }
-
-      // Clear localStorage
-      localStorage.removeItem("push_subscribed");
-      localStorage.removeItem("push_device_id");
 
       setIsSubscribed(false);
-      toast.success("Notificações desativadas");
+      toast.success("Notificações desativadas neste aparelho");
       return true;
     } catch (error) {
       console.error("Error unsubscribing:", error);
@@ -209,7 +164,7 @@ export function usePushNotifications() {
   };
 }
 
-// Helper function to convert VAPID key
+// Converte a chave VAPID (base64url) para o formato que o navegador espera
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");

@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/api/, /^\/share-cirurgia/],
         cleanupOutdatedCaches: true,
+        // Notificações push (public/push-handler.js) dentro do service worker gerado
+        importScripts: ["/push-handler.js"],
         clientsClaim: true,
         skipWaiting: true,
         runtimeCaching: [
