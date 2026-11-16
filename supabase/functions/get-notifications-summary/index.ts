@@ -17,7 +17,7 @@ function getCorsHeaders(origin: string | null) {
 }
 
 function capitalizeFirst(value: string | null | undefined): string | null {
-  if (!value) return value;
+  if (!value) return value ?? null;
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
