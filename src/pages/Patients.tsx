@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter, Clock, AlertCircle, X, MessageCircle } from "lucide-react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Clock, AlertCircle, X, MessageCircle } from "lucide-react";
 import { PatientCardSwipeable } from "@/components/PatientCardSwipeable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -25,6 +24,16 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn, normalizeSearch } from "@/lib/utils";
+import { PatientFiltersSheet } from "@/components/PatientFiltersSheet";
+import {
+  DEFAULT_STATUS_FILTER,
+  HOSPITAL_FILTER_OPTIONS,
+  PROCEDURE_FILTER_OPTIONS,
+  STATUS_FILTER_OPTIONS,
+  type PatientFilters,
+  shortHospital,
+  statusLabel,
+} from "@/lib/patientFilters";
 import { describeError } from "@/lib/errors";
 
 interface Patient {
@@ -92,7 +101,6 @@ const getNextAction = (patient: Patient): { text: string; variant: "default" | "
   return { text: "Status atualizado", variant: "default" };
 };
 
-const DEFAULT_STATUS_FILTER = ["authorized", "awaiting_authorization", "pending_scheduling", "surgery_scheduled"];
 
 function useSessionState<T>(key: string, initialValue: T) {
   const [value, setValue] = useState<T>(() => {
@@ -131,11 +139,14 @@ const Patients = () => {
   const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Apply filter from navigation state
+  // Filtro vindo de outra tela (ex.: card da Home): aplica uma vez e limpa o
+  // state da navegação, senão ao voltar da ficha ele sobrescreveria os filtros.
   useEffect(() => {
     if (location.state?.filterStatus) {
       setFilterStatuses([location.state.filterStatus]);
+      navigate(location.pathname + location.search, { replace: true, state: null });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   useEffect(() => {
@@ -198,24 +209,38 @@ const Patients = () => {
     );
   };
 
+  const currentFilters: PatientFilters = {
+    procedures: filterProcedures,
+    hospitals: filterHospitals,
+    statuses: filterStatuses,
+  };
+
+  const matchesFilters = (patient: Patient, filters: PatientFilters) => {
+    // Busca sem diferenciar acentos/maiúsculas; telefone pelos dígitos
+    const query = normalizeSearch(searchTerm);
+    const queryDigits = searchTerm.replace(/\D/g, "");
+    const matchesSearch =
+      !query ||
+      normalizeSearch(patient.name).includes(query) ||
+      normalizeSearch(patient.procedure).includes(query) ||
+      normalizeSearch(patient.hospital).includes(query) ||
+      (queryDigits.length >= 4 && (patient.phone || "").replace(/\D/g, "").includes(queryDigits));
+
+    const matchesProcedure = filters.procedures.length === 0 || filters.procedures.includes(patient.procedure);
+    const matchesHospital = filters.hospitals.length === 0 || (!!patient.hospital && filters.hospitals.includes(patient.hospital));
+    const matchesStatus = filters.statuses.length === 0 || filters.statuses.includes(patient.status);
+
+    return matchesSearch && matchesProcedure && matchesHospital && matchesStatus;
+  };
+
+  const applyFilters = (filters: PatientFilters) => {
+    setFilterProcedures(filters.procedures);
+    setFilterHospitals(filters.hospitals);
+    setFilterStatuses(filters.statuses);
+  };
+
   const filteredPatients = patients
-    .filter((patient) => {
-      // Busca sem diferenciar acentos/maiúsculas; telefone pelos dígitos
-      const query = normalizeSearch(searchTerm);
-      const queryDigits = searchTerm.replace(/\D/g, "");
-      const matchesSearch =
-        !query ||
-        normalizeSearch(patient.name).includes(query) ||
-        normalizeSearch(patient.procedure).includes(query) ||
-        normalizeSearch(patient.hospital).includes(query) ||
-        (queryDigits.length >= 4 && (patient.phone || "").replace(/\D/g, "").includes(queryDigits));
-      
-      const matchesProcedure = filterProcedures.length === 0 || filterProcedures.includes(patient.procedure);
-      const matchesHospital = filterHospitals.length === 0 || (patient.hospital && filterHospitals.includes(patient.hospital));
-      const matchesStatus = filterStatuses.length === 0 || filterStatuses.includes(patient.status);
-      
-      return matchesSearch && matchesProcedure && matchesHospital && matchesStatus;
-    })
+    .filter((patient) => matchesFilters(patient, currentFilters))
     .sort((a, b) => {
       let compareValue = 0;
       
@@ -291,134 +316,24 @@ const Patients = () => {
       <Card>
         <CardHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <div className="space-y-4">
-            {/* Mobile: Search + Filter Button */}
+            {/* Mobile: busca + botão "Filtros (N)" que abre o painel de baixo para cima */}
             {isMobile ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center flex-1 space-x-2">
-                  <Search className="h-5 w-5 text-muted-foreground" />
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
-                    placeholder="Nome, procedimento ou telefone..."
+                    type="search"
+                    placeholder="Nome, procedimento ou telefone"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1"
+                    className="pl-9 h-10 text-base"
                   />
                 </div>
-                <Drawer>
-                  <DrawerTrigger asChild>
-                    <Button
-                      variant={activeFilterCount > 0 ? "default" : "outline"}
-                      size="icon"
-                      className="relative shrink-0"
-                      aria-label={activeFilterCount > 0 ? `Filtros (${activeFilterCount} ativos)` : "Filtros"}
-                    >
-                      <Filter className="h-5 w-5" />
-                      {activeFilterCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center">
-                          {activeFilterCount}
-                        </span>
-                      )}
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="max-h-[85vh]">
-                    <DrawerHeader>
-                      <DrawerTitle>Filtros</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="px-4 pb-6 space-y-4">
-                      {/* Procedimentos */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Procedimento</h3>
-                        <div className="flex flex-wrap gap-2">
-{["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia", "troca de cânula"].map((procedure) => (
-                            <button
-                              key={procedure}
-                              type="button"
-                              className={cn(
-                                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors capitalize",
-                                filterProcedures.includes(procedure)
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background text-foreground border-border hover:bg-muted"
-                              )}
-                              onClick={() => {
-                                if (filterProcedures.includes(procedure)) {
-                                  setFilterProcedures(filterProcedures.filter(p => p !== procedure));
-                                } else {
-                                  setFilterProcedures([...filterProcedures, procedure]);
-                                }
-                              }}
-                            >
-                              {procedure}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Hospitais */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Hospital</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada", "Hospital DF Star"].map((hospital) => (
-                            <button
-                              key={hospital}
-                              type="button"
-                              className={cn(
-                                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-                                filterHospitals.includes(hospital)
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background text-foreground border-border hover:bg-muted"
-                              )}
-                              onClick={() => {
-                                if (filterHospitals.includes(hospital)) {
-                                  setFilterHospitals(filterHospitals.filter(h => h !== hospital));
-                                } else {
-                                  setFilterHospitals([...filterHospitals, hospital]);
-                                }
-                              }}
-                            >
-                              {hospital.replace("Hospital ", "")}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Status */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Status</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { value: "awaiting_consultation", label: "Ag. Consulta" },
-                            { value: "awaiting_authorization", label: "Ag. Autorização" },
-                            { value: "authorized", label: "Autorizado" },
-                            { value: "pending_scheduling", label: "Ag. Agendamento" },
-                            { value: "surgery_scheduled", label: "Cirurgia Agendada" },
-                            { value: "surgery_completed", label: "Cirurgia Realizada" },
-                            { value: "completed", label: "Concluído" },
-                            { value: "cancelled", label: "Cancelado" }
-                          ].map((status) => (
-                            <button
-                              key={status.value}
-                              type="button"
-                              className={cn(
-                                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-                                filterStatuses.includes(status.value)
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background text-foreground border-border hover:bg-muted"
-                              )}
-                              onClick={() => {
-                                if (filterStatuses.includes(status.value)) {
-                                  setFilterStatuses(filterStatuses.filter(s => s !== status.value));
-                                } else {
-                                  setFilterStatuses([...filterStatuses, status.value]);
-                                }
-                              }}
-                            >
-                              {status.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </DrawerContent>
-                </Drawer>
+                <PatientFiltersSheet
+                  value={currentFilters}
+                  onApply={applyFilters}
+                  previewCount={(filters) => patients.filter((p) => matchesFilters(p, filters)).length}
+                />
               </div>
             ) : (
               /* Desktop: Search + Filter Popovers */
@@ -434,135 +349,120 @@ const Patients = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="justify-between">
-                        {filterProcedures.length > 0 
-                          ? `${filterProcedures.length} selecionado(s)` 
-                          : "Filtrar por procedimento"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
-                      <div className="p-4 space-y-2">
-                        {["simpatectomia", "lobectomia", "broncoscopia", "rinoplastia"].map((procedure) => (
-                          <div key={procedure} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`procedure-${procedure}`}
-                              checked={filterProcedures.includes(procedure)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setFilterProcedures([...filterProcedures, procedure]);
-                                } else {
-                                  setFilterProcedures(filterProcedures.filter(p => p !== procedure));
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={`procedure-${procedure}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
-                            >
-                              {procedure}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="justify-between">
-                        {filterHospitals.length > 0 
-                          ? `${filterHospitals.length} selecionado(s)` 
-                          : "Filtrar por hospital"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[240px] p-0 bg-background z-50" align="start">
-                      <div className="p-4 space-y-2">
-                        {["Hospital Brasília", "Hospital Anchieta", "Hospital Prontonorte", "Hospital Santa Lúcia Norte", "Hospital Mantevida", "Hospital Ceuta", "Hospital Alvorada"].map((hospital) => (
-                          <div key={hospital} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`hospital-${hospital}`}
-                              checked={filterHospitals.includes(hospital)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setFilterHospitals([...filterHospitals, hospital]);
-                                } else {
-                                  setFilterHospitals(filterHospitals.filter(h => h !== hospital));
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={`hospital-${hospital}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {hospital}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="justify-between">
-                        {filterStatuses.length > 0 
-                          ? `${filterStatuses.length} selecionado(s)` 
-                          : "Filtrar por status"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-0 bg-background z-50" align="start">
-                      <div className="p-4 space-y-2">
-                        {[
-                          { value: "awaiting_consultation", label: "Aguardando Consulta" },
-                          { value: "awaiting_authorization", label: "Aguardando Autorização" },
-                          { value: "authorized", label: "Autorizado" },
-                          { value: "pending_scheduling", label: "Ag. Agendamento" },
-                          { value: "surgery_scheduled", label: "Cirurgia Agendada" },
-                          { value: "surgery_completed", label: "Cirurgia Realizada" },
-                          { value: "completed", label: "Concluído" },
-                          { value: "cancelled", label: "Cancelado" }
-                        ].map((status) => (
-                          <div key={status.value} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`status-${status.value}`}
-                              checked={filterStatuses.includes(status.value)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setFilterStatuses([...filterStatuses, status.value]);
-                                } else {
-                                  setFilterStatuses(filterStatuses.filter(s => s !== status.value));
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={`status-${status.value}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {status.label}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  {[
+                    {
+                      key: "procedures",
+                      placeholder: "Filtrar por procedimento",
+                      selected: filterProcedures,
+                      set: setFilterProcedures,
+                      options: PROCEDURE_FILTER_OPTIONS.map((v) => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) })),
+                    },
+                    {
+                      key: "hospitals",
+                      placeholder: "Filtrar por hospital",
+                      selected: filterHospitals,
+                      set: setFilterHospitals,
+                      options: HOSPITAL_FILTER_OPTIONS.map((v) => ({ value: v, label: v })),
+                    },
+                    {
+                      key: "statuses",
+                      placeholder: "Filtrar por status",
+                      selected: filterStatuses,
+                      set: setFilterStatuses,
+                      options: STATUS_FILTER_OPTIONS,
+                    },
+                  ].map((filter) => (
+                    <Popover key={filter.key}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="justify-between">
+                          {filter.selected.length > 0 ? `${filter.selected.length} selecionado(s)` : filter.placeholder}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      {/* Fica dentro da tela (collisionPadding) e rola se não couber; fecha ao clicar fora */}
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] min-w-[240px] p-0 bg-background z-50 max-h-[min(60vh,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain"
+                        align="start"
+                        collisionPadding={8}
+                      >
+                        <div className="p-2">
+                          {filter.options.map((option) => {
+                            const id = `${filter.key}-${option.value}`;
+                            return (
+                              <label
+                                key={option.value}
+                                htmlFor={id}
+                                className="flex items-center gap-2 min-h-10 px-2 rounded-md cursor-pointer hover:bg-muted"
+                              >
+                                <Checkbox
+                                  id={id}
+                                  checked={filter.selected.includes(option.value)}
+                                  onCheckedChange={(checked) =>
+                                    filter.set(
+                                      checked
+                                        ? [...filter.selected, option.value]
+                                        : filter.selected.filter((v) => v !== option.value)
+                                    )
+                                  }
+                                />
+                                <span className="text-sm font-medium">{option.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ))}
                 </div>
               </>
             )}
 
-            {!loading && hasActiveFilters && (
-              <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-                <span>
-                  Mostrando {filteredPatients.length} de {patients.length} pacientes
-                </span>
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2 text-primary">
-                  <X className="h-4 w-4 mr-1" />
-                  Limpar filtros
-                </Button>
+            {/* Filtros ativos como etiquetas removíveis + contagem */}
+            {hasActiveFilters && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5" aria-label="Filtros ativos">
+                  {[
+                    ...(searchTerm.trim()
+                      ? [{ key: "search", label: `"${searchTerm.trim()}"`, remove: () => setSearchTerm("") }]
+                      : []),
+                    ...filterProcedures.map((v) => ({
+                      key: `p-${v}`,
+                      label: v.charAt(0).toUpperCase() + v.slice(1),
+                      remove: () => setFilterProcedures(filterProcedures.filter((x) => x !== v)),
+                    })),
+                    ...filterHospitals.map((v) => ({
+                      key: `h-${v}`,
+                      label: shortHospital(v),
+                      remove: () => setFilterHospitals(filterHospitals.filter((x) => x !== v)),
+                    })),
+                    ...filterStatuses.map((v) => ({
+                      key: `s-${v}`,
+                      label: statusLabel(v),
+                      remove: () => setFilterStatuses(filterStatuses.filter((x) => x !== v)),
+                    })),
+                  ].map((chip) => (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={chip.remove}
+                      aria-label={`Remover filtro ${chip.label}`}
+                      className="inline-flex items-center gap-1 h-9 max-w-full rounded-full border bg-secondary/60 pl-3 pr-2 text-xs font-medium text-foreground active:bg-secondary"
+                    >
+                      <span className="truncate">{chip.label}</span>
+                      <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+                {!loading && (
+                  <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+                    <span>
+                      Mostrando {filteredPatients.length} de {patients.length} pacientes
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-primary shrink-0">
+                      Limpar tudo
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
