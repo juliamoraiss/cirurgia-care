@@ -14,6 +14,7 @@ interface PatientFormStepsProps {
   onNext: () => void;
   onPrevious: () => void;
   onSubmit: (e: any) => void;
+  onStepClick?: (index: number) => void;
   isSubmitting: boolean;
   isEditMode: boolean;
 }
@@ -25,45 +26,66 @@ export function PatientFormSteps({
   onNext,
   onPrevious,
   onSubmit,
+  onStepClick,
   isSubmitting,
   isEditMode,
 }: PatientFormStepsProps) {
   const isLastStep = currentStep === totalSteps - 1;
   const isFirstStep = currentStep === 0;
 
+  // Na edição dá para pular para qualquer etapa; no cadastro novo, só voltar.
+  const canClickStep = (index: number) =>
+    !!onStepClick && !isSubmitting && index !== currentStep && (isEditMode || index < currentStep);
+
+  const submitLabel = isSubmitting
+    ? "Salvando..."
+    : isEditMode
+    ? "Salvar alterações"
+    : "Cadastrar Paciente";
+
   return (
     <div className="space-y-6">
       {/* Progress Steps */}
       <div className="w-full">
         <div className="flex items-center justify-between mb-2">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-center flex-1">
-              <div
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all",
-                  index < currentStep
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : index === currentStep
-                    ? "border-primary text-primary"
-                    : "border-border text-muted-foreground"
-                )}
-              >
-                {index < currentStep ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  <span className="font-semibold">{index + 1}</span>
+          {steps.map((step, index) => {
+            const clickable = canClickStep(index);
+            return (
+              <div key={index} className="flex items-center flex-1">
+                <button
+                  type="button"
+                  onClick={() => clickable && onStepClick?.(index)}
+                  disabled={!clickable}
+                  title={clickable ? `Ir para "${step.title}"` : step.title}
+                  aria-label={`Etapa ${index + 1}: ${step.title}`}
+                  aria-current={index === currentStep ? "step" : undefined}
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all shrink-0",
+                    index < currentStep
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : index === currentStep
+                      ? "border-primary text-primary"
+                      : "border-border text-muted-foreground",
+                    clickable ? "cursor-pointer hover:ring-2 hover:ring-primary/30" : "cursor-default"
+                  )}
+                >
+                  {index < currentStep ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <span className="font-semibold">{index + 1}</span>
+                  )}
+                </button>
+                {index < steps.length - 1 && (
+                  <div
+                    className={cn(
+                      "flex-1 h-0.5 mx-2 transition-all",
+                      index < currentStep ? "bg-primary" : "bg-border"
+                    )}
+                  />
                 )}
               </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "flex-1 h-0.5 mx-2 transition-all",
-                    index < currentStep ? "bg-primary" : "bg-border"
-                  )}
-                />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="text-center mt-4">
           <h3 className="text-lg font-semibold">{steps[currentStep].title}</h3>
@@ -74,7 +96,7 @@ export function PatientFormSteps({
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between pt-4 border-t">
+      <div className="flex flex-wrap justify-between gap-2 pt-4 border-t">
         <Button
           type="button"
           variant="outline"
@@ -84,21 +106,25 @@ export function PatientFormSteps({
           <ArrowLeft className="h-4 w-4 mr-2" />
           Anterior
         </Button>
-        {!isLastStep ? (
-          <Button type="button" onClick={onNext} disabled={isSubmitting}>
-            Próximo
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        ) : (
-          <Button type="button" onClick={(e) => onSubmit(e)} disabled={isSubmitting}>
-            {isSubmitting
-              ? "Salvando..."
-              : isEditMode
-              ? "Atualizar Paciente"
-              : "Cadastrar Paciente"}
-            <Check className="h-4 w-4 ml-2" />
-          </Button>
-        )}
+        <div className="flex gap-2 ml-auto">
+          {!isLastStep && (
+            <Button
+              type="button"
+              variant={isEditMode ? "outline" : "default"}
+              onClick={onNext}
+              disabled={isSubmitting}
+            >
+              Próximo
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
+          {(isLastStep || isEditMode) && (
+            <Button type="button" onClick={(e) => onSubmit(e)} disabled={isSubmitting}>
+              {submitLabel}
+              <Check className="h-4 w-4 ml-2" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

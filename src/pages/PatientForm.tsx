@@ -328,17 +328,74 @@ const PatientForm = () => {
     },
   ];
 
-  const handleNextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  // Campos exibidos em cada etapa — usado para validar só a etapa atual
+  // e para levar o usuário até a etapa onde está o erro.
+  const STEP_FIELDS: string[][] = [
+    ["name", "phone", "birth_date", "gender", "responsible_user_id"],
+    ["procedure", "hospital", "insurance", "status", "origem", "surgery_date", "guide_validity_date"],
+    [],
+  ];
+
+  const collectFormErrors = (): Record<string, string> => {
+    const fieldErrors: Record<string, string> = {};
+    const result = patientSchema.safeParse(formData);
+    if (!result.success) {
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string | undefined;
+        if (field && !fieldErrors[field]) fieldErrors[field] = err.message;
+      });
     }
+    if (!isEditMode && isAdmin && !formData.responsible_user_id) {
+      fieldErrors.responsible_user_id = "Selecione o profissional responsável pelo paciente";
+    }
+    if (formData.surgery_date && formData.guide_validity_date) {
+      // A guia vale até o fim do dia da validade
+      const surgeryDate = new Date(formData.surgery_date);
+      const validityEnd = new Date(`${formData.guide_validity_date}T23:59:59`);
+      if (surgeryDate > validityEnd) {
+        fieldErrors.surgery_date = "A data da cirurgia não pode ultrapassar a validade da guia";
+      }
+    }
+    return fieldErrors;
+  };
+
+  const scrollToTop = () => {
+    // O conteúdo rola dentro do <main> do Layout, não na janela
+    document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+    scrollToTop();
+  };
+
+  const handleNextStep = () => {
+    if (currentStep >= steps.length - 1) return;
+
+    const allErrors = collectFormErrors();
+    const stepErrors = Object.fromEntries(
+      Object.entries(allErrors).filter(([field]) => STEP_FIELDS[currentStep].includes(field))
+    );
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      toast.error("Corrija os campos destacados antes de continuar");
+      return;
+    }
+
+    setErrors({});
+    goToStep(currentStep + 1);
+  };
+
+  const handleStepClick = (step: number) => {
+    if (step === currentStep) return;
+    // Voltar é sempre livre; avançar pelo indicador só na edição
+    if (step < currentStep || isEditMode) goToStep(step);
   };
 
   const handlePreviousStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      goToStep(currentStep - 1);
     }
   };
 
@@ -755,6 +812,20 @@ const PatientForm = () => {
     e.preventDefault();
     if (!user) return;
 
+    // Valida o formulário inteiro e, se houver erro, leva até a etapa do erro
+    const formErrors = collectFormErrors();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      const errorStep = STEP_FIELDS.findIndex((fields) => fields.some((f) => formErrors[f]));
+      if (errorStep >= 0 && errorStep !== currentStep) {
+        goToStep(errorStep);
+        toast.error(`Corrija os campos destacados na etapa "${steps[errorStep].title}"`);
+      } else {
+        toast.error("Corrija os campos destacados");
+      }
+      return;
+    }
+
     setErrors({});
     setLoading(true);
 
@@ -770,19 +841,8 @@ const PatientForm = () => {
         const localDate = new Date(formData.surgery_date);
         utcSurgeryDate = localDate.toISOString();
       }
-      
-      // Validate that surgery_date doesn't exceed guide_validity_date
-      if (formData.surgery_date && formData.guide_validity_date) {
-        const surgeryDate = new Date(formData.surgery_date);
-        const validityDate = new Date(formData.guide_validity_date);
-        
-        if (surgeryDate > validityDate) {
-          toast.error("A data da cirurgia não pode ultrapassar a validade da guia");
-          setLoading(false);
-          return;
-        }
-      }
-      
+
+
       // Garante que o hospital esteja cadastrado no banco antes de associar ao paciente
       const hospitalFinal = validatedData.hospital
         ? await ensureHospitalRegistered(validatedData.hospital, user?.id)
@@ -806,13 +866,6 @@ const PatientForm = () => {
         oncology_stage: formData.is_oncology ? formData.oncology_stage || null : null,
       };
 
-      // Validate responsible_user_id for new patients (only admins need to select)
-      if (!isEditMode && !formData.responsible_user_id && isAdmin) {
-        toast.error("Selecione o profissional responsável pelo paciente");
-        setLoading(false);
-        return;
-      }
-      
       // For non-admins creating patients, ensure their own ID is set
       if (!isEditMode && !isAdmin && user) {
         patientData.responsible_user_id = user.id;
@@ -991,7 +1044,7 @@ const PatientForm = () => {
 
       <form onSubmit={(e) => {
         e.preventDefault();
-        if (currentStep === steps.length - 1) {
+        if (isEditMode || currentStep === steps.length - 1) {
           handleSubmit(e);
         }
       }}>
@@ -1170,7 +1223,7 @@ const PatientForm = () => {
                       type="datetime-local"
                       value={formData.surgery_date}
                       onChange={(e) => handleChange("surgery_date", e.target.value)}
-                      className="flex-1"
+                      className={`flex-1 ${errors.surgery_date ? "border-destructive" : ""}`}
                     />
                     {formData.surgery_date && (
                       <Button
@@ -1184,6 +1237,7 @@ const PatientForm = () => {
                       </Button>
                     )}
                   </div>
+                  {errors.surgery_date && <p className="text-sm text-destructive">{errors.surgery_date}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -1524,6 +1578,7 @@ const PatientForm = () => {
               steps={steps}
               onNext={handleNextStep}
               onPrevious={handlePreviousStep}
+              onStepClick={handleStepClick}
               onSubmit={(e) => handleSubmit(e)}
               isSubmitting={loading || uploadingFiles}
               isEditMode={isEditMode}

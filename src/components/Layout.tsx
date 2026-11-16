@@ -1,4 +1,4 @@
-import { ReactNode, useState, useCallback } from "react";
+import { Fragment, ReactNode, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,14 +39,27 @@ export function Layout({ children, onRefresh }: LayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const queryClient = useQueryClient();
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Smart refresh: invalidate all queries to refetch data without page reload
+  // Telas com formulário: puxar para atualizar recriaria a tela e poderia
+  // descartar o que está sendo digitado, então o gesto fica desligado nelas.
+  const isFormRoute =
+    location.pathname === "/patients/new" ||
+    /^\/patients\/[^/]+$/.test(location.pathname) ||
+    location.pathname === "/share-cirurgia" ||
+    location.pathname === "/users" ||
+    location.pathname === "/surgery-availability";
+
+  // Puxar para atualizar: a maioria das telas busca dados direto no Supabase
+  // (sem react-query), então além de invalidar as queries recriamos a tela,
+  // o que dispara de novo todas as buscas dela e dos cards internos.
   const handleRefresh = useCallback(async () => {
     if (onRefresh) {
       await onRefresh();
-    } else {
-      await queryClient.invalidateQueries();
+      return;
     }
+    await queryClient.invalidateQueries();
+    setRefreshKey((k) => k + 1);
   }, [onRefresh, queryClient]);
 
   const menuItems = [
@@ -275,9 +288,9 @@ export function Layout({ children, onRefresh }: LayoutProps) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 pb-20 md:pb-0">
-        {isMobile ? (
+        {isMobile && !isFormRoute ? (
           <PullToRefresh onRefresh={handleRefresh} className="min-h-full">
-            {children}
+            <Fragment key={refreshKey}>{children}</Fragment>
           </PullToRefresh>
         ) : (
           children

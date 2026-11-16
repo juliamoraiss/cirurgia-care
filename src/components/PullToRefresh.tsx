@@ -19,12 +19,17 @@ export const PullToRefresh = ({ onRefresh, children, className }: PullToRefreshP
   const threshold = 80;
   const maxPull = 120;
 
+  // Quem rola de fato é o <main> do Layout (pai deste container), então
+  // checamos os dois para só ativar o gesto quando a tela está no topo.
+  const isScrolledDown = (container: HTMLDivElement) =>
+    container.scrollTop > 0 || (container.parentElement?.scrollTop ?? 0) > 0;
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
     if (!container || refreshing) return;
-    
+
     // Only enable pull-to-refresh when scrolled to top
-    if (container.scrollTop > 0) return;
+    if (isScrolledDown(container)) return;
     
     startY.current = e.touches[0].clientY;
     setPulling(true);
@@ -34,7 +39,7 @@ export const PullToRefresh = ({ onRefresh, children, className }: PullToRefreshP
     if (!pulling || refreshing) return;
     
     const container = containerRef.current;
-    if (!container || container.scrollTop > 0) {
+    if (!container || isScrolledDown(container)) {
       setPulling(false);
       setPullDistance(0);
       return;

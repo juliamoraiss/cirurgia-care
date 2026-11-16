@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter, Clock, AlertCircle } from "lucide-react";
+import { Plus, Search, ArrowUpDown, ArrowUp, ArrowDown, Check, ChevronsUpDown, Calendar, Building2, Filter, Clock, AlertCircle, X } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { PatientCardSwipeable } from "@/components/PatientCardSwipeable";
 import { format } from "date-fns";
@@ -91,6 +91,29 @@ const getNextAction = (patient: Patient): { text: string; variant: "default" | "
   return { text: "Status atualizado", variant: "default" };
 };
 
+const DEFAULT_STATUS_FILTER = ["authorized", "awaiting_authorization", "pending_scheduling", "surgery_scheduled"];
+
+function useSessionState<T>(key: string, initialValue: T) {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = sessionStorage.getItem(key);
+      return stored !== null ? (JSON.parse(stored) as T) : initialValue;
+    } catch {
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      /* ignore */
+    }
+  }, [key, value]);
+
+  return [value, setValue] as const;
+}
+
 const Patients = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,10 +121,12 @@ const Patients = () => {
   const isMobile = useIsMobile();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterProcedures, setFilterProcedures] = useState<string[]>([]);
-  const [filterHospitals, setFilterHospitals] = useState<string[]>([]);
-  const [filterStatuses, setFilterStatuses] = useState<string[]>(["authorized", "awaiting_authorization", "pending_scheduling", "surgery_scheduled"]);
+  // Busca e filtros ficam salvos na sessão para não se perderem ao abrir um
+  // paciente e voltar, ou ao puxar a tela para atualizar.
+  const [searchTerm, setSearchTerm] = useSessionState("patients:search", "");
+  const [filterProcedures, setFilterProcedures] = useSessionState<string[]>("patients:procedures", []);
+  const [filterHospitals, setFilterHospitals] = useSessionState<string[]>("patients:hospitals", []);
+  const [filterStatuses, setFilterStatuses] = useSessionState<string[]>("patients:statuses", DEFAULT_STATUS_FILTER);
   const [sortColumn, setSortColumn] = useState<"name" | "procedure" | "surgery_date" | "created_at">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -207,6 +232,16 @@ const Patients = () => {
       return sortDirection === "asc" ? compareValue : -compareValue;
     });
 
+  const activeFilterCount = filterProcedures.length + filterHospitals.length + filterStatuses.length;
+  const hasActiveFilters = searchTerm.trim() !== "" || activeFilterCount > 0;
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterProcedures([]);
+    setFilterHospitals([]);
+    setFilterStatuses([]);
+  };
+
   // Group patients by category
   const now = new Date();
   const upcomingSurgeries = filteredPatients.filter(p => 
@@ -256,8 +291,18 @@ const Patients = () => {
                 </div>
                 <Drawer>
                   <DrawerTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button
+                      variant={activeFilterCount > 0 ? "default" : "outline"}
+                      size="icon"
+                      className="relative shrink-0"
+                      aria-label={activeFilterCount > 0 ? `Filtros (${activeFilterCount} ativos)` : "Filtros"}
+                    >
                       <Filter className="h-5 w-5" />
+                      {activeFilterCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center">
+                          {activeFilterCount}
+                        </span>
+                      )}
                     </Button>
                   </DrawerTrigger>
                   <DrawerContent className="max-h-[85vh]">
@@ -494,6 +539,18 @@ const Patients = () => {
                 </div>
               </>
             )}
+
+            {!loading && hasActiveFilters && (
+              <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+                <span>
+                  Mostrando {filteredPatients.length} de {patients.length} pacientes
+                </span>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2 text-primary">
+                  <X className="h-4 w-4 mr-1" />
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -502,8 +559,22 @@ const Patients = () => {
               Carregando pacientes...
             </div>
           ) : filteredPatients.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "Nenhum paciente encontrado" : "Nenhum paciente cadastrado"}
+            <div className="text-center py-8 text-muted-foreground space-y-3">
+              {patients.length === 0 ? (
+                <p>Nenhum paciente cadastrado</p>
+              ) : (
+                <>
+                  <p>
+                    Nenhum paciente encontrado com a busca e os filtros atuais.
+                    <br />
+                    {patients.length} {patients.length === 1 ? "paciente está oculto" : "pacientes estão ocultos"}.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Limpar filtros
+                  </Button>
+                </>
+              )}
             </div>
           ) : isMobile ? (
             <div className="space-y-6">
