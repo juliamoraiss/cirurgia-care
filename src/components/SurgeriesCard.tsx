@@ -41,7 +41,7 @@ export function SurgeriesCard({ surgeries, loading }: SurgeriesCardProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
+            <Calendar className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-base">Próximas cirurgias</CardTitle>
           </div>
           {!loading && upcoming.length > 0 && (

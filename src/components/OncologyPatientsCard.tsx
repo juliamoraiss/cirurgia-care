@@ -110,7 +110,7 @@ export function OncologyPatientsCard({ selectedProfessional, isAdmin }: Oncology
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+            <Activity className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-base">Pacientes Oncológicos</CardTitle>
           </div>
         </CardHeader>

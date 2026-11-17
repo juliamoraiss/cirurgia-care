@@ -1,7 +1,17 @@
 import { differenceInCalendarDays } from "date-fns";
 
-/** Exames exigidos por procedimento (itens com "opcional" não contam como pendência). */
+/** Exames exigidos (soma dos procedimentos, quando há mais de um). */
 export function getExamsForProcedure(procedure: string): string[] {
+  const list = procedure
+    .split(",")
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  if (list.length > 1) return Array.from(new Set(list.flatMap((p) => examsForSingleProcedure(p))));
+  return examsForSingleProcedure(list[0] || "");
+}
+
+/** Exames de um procedimento (itens com "opcional" não contam como pendência). */
+function examsForSingleProcedure(procedure: string): string[] {
   const examsMap: Record<string, string[]> = {
     simpatectomia: ["Risco Cirúrgico Cardiológico"],
     lobectomia: [

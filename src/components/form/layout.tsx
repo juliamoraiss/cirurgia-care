@@ -50,15 +50,15 @@ export function FormSection({ id, title, open, onToggle, summary, alert, childre
           <span
             className={cn(
               "block",
-              variant === "ios" && "text-[13px] uppercase tracking-wide text-muted-foreground",
-              variant === "android" && "text-sm font-medium text-primary",
+              // Celular: título pequeno em caixa alta cinza (iOS e Android)
+              variant !== "desktop" && "text-[13px] uppercase tracking-wide text-muted-foreground",
               variant === "desktop" && "text-base font-semibold"
             )}
           >
             {title}
             {alert && <span className="ml-1.5 inline-block h-2 w-2 rounded-full bg-destructive align-middle" aria-label="tem pendência" />}
           </span>
-          {!open && summary && <span className="block text-[13px] text-muted-foreground truncate normal-case tracking-normal">{summary}</span>}
+          {!open && summary && <span className="block text-[13px] text-muted-foreground normal-case tracking-normal">{summary}</span>}
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
@@ -69,6 +69,11 @@ export function FormSection({ id, title, open, onToggle, summary, alert, childre
       )}
     </section>
   );
+}
+
+/** Cabeçalho pequeno de um grupo de campos: "PACIENTE", "CIRURGIA"… */
+export function GroupHeading({ children }: { children: ReactNode }) {
+  return <h3 className="px-4 md:px-0 pt-1 pb-1.5 text-[13px] font-normal uppercase tracking-wide text-muted-foreground">{children}</h3>;
 }
 
 // ------------------------------------------------------------------ teclado
@@ -117,7 +122,12 @@ export function SaveBar({ label, dirty, state, onSave, secondary }: SaveBarProps
         type="button"
         onClick={onSave}
         disabled={!dirty || state === "saving"}
-        className={cn("flex-1 h-12 text-base", variant === "desktop" && "flex-none min-w-40 h-10 text-sm")}
+        className={cn(
+          "flex-1 h-12 text-base",
+          // Desabilitado: cinza com texto legível (contraste AA), sem transparência
+          "disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground",
+          variant === "desktop" && "flex-none min-w-40 h-10 text-sm"
+        )}
       >
         {state === "saving" ? (
           <>

@@ -14,6 +14,8 @@ interface PageHeaderProps {
   children?: ReactNode;
   /** iOS: título grande que encolhe ao rolar (padrão). false = só título pequeno. */
   largeTitle?: boolean;
+  /** Substitui o "voltar" (ex.: "Cancelar" em texto, sem seta, num modal). */
+  leading?: ReactNode;
 }
 
 /**
@@ -23,7 +25,7 @@ interface PageHeaderProps {
  *    fundo translúcido com blur, voltar "‹ Pacientes", ações à direita.
  *  - Android: top app bar Material 3 (título à esquerda, seta ←, ações à direita).
  */
-export function PageHeader({ title, actions, back, children, largeTitle = true }: PageHeaderProps) {
+export function PageHeader({ title, actions, back, children, largeTitle = true, leading }: PageHeaderProps) {
   const { scrolled } = useMainScroll(isIOS && largeTitle ? 36 : 4);
 
   if (isIOS) {
@@ -34,13 +36,14 @@ export function PageHeader({ title, actions, back, children, largeTitle = true }
           className={cn(
             "md:hidden sticky top-0 z-40 pt-[env(safe-area-inset-top)] transition-colors",
             scrolled
-              ? "bg-page-background/80 backdrop-blur-xl backdrop-saturate-150 border-b border-border/60"
+              ? "bg-page-background/95 backdrop-blur-xl backdrop-saturate-150 border-b border-border/60"
               : "bg-page-background"
           )}
         >
           <div className="relative h-11 flex items-center justify-between px-2">
             <div className="min-w-[44px] flex items-center z-10">
-              {back && (
+              {leading}
+              {!leading && back && (
                 <button
                   type="button"
                   onClick={back.onClick}
@@ -83,7 +86,9 @@ export function PageHeader({ title, actions, back, children, largeTitle = true }
         )}
       >
         <div className="h-16 flex items-center gap-1 px-1">
-          {back ? (
+          {leading ? (
+            <div className="pl-2">{leading}</div>
+          ) : back ? (
             <button
               type="button"
               onClick={back.onClick}

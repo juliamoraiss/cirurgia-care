@@ -59,7 +59,8 @@ export function FieldRow({ label, required, error, hint, stacked, aside, childre
   const labelText = (
     <>
       {label}
-      {required && <span className="text-destructive"> *</span>}
+      {/* iOS não usa asterisco: o botão "Criar" desabilitado indica o que falta */}
+      {required && variant !== "ios" && <span className="text-destructive"> *</span>}
     </>
   );
   const messages = (error || hint) && (

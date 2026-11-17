@@ -5,7 +5,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } f
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { FieldRow, inputClass, useFieldId, useFieldVariant } from "@/components/form/FieldRow";
-import { longDateTime } from "@/lib/dates";
+import { longDate, longDateTime } from "@/lib/dates";
 import { formatPhone, normalizePhoneDigits, phoneError } from "@/lib/phone";
 import { COMMON_SURGERY_TIMES, STATUS_FLOW, statusInfo } from "@/lib/patientOptions";
 import { createWhatsAppUrl, safeWindowOpen } from "@/lib/urlSecurity";
@@ -75,11 +75,13 @@ export function PhoneField({
   onChange,
   required,
   error,
+  className,
 }: {
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
   error?: string | null;
+  className?: string;
 }) {
   const [touched, setTouched] = useState(false);
   const shownError = error ?? (touched ? phoneError(value) : null);
@@ -87,7 +89,7 @@ export function PhoneField({
   const variant = useFieldVariant();
 
   return (
-    <FieldRow label="Telefone (WhatsApp)" required={required} error={shownError}>
+    <FieldRow label="WhatsApp" required={required} error={shownError} className={className}>
       <PhoneInput
         value={value}
         onChange={onChange}
@@ -136,7 +138,7 @@ function PhoneInput({ value, onChange, onBlur, invalid }: { value: string; onCha
 // ------------------------------------------------------------------ nascimento
 
 /** "AAAA-MM-DD" ⇄ "DD/MM/AAAA" com máscara e idade ao lado. */
-export function BirthDateField({ value, onChange }: { value: string; onChange: (isoDate: string) => void }) {
+export function BirthDateField({ value, onChange, className }: { value: string; onChange: (isoDate: string) => void; className?: string }) {
   const variant = useFieldVariant();
   const toText = (iso: string) => (iso ? format(new Date(`${iso}T12:00:00`), "dd/MM/yyyy") : "");
   const [text, setText] = useState(toText(value));
@@ -174,7 +176,7 @@ export function BirthDateField({ value, onChange }: { value: string; onChange: (
   const age = value ? differenceInYears(new Date(), new Date(`${value}T12:00:00`)) : null;
 
   return (
-    <FieldRow label="Nascimento" error={error} aside={age !== null && !error ? <span className="text-muted-foreground">{age} anos</span> : undefined}>
+    <FieldRow label="Nascimento" error={error} className={className} aside={age !== null && !error ? <span className="text-muted-foreground">{age} anos</span> : undefined}>
       <BirthInput text={text} onText={handle} invalid={!!error} variant={variant} />
     </FieldRow>
   );
@@ -197,29 +199,76 @@ function BirthInput({ text, onText, invalid, variant }: { text: string; onText: 
   );
 }
 
+// ------------------------------------------------------------------ seletores nativos
+
+/**
+ * Input nativo (date/time) transparente por cima de um "botão": tocar abre o
+ * seletor do sistema. O valor só muda quando a usuária escolhe algo — um
+ * campo vazio nunca aparece com a data de hoje (como o iPhone faz).
+ */
+function NativePickerOverlay({
+  type,
+  value,
+  onChange,
+  label,
+}: {
+  type: "date" | "time";
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      aria-label={label}
+      onChange={(e) => e.target.value && onChange(e.target.value)}
+      onClick={(e) => {
+        // Computador: abre o seletor ao clicar em qualquer parte
+        try {
+          (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+        } catch {
+          /* alguns navegadores não permitem */
+        }
+      }}
+      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 [color-scheme:light_dark]"
+    />
+  );
+}
+
 // ------------------------------------------------------------------ data/hora da cirurgia
 
-/** value = "AAAA-MM-DDTHH:mm" (hora local), como o <input type=datetime-local>. */
+/** value = "AAAA-MM-DDTHH:mm" (hora local). Começa VAZIO ("Adicionar data"). */
 export function SurgeryDateTimeField({
   value,
   onChange,
   error,
   required,
+  className,
+  suggestion,
 }: {
   value: string;
   onChange: (v: string) => void;
   error?: string | null;
   required?: boolean;
+  className?: string;
+  /** Ex.: "Mais comum neste hospital: 07:00 · Usar". */
+  suggestion?: ReactNode;
 }) {
-  const variant = useFieldVariant();
   const datePart = value ? value.slice(0, 10) : "";
   const timePart = value ? value.slice(11, 16) : "";
+  const isCustomTime = !!timePart && !COMMON_SURGERY_TIMES.includes(timePart);
 
-  const setDate = (d: string) => onChange(d ? `${d}T${timePart || "07:00"}` : "");
-  const setTime = (t: string) => {
-    if (!datePart) return;
-    onChange(`${datePart}T${t}`);
-  };
+  if (!value) {
+    return (
+      <FieldRow label="Data da cirurgia" required={required} error={error} className={className}>
+        <span className="relative inline-flex items-center min-h-11 text-[16px] text-primary font-medium">
+          + Adicionar data
+          <NativePickerOverlay type="date" value="" label="Escolher a data da cirurgia" onChange={(d) => onChange(`${d}T07:00`)} />
+        </span>
+      </FieldRow>
+    );
+  }
 
   return (
     <FieldRow
@@ -227,51 +276,49 @@ export function SurgeryDateTimeField({
       required={required}
       error={error}
       stacked
+      className={className}
       aside={
-        value ? (
-          <button type="button" onClick={() => onChange("")} className="text-[13px] text-primary min-h-11 px-1">
-            Limpar
-          </button>
-        ) : undefined
+        <button type="button" onClick={() => onChange("")} className="text-[13px] text-destructive min-h-11 px-1">
+          Remover
+        </button>
       }
     >
       <div className="space-y-2">
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          {/* Seletores nativos do sistema (iOS/Android) */}
-          <input
-            type="date"
-            aria-label="Dia da cirurgia"
-            value={datePart}
-            onChange={(e) => setDate(e.target.value)}
-            className={cn(inputClass(variant === "ios" ? "android" : variant, !!error), variant === "ios" && "h-11 text-left")}
-          />
-          <input
-            type="time"
-            aria-label="Horário da cirurgia"
-            value={timePart}
-            disabled={!datePart}
-            onChange={(e) => setTime(e.target.value)}
-            className={cn(inputClass(variant === "ios" ? "android" : variant, !!error), "w-[110px]", variant === "ios" && "h-11")}
-          />
+        {/* Dia: toque para trocar (seletor nativo) */}
+        <span className="relative flex items-center justify-between min-h-11 rounded-lg bg-muted/60 px-3 text-[16px]">
+          <span className="first-letter:uppercase">{longDate(`${datePart}T12:00:00`)}</span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <NativePickerOverlay type="date" value={datePart} label="Trocar o dia da cirurgia" onChange={(d) => onChange(`${d}T${timePart || "07:00"}`)} />
+        </span>
+        {/* Hora: atalhos + "Outro…" */}
+        <div role="radiogroup" aria-label="Horário" className="flex flex-wrap gap-1.5">
+          {COMMON_SURGERY_TIMES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="radio"
+              aria-checked={timePart === t}
+              onClick={() => onChange(`${datePart}T${t}`)}
+              className={cn(
+                "h-10 min-w-[64px] rounded-full border px-3 text-[15px] tabular-nums",
+                timePart === t ? "bg-primary text-primary-foreground border-primary font-semibold" : "bg-card text-foreground active:bg-muted"
+              )}
+            >
+              {t}
+            </button>
+          ))}
+          <span
+            className={cn(
+              "relative inline-flex items-center h-10 rounded-full border px-3 text-[15px]",
+              isCustomTime ? "bg-primary text-primary-foreground border-primary font-semibold" : "bg-card text-foreground"
+            )}
+          >
+            {isCustomTime ? timePart : "Outro…"}
+            <NativePickerOverlay type="time" value={timePart} label="Outro horário" onChange={(t) => onChange(`${datePart}T${t}`)} />
+          </span>
         </div>
-        {datePart && (
-          <div className="flex flex-wrap gap-1.5">
-            {COMMON_SURGERY_TIMES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTime(t)}
-                className={cn(
-                  "h-9 min-w-[60px] rounded-full border px-3 text-sm tabular-nums",
-                  timePart === t ? "bg-primary text-primary-foreground border-primary" : "bg-card active:bg-muted"
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        )}
-        {value && <p className="text-[13px] text-muted-foreground first-letter:uppercase">{longDateTime(new Date(value))}</p>}
+        <p className="text-[13px] text-muted-foreground first-letter:uppercase">{longDateTime(new Date(value))}</p>
+        {suggestion && <p className="text-[13px] text-muted-foreground">{suggestion}</p>}
       </div>
     </FieldRow>
   );
@@ -279,39 +326,47 @@ export function SurgeryDateTimeField({
 
 // ------------------------------------------------------------------ validade da guia
 
-export function GuideValidityField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const variant = useFieldVariant();
+export function GuideValidityField({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
   const days = value ? differenceInCalendarDays(new Date(`${value}T23:59:59`), new Date()) : null;
   const aside =
     days === null ? undefined : days < 0 ? (
-      <span className="font-medium text-destructive">Vencida há {Math.abs(days)} dia(s)</span>
+      <span className="text-[13px] font-medium text-destructive">Vencida há {Math.abs(days)} dia(s)</span>
     ) : (
-      <span className={cn(days < 15 ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
+      <span className={cn("text-[13px]", days < 15 ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
         {days === 0 ? "Vence hoje" : `Vence em ${days} dia(s)`}
-        {days < 15 && " ⚠"}
       </span>
     );
   return (
-    <FieldRow label="Validade da guia" aside={aside}>
-      <GuideInput value={value} onChange={onChange} variant={variant} />
+    <FieldRow label="Validade da guia" aside={aside} className={className}>
+      <span className="relative flex items-center justify-end gap-1 min-h-11 w-full text-[16px]">
+        <span className={cn(!value && "text-muted-foreground")}>{value ? format(new Date(`${value}T12:00:00`), "dd/MM/yyyy") : "Escolher"}</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+        <NativePickerOverlay type="date" value={value} label="Validade da guia" onChange={onChange} />
+      </span>
     </FieldRow>
   );
 }
 
-function GuideInput({ value, onChange, variant }: { value: string; onChange: (v: string) => void; variant: ReturnType<typeof useFieldVariant> }) {
-  const id = useFieldId();
+// ------------------------------------------------------------------ chips
+
+function Chip({ active, onClick, children, role }: { active: boolean; onClick: () => void; children: ReactNode; role: "radio" | "checkbox" }) {
   return (
-    <input
-      id={id}
-      type="date"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(inputClass(variant), variant === "ios" && "w-auto")}
-    />
+    <button
+      type="button"
+      role={role}
+      aria-checked={active}
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 min-h-11 rounded-full border px-4 text-[15px] transition-colors",
+        // Selecionado: preenchido + ✓ (contraste AA nos dois modos)
+        active ? "bg-primary text-primary-foreground border-primary font-semibold" : "bg-card text-foreground border-border active:bg-muted"
+      )}
+    >
+      {active && <Check className="h-4 w-4 -ml-1" strokeWidth={3} />}
+      {children}
+    </button>
   );
 }
-
-// ------------------------------------------------------------------ chips
 
 export function ChoiceChips({
   label,
@@ -321,6 +376,7 @@ export function ChoiceChips({
   required,
   error,
   hint,
+  className,
 }: {
   label: string;
   options: { value: string; label: string }[];
@@ -329,27 +385,55 @@ export function ChoiceChips({
   required?: boolean;
   error?: string | null;
   hint?: ReactNode;
+  className?: string;
 }) {
   return (
-    <FieldRow label={label} required={required} error={error} hint={hint} stacked>
+    <FieldRow label={label} required={required} error={error} hint={hint} stacked className={className}>
       <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <Chip key={o.value} role="radio" active={o.value === value} onClick={() => onChange(o.value)}>
+            {o.label}
+          </Chip>
+        ))}
+      </div>
+    </FieldRow>
+  );
+}
+
+/** Chips de múltipla escolha (ex.: procedimentos). */
+export function MultiChoiceChips({
+  label,
+  options,
+  values,
+  onChange,
+  required,
+  error,
+  hint,
+  className,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  values: string[];
+  onChange: (v: string[]) => void;
+  required?: boolean;
+  error?: string | null;
+  hint?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <FieldRow label={label} required={required} error={error} hint={hint} stacked className={className}>
+      <div role="group" aria-label={label} className="flex flex-wrap gap-2">
         {options.map((o) => {
-          const active = o.value === value;
+          const active = values.includes(o.value);
           return (
-            <button
+            <Chip
               key={o.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onChange(o.value)}
-              className={cn(
-                "min-h-11 rounded-full border px-4 text-[15px] transition-colors",
-                active ? "bg-primary text-primary-foreground border-primary" : "bg-card active:bg-muted"
-              )}
+              role="checkbox"
+              active={active}
+              onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])}
             >
-              {active && <Check className="inline h-4 w-4 mr-1 -ml-1" />}
               {o.label}
-            </button>
+            </Chip>
           );
         })}
       </div>
@@ -396,9 +480,9 @@ export function SegmentedField({
   );
 }
 
-export function SwitchField({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: ReactNode }) {
+export function SwitchField({ label, checked, onChange, hint, className }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: ReactNode; className?: string }) {
   return (
-    <FieldRow label={label} hint={hint}>
+    <FieldRow label={label} hint={hint} className={className}>
       <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </FieldRow>
   );
@@ -417,13 +501,14 @@ interface SelectSheetFieldProps {
   searchable?: boolean;
   /** Permite "Outro…": digitar um valor que não está na lista. */
   onAddOption?: (v: string) => void;
+  className?: string;
 }
 
 /**
  * Seleção que abre uma folha de baixo para cima, com busca e "Cancelar / OK"
  * (iOS) — no Android, bottom sheet do Material.
  */
-export function SelectSheetField({ label, value, onChange, options, placeholder = "Selecionar", required, error, searchable, onAddOption }: SelectSheetFieldProps) {
+export function SelectSheetField({ label, value, onChange, options, placeholder = "Escolher", required, error, searchable, onAddOption, className }: SelectSheetFieldProps) {
   const variant = useFieldVariant();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -460,7 +545,7 @@ export function SelectSheetField({ label, value, onChange, options, placeholder 
 
   return (
     <>
-      <FieldRow label={label} required={required} error={error}>
+      <FieldRow label={label} required={required} error={error} className={className}>
         {trigger}
       </FieldRow>
       <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
@@ -585,7 +670,7 @@ export function StatusField({ value, onChange, error }: { value: string; onChang
       value={value}
       onChange={onChange}
       error={error}
-      options={STATUS_FLOW.map((s, i) => ({ value: s.value, label: `${i + 1}. ${s.label}`, dot: s.dot }))}
+      options={STATUS_FLOW.map((s) => ({ value: s.value, label: s.label, dot: s.dot }))}
     />
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Check, Copy, FileText, Link2, MessageCircle, Trash2, Upload } from "lucide-react";
+import { Check, Copy, FileText, Link2, Loader2, MessageCircle, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, HeaderAction } from "@/components/PageHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { PatientNotesSection } from "@/components/PatientNotesSection";
 import { PatientFeedbacksSection } from "@/components/PatientFeedbacksSection";
 import { PatientSurgeryTimeline } from "@/components/PatientSurgeryTimeline";
@@ -19,7 +19,7 @@ import { PatientSurgeriesHistory } from "@/components/PatientSurgeriesHistory";
 import { FieldGroup } from "@/components/form/FieldRow";
 import {
   BirthDateField,
-  ChoiceChips,
+  MultiChoiceChips,
   GuideValidityField,
   PhoneField,
   SegmentedField,
@@ -29,14 +29,16 @@ import {
   SwitchField,
   TextField,
 } from "@/components/form/fields";
-import { DiscardChangesDialog, FormSection, ResumeDraftDialog, SaveBar, SaveEffectsSheet, type SaveState } from "@/components/form/layout";
+import { DiscardChangesDialog, FormSection, GroupHeading, ResumeDraftDialog, SaveBar, SaveEffectsSheet, type SaveState } from "@/components/form/layout";
 import { DuplicateWarning, ImportWhatsAppSheet, importedHighlight, type ImportedPatientData } from "@/components/form/PatientAssist";
 import { DEFAULT_RESPONSIBLE_DOCTOR_ID } from "@/lib/defaults";
 import { describeError } from "@/lib/errors";
 import { HOSPITAL_OPTIONS, ensureHospitalRegistered } from "@/lib/hospitals";
 import { getExamsForProcedure } from "@/lib/patientAlerts";
 import { createSurgeryTasks, detectSaveEffects, runSaveEffects, type EffectKey, type PatientSnapshot, type SaveEffect } from "@/lib/patientActions";
-import { DEFAULT_INSURANCES, ONCOLOGY_STAGES, ORIGEM_OPTIONS, PROCEDURE_OPTIONS, type PatientStatusValue } from "@/lib/patientOptions";
+import { DEFAULT_INSURANCES, ONCOLOGY_STAGES, ORIGEM_OPTIONS, PROCEDURE_OPTIONS, joinProcedures, parseProcedures, procedureLabel, type PatientStatusValue } from "@/lib/patientOptions";
+import { isIOS } from "@/lib/platform";
+import { cn } from "@/lib/utils";
 import { normalizePhoneDigits, phoneError } from "@/lib/phone";
 import { longDateTime } from "@/lib/dates";
 
@@ -82,7 +84,7 @@ const EMPTY_FORM: FormState = {
 
 type Draft = { form: FormState; checkedExams: string[]; savedAt: number };
 
-const SECTION_IDS = ["dados", "cirurgia", "autorizacao", "exames", "notas", "feedback", "historico"] as const;
+const SECTION_IDS = ["dados", "autorizacao", "cirurgia", "outros", "exames", "notas", "feedback", "historico"] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
 /** UTC do banco → "AAAA-MM-DDTHH:mm" local. */
@@ -136,7 +138,7 @@ const FIELD_SECTION: Partial<Record<keyof FormState, SectionId>> = {
   name: "dados",
   phone: "dados",
   responsible_user_id: "dados",
-  procedure: "cirurgia",
+  procedure: "dados",
   hospital: "cirurgia",
   surgery_date: "cirurgia",
   status: "autorizacao",
@@ -400,7 +402,11 @@ const PatientForm = () => {
       return next;
     });
     setTouched((t) => new Set(t).add(field));
-    if (field === "procedure" && value !== baseline?.procedure) setCheckedExams([]);
+    // Ao trocar procedimentos, mantém marcados só os exames que continuam valendo
+    if (field === "procedure") {
+      const stillValid = getExamsForProcedure(value as string);
+      setCheckedExams((prev) => prev.filter((e) => stillValid.includes(e)));
+    }
   };
 
   const applyImport = (data: ImportedPatientData) => {
@@ -663,32 +669,113 @@ const PatientForm = () => {
   }
 
   const professionalOptions = professionals.map((p) => ({ value: p.id, label: p.full_name }));
+  const hl = (key: string) => importedHighlight(imported.has(key));
+  const procedures = parseProcedures(form.procedure);
+  // Mínimo para criar: nome + WhatsApp + procedimento (o botão "Criar" indica isso)
+  const canCreate = !errors.name && !errors.phone && !errors.procedure && !errors.responsible_user_id;
+  const iosModal = isIOS && isNew && isMobile;
 
-  // Blocos de campos reaproveitados entre "Novo" e "Editar"
-  const personalFields = (
+  // ---- campos (cada um é uma linha direta do grupo: alturas e divisórias uniformes)
+
+  const nameField = (
+    <TextField
+      label="Nome"
+      required
+      value={form.name}
+      onChange={(v) => set("name", v)}
+      error={visibleError("name")}
+      autoCapitalize="words"
+      autoComplete="off"
+      placeholder="Nome completo"
+      className={hl("name")}
+    />
+  );
+  const phoneField = <PhoneField value={form.phone} onChange={(v) => set("phone", v)} required={isNew} error={visibleError("phone")} className={hl("phone")} />;
+  const professionalField = (
+    <SelectSheetField
+      label="Profissional"
+      required
+      value={form.responsible_user_id}
+      onChange={(v) => set("responsible_user_id", v)}
+      options={professionalOptions}
+      error={visibleError("responsible_user_id")}
+    />
+  );
+  const procedureField = (
+    <MultiChoiceChips
+      label="Procedimento"
+      required
+      options={[
+        ...PROCEDURE_OPTIONS,
+        // Procedimento antigo que não está na lista continua visível
+        ...procedures.filter((p) => !PROCEDURE_OPTIONS.some((o) => o.value === p)).map((p) => ({ value: p, label: p })),
+      ]}
+      values={procedures}
+      onChange={(list) => set("procedure", joinProcedures(list))}
+      error={visibleError("procedure")}
+      hint={examsChecklist.length > 0 ? `Exames sugeridos: ${examsChecklist.join(", ")}` : undefined}
+      className={hl("procedure")}
+    />
+  );
+
+  const authorizationFields = (
     <>
-      <TextField
-        label="Nome"
-        required
-        value={form.name}
-        onChange={(v) => set("name", v)}
-        error={visibleError("name")}
-        autoCapitalize="words"
-        autoComplete="off"
-        placeholder="Nome completo"
-        className={importedHighlight(imported.has("name"))}
+      <StatusField value={form.status} onChange={(v) => set("status", v as PatientStatusValue)} error={visibleError("status")} />
+      <SelectSheetField
+        label="Convênio"
+        value={form.insurance}
+        onChange={(v) => set("insurance", v)}
+        options={insurances.map((i) => ({ value: i, label: i }))}
+        searchable
+        onAddOption={addInsurance}
+        className={hl("insurance")}
       />
-      <div className={importedHighlight(imported.has("phone"))}>
-        <PhoneField value={form.phone} onChange={(v) => set("phone", v)} required={isNew} error={visibleError("phone")} />
-      </div>
+      <GuideValidityField value={form.guide_validity_date} onChange={(v) => set("guide_validity_date", v)} />
     </>
   );
 
-  const extraPersonalFields = (
+  const surgeryFields = (
     <>
-      <div className={importedHighlight(imported.has("birth_date"))}>
-        <BirthDateField value={form.birth_date} onChange={(v) => set("birth_date", v)} />
-      </div>
+      <SelectSheetField
+        label="Hospital"
+        value={form.hospital}
+        onChange={(v) => set("hospital", v)}
+        options={hospitalNames.map((h) => ({ value: h, label: h }))}
+        searchable
+        onAddOption={(v) => setHospitalNames((l) => Array.from(new Set([...l, v])).sort())}
+        error={visibleError("hospital")}
+        className={hl("hospital")}
+      />
+      <SurgeryDateTimeField
+        value={form.surgery_date}
+        onChange={(v) => set("surgery_date", v)}
+        error={visibleError("surgery_date")}
+        required={form.status === "surgery_scheduled"}
+        className={hl("surgery_date")}
+        suggestion={
+          commonTime && form.surgery_date && form.surgery_date.slice(11, 16) !== commonTime ? (
+            <span>
+              Mais comum em {form.hospital.replace(/^Hospital\s+/i, "")}: {commonTime}{" "}
+              <button type="button" className="text-primary font-medium min-h-9 px-1" onClick={() => set("surgery_date", `${form.surgery_date.slice(0, 10)}T${commonTime}`)}>
+                Usar
+              </button>
+            </span>
+          ) : undefined
+        }
+      />
+      {form.surgery_date && (
+        <SwitchField label="Data a confirmar" checked={form.surgery_to_confirm} onChange={(v) => set("surgery_to_confirm", v)} />
+      )}
+      <SwitchField label="Oncológico" checked={form.is_oncology} onChange={(v) => set("is_oncology", v)} />
+      {form.is_oncology && (
+        <SelectSheetField label="Estágio" value={form.oncology_stage} onChange={(v) => set("oncology_stage", v)} options={ONCOLOGY_STAGES} placeholder="Não informado" />
+      )}
+    </>
+  );
+
+  const otherFields = (
+    <>
+      <BirthDateField value={form.birth_date} onChange={(v) => set("birth_date", v)} className={hl("birth_date")} />
       <SegmentedField
         label="Gênero"
         value={form.gender}
@@ -708,98 +795,14 @@ const PatientForm = () => {
     </>
   );
 
-  const professionalField = (
-    <SelectSheetField
-      label="Profissional"
-      required
-      value={form.responsible_user_id}
-      onChange={(v) => set("responsible_user_id", v)}
-      options={professionalOptions}
-      error={visibleError("responsible_user_id")}
-    />
-  );
-
-  const procedureField = (
-    <div className={importedHighlight(imported.has("procedure"))}>
-      <ChoiceChips
-        label="Procedimento"
-        required
-        options={PROCEDURE_OPTIONS}
-        value={form.procedure}
-        onChange={(v) => set("procedure", v)}
-        error={visibleError("procedure")}
-        hint={examsChecklist.length > 0 ? `Exames sugeridos: ${examsChecklist.join(", ")}` : undefined}
-      />
+  /** Grupo com cabeçalho pequeno em caixa alta (PACIENTE, CIRURGIA…). */
+  const group = (title: string, children: React.ReactNode) => (
+    <div>
+      <GroupHeading>{title}</GroupHeading>
+      <div className="px-4 md:px-0">
+        <FieldGroup>{children}</FieldGroup>
+      </div>
     </div>
-  );
-
-  const surgeryFields = (
-    <>
-      <div className={importedHighlight(imported.has("hospital"))}>
-        <SelectSheetField
-          label="Hospital"
-          value={form.hospital}
-          onChange={(v) => set("hospital", v)}
-          options={hospitalNames.map((h) => ({ value: h, label: h }))}
-          placeholder="Escolher"
-          searchable
-          onAddOption={(v) => setHospitalNames((l) => Array.from(new Set([...l, v])).sort())}
-          error={visibleError("hospital")}
-        />
-      </div>
-      <div className={importedHighlight(imported.has("surgery_date"))}>
-        <SurgeryDateTimeField
-          value={form.surgery_date}
-          onChange={(v) => set("surgery_date", v)}
-          error={visibleError("surgery_date")}
-          required={form.status === "surgery_scheduled"}
-        />
-        {commonTime && form.surgery_date && form.surgery_date.slice(11, 16) !== commonTime && (
-          <p className="px-4 md:px-0 -mt-1 pb-2 text-[13px] text-muted-foreground">
-            Horário mais comum em {form.hospital.replace(/^Hospital\s+/i, "")}: {commonTime}.{" "}
-            <button type="button" className="text-primary min-h-9" onClick={() => set("surgery_date", `${form.surgery_date.slice(0, 10)}T${commonTime}`)}>
-              Usar
-            </button>
-          </p>
-        )}
-      </div>
-      {form.surgery_date && (
-        <SwitchField
-          label="Data a confirmar"
-          checked={form.surgery_to_confirm}
-          onChange={(v) => set("surgery_to_confirm", v)}
-          hint="Data proposta, ainda aguardando hospital ou paciente"
-        />
-      )}
-      <SwitchField label="Paciente oncológico" checked={form.is_oncology} onChange={(v) => set("is_oncology", v)} />
-      {form.is_oncology && (
-        <SelectSheetField
-          label="Estágio"
-          value={form.oncology_stage}
-          onChange={(v) => set("oncology_stage", v)}
-          options={ONCOLOGY_STAGES}
-          placeholder="Não informado"
-        />
-      )}
-    </>
-  );
-
-  const authorizationFields = (
-    <>
-      <StatusField value={form.status} onChange={(v) => set("status", v as PatientStatusValue)} error={visibleError("status")} />
-      <div className={importedHighlight(imported.has("insurance"))}>
-        <SelectSheetField
-          label="Convênio"
-          value={form.insurance}
-          onChange={(v) => set("insurance", v)}
-          options={insurances.map((i) => ({ value: i, label: i }))}
-          placeholder="Escolher"
-          searchable
-          onAddOption={addInsurance}
-        />
-      </div>
-      <GuideValidityField value={form.guide_validity_date} onChange={(v) => set("guide_validity_date", v)} />
-    </>
   );
 
   const examsBlock = (
@@ -900,43 +903,68 @@ const PatientForm = () => {
       </div>
     ) : null;
 
+  // "Criar" no topo (iPhone): parece desabilitado enquanto falta algo, mas o
+  // toque explica o que falta em vez de não fazer nada
+  const createInHeader = (
+    <button
+      type="button"
+      aria-disabled={!canCreate || saveState === "saving"}
+      onClick={() => {
+        if (saveState === "saving") return;
+        if (!canCreate) {
+          setSubmitted(true);
+          toast.error("Preencha nome, WhatsApp e procedimento");
+          return;
+        }
+        handleSave();
+      }}
+      className={cn("min-h-11 px-2 text-[17px] font-semibold", canCreate ? "text-primary" : "text-muted-foreground")}
+    >
+      {saveState === "saving" ? <Loader2 className="h-5 w-5 animate-spin" /> : "Criar"}
+    </button>
+  );
+
+  const pasteButton = isNew ? (
+    <div className="px-4 md:px-0">
+      <Button type="button" variant="outline" className="h-11 w-full md:w-auto rounded-full" onClick={() => setImportOpen(true)}>
+        <MessageCircle className="h-4 w-4 mr-2 text-[#25D366]" />
+        Colar do WhatsApp
+      </Button>
+    </div>
+  ) : null;
+
   return (
     <>
       <PageHeader
         title={isNew ? "Novo paciente" : "Editar paciente"}
         largeTitle={false}
-        back={{ label: isNew ? "Cancelar" : "Voltar", onClick: handleBack }}
-        actions={
-          isNew ? (
-            <HeaderAction icon={<MessageCircle className="h-5 w-5" />} label="Importar do WhatsApp" onClick={() => setImportOpen(true)} />
+        leading={
+          iosModal ? (
+            <button type="button" onClick={handleBack} className="min-h-11 px-2 text-[17px] text-primary">
+              Cancelar
+            </button>
           ) : undefined
         }
+        back={{ label: isNew ? "Cancelar" : "Voltar", onClick: handleBack }}
+        actions={iosModal ? createInHeader : undefined}
       />
 
-      <div data-form-root onFocusCapture={handleFocusCapture} className="max-w-3xl mx-auto pt-2 md:p-6 space-y-5">
-        {/* Computador: título e botão de importar */}
-        <div className="hidden md:flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">{isNew ? "Novo paciente" : `Editar ${baseline?.name ?? "paciente"}`}</h1>
-          {isNew && (
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <MessageCircle className="h-4 w-4 mr-2 text-[#25D366]" />
-              Importar do WhatsApp
-            </Button>
-          )}
-        </div>
+      <div data-form-root onFocusCapture={handleFocusCapture} className="max-w-3xl mx-auto pt-2 md:p-6 space-y-4">
+        {/* Computador: título */}
+        <h1 className="hidden md:block text-2xl font-bold text-foreground">{isNew ? "Novo paciente" : `Editar ${baseline?.name ?? "paciente"}`}</h1>
 
         {isNew ? (
           <>
-            {/* Mínimo obrigatório no topo */}
-            <div className="px-4 md:px-0">
-              <FieldGroup>
-                {personalFields}
+            {pasteButton}
+            {group(
+              "Paciente",
+              <>
+                {nameField}
+                {phoneField}
                 {isAdmin && professionalField}
-              </FieldGroup>
-            </div>
-            <div className="px-4 md:px-0">
-              <FieldGroup className="md:block">{procedureField}</FieldGroup>
-            </div>
+                {procedureField}
+              </>
+            )}
             <DuplicateWarning name={form.name} phone={form.phone} />
 
             <FormSection
@@ -944,12 +972,12 @@ const PatientForm = () => {
               title="Mais detalhes"
               open={moreOpen}
               onToggle={() => setMoreOpen((o) => !o)}
-              summary="Nascimento, convênio, hospital, data da cirurgia… (pode completar depois)"
+              summary="Nascimento, convênio, hospital, data… Pode completar depois."
             >
-              <div className="space-y-4 px-4 md:px-0">
-                <FieldGroup>{extraPersonalFields}</FieldGroup>
-                <FieldGroup>{authorizationFields}</FieldGroup>
-                <FieldGroup>{surgeryFields}</FieldGroup>
+              <div className="space-y-3">
+                {group("Autorização", authorizationFields)}
+                {group("Cirurgia", surgeryFields)}
+                {group("Outros", otherFields)}
               </div>
             </FormSection>
           </>
@@ -959,42 +987,25 @@ const PatientForm = () => {
 
             <FormSection
               id="dados"
-              title="Dados pessoais"
+              title="Paciente"
               open={openSections.has("dados")}
               onToggle={() => toggleSection("dados")}
-              summary={[form.name, form.phone].filter(Boolean).join(" · ")}
-              alert={!!(visibleError("name") || visibleError("phone"))}
+              summary={[form.name, form.phone, procedureLabel(form.procedure)].filter(Boolean).join(" · ")}
+              alert={!!(visibleError("name") || visibleError("phone") || visibleError("procedure"))}
             >
               <div className="px-4 md:px-0">
                 <FieldGroup>
-                  {personalFields}
-                  {extraPersonalFields}
+                  {nameField}
+                  {phoneField}
                   {professionalField}
+                  {procedureField}
                 </FieldGroup>
               </div>
             </FormSection>
 
             <FormSection
-              id="cirurgia"
-              title="Cirurgia"
-              open={openSections.has("cirurgia")}
-              onToggle={() => toggleSection("cirurgia")}
-              summary={[
-                PROCEDURE_OPTIONS.find((p) => p.value === form.procedure)?.label ?? form.procedure,
-                form.surgery_date ? longDateTime(new Date(form.surgery_date)) : "sem data",
-              ].join(" · ")}
-              alert={!!(visibleError("procedure") || visibleError("surgery_date") || visibleError("hospital"))}
-            >
-              <div className="space-y-3 px-4 md:px-0">
-                <FieldGroup className="md:block">{procedureField}</FieldGroup>
-                <FieldGroup>{surgeryFields}</FieldGroup>
-              </div>
-              {schedulingBlock}
-            </FormSection>
-
-            <FormSection
               id="autorizacao"
-              title="Autorização e guia"
+              title="Autorização"
               open={openSections.has("autorizacao")}
               onToggle={() => toggleSection("autorizacao")}
               summary={[
@@ -1006,6 +1017,34 @@ const PatientForm = () => {
             >
               <div className="px-4 md:px-0">
                 <FieldGroup>{authorizationFields}</FieldGroup>
+              </div>
+            </FormSection>
+
+            <FormSection
+              id="cirurgia"
+              title="Cirurgia"
+              open={openSections.has("cirurgia")}
+              onToggle={() => toggleSection("cirurgia")}
+              summary={[form.hospital || "Sem hospital", form.surgery_date ? longDateTime(new Date(form.surgery_date)) : "sem data"].join(" · ")}
+              alert={!!(visibleError("surgery_date") || visibleError("hospital"))}
+            >
+              <div className="px-4 md:px-0">
+                <FieldGroup>{surgeryFields}</FieldGroup>
+              </div>
+              {schedulingBlock}
+            </FormSection>
+
+            <FormSection
+              id="outros"
+              title="Outros"
+              open={openSections.has("outros")}
+              onToggle={() => toggleSection("outros")}
+              summary={[form.birth_date ? form.birth_date.split("-").reverse().join("/") : null, form.gender || null, form.origem || null]
+                .filter(Boolean)
+                .join(" · ") || "Nascimento, gênero, origem"}
+            >
+              <div className="px-4 md:px-0">
+                <FieldGroup>{otherFields}</FieldGroup>
               </div>
             </FormSection>
 
@@ -1055,9 +1094,14 @@ const PatientForm = () => {
           </>
         )}
 
-        <div className="px-4 md:px-0">
-          <SaveBar label={isNew ? "Criar paciente" : "Salvar"} dirty={dirty} state={saveState} onSave={handleSave} />
-        </div>
+        {/* iPhone (novo): o "Criar" fica no topo; nos demais, botão fixo embaixo */}
+        {iosModal ? (
+          <div className="h-8" aria-hidden />
+        ) : (
+          <div className="px-4 md:px-0">
+            <SaveBar label={isNew ? "Criar paciente" : "Salvar"} dirty={dirty} state={saveState} onSave={handleSave} />
+          </div>
+        )}
       </div>
 
       <SaveEffectsSheet

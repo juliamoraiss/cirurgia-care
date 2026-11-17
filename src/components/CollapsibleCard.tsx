@@ -14,7 +14,7 @@ interface CollapsibleCardProps {
 
 export function CollapsibleCard({
   icon: Icon,
-  iconClassName = "text-primary",
+  iconClassName = "text-muted-foreground",
   title,
   headerRight,
   children,

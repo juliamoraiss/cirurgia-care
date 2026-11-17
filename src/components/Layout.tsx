@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/BottomNav";
 import { isNavItemActive } from "@/lib/navigation";
+import { isIOS } from "@/lib/platform";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface LayoutProps {
@@ -239,7 +240,8 @@ export function Layout({ children, onRefresh }: LayoutProps) {
       </main>
 
       {/* Mobile Navigation */}
-      <BottomNav />
+      {/* iPhone: "Novo paciente" abre como modal em tela cheia, sem barra de abas */}
+      {!(isIOS && location.pathname === "/patients/new") && <BottomNav />}
     </div>
   );
 }

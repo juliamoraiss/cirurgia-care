@@ -310,7 +310,7 @@ export function PatientQuickActions({ patient, onChanged }: { patient: QuickPati
       {/* Mudar status */}
       <QuickSheet open={sheet === "status"} onOpenChange={(o) => !o && setSheet(null)} title="Mudar status" onSave={() => saveStatus()} saving={saving} canSave={!statusError && status !== patient.status}>
         <ul role="radiogroup" className="rounded-xl bg-card overflow-hidden divide-y divide-border/60">
-          {STATUS_FLOW.map((s, i) => (
+          {STATUS_FLOW.map((s) => (
             <li key={s.value}>
               <button
                 type="button"
@@ -324,9 +324,7 @@ export function PatientQuickActions({ patient, onChanged }: { patient: QuickPati
                 className="w-full min-h-12 flex items-center gap-3 px-4 text-left active:bg-muted"
               >
                 <span className={cn("h-2.5 w-2.5 rounded-full", s.dot)} />
-                <span className="flex-1 text-[16px]">
-                  {i + 1}. {s.label}
-                </span>
+                <span className="flex-1 text-[16px]">{s.label}</span>
                 {status === s.value && <Check className="h-5 w-5 text-primary" />}
               </button>
             </li>

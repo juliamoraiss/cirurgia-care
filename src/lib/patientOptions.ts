@@ -9,6 +9,28 @@ export const PROCEDURE_OPTIONS = [
   { value: "controle", label: "Controle" },
 ];
 
+/**
+ * Vários procedimentos ficam no mesmo campo de texto, separados por vírgula
+ * ("rinoplastia, septoplastia"). Assim nada muda no banco nem nos gatilhos
+ * (que procuram o procedimento por trecho do texto).
+ */
+export function parseProcedures(value: string | null | undefined): string[] {
+  return (value || "")
+    .split(",")
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function joinProcedures(list: string[]): string {
+  return list.map((p) => p.trim()).filter(Boolean).join(", ");
+}
+
+export function procedureLabel(value: string | null | undefined): string {
+  return parseProcedures(value)
+    .map((p) => PROCEDURE_OPTIONS.find((o) => o.value === p)?.label ?? p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" + ");
+}
+
 export const DEFAULT_INSURANCES = [
   "ASSEFAZ",
   "FUSEX",

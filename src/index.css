@@ -220,8 +220,10 @@ All colors MUST be HSL.
   }
 
   /* Typography - Compact and professional */
+  /* Títulos na cor de texto padrão no celular (azul só para o que é tocável);
+     no computador mantém o azul da marca */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-primary;
+    @apply font-bold tracking-tight text-foreground md:text-primary;
     line-height: 1.1;
     letter-spacing: -0.02em;
   }

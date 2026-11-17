@@ -178,7 +178,9 @@ const Patients = () => {
       normalizeSearch(patient.hospital).includes(query) ||
       (queryDigits.length >= 4 && (patient.phone || "").replace(/\D/g, "").includes(queryDigits));
 
-    const matchesProcedure = filters.procedures.length === 0 || filters.procedures.includes(patient.procedure);
+    // Paciente com vários procedimentos ("rinoplastia, septoplastia") casa com qualquer um
+    const patientProcedures = patient.procedure.split(",").map((p) => p.trim().toLowerCase());
+    const matchesProcedure = filters.procedures.length === 0 || filters.procedures.some((f) => patientProcedures.includes(f));
     const matchesHospital = filters.hospitals.length === 0 || (!!patient.hospital && filters.hospitals.includes(patient.hospital));
     const matchesStatus = filters.statuses.length === 0 || filters.statuses.includes(patient.status);
 
