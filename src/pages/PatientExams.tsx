@@ -211,6 +211,12 @@ const PatientExams = () => {
     setIsFullscreen(false);
   };
 
+  // Atalho "#tarefas" (ex.: pendência "Orientações pré-op não enviadas" na Início)
+  useEffect(() => {
+    if (loading || window.location.hash !== "#tarefas") return;
+    setTimeout(() => document.getElementById("tarefas")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+  }, [loading]);
+
   const goBack = () => {
     if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) navigate(-1);
     else navigate("/patients");
@@ -580,7 +586,11 @@ const PatientExams = () => {
 
 
       {/* Tarefas do paciente ficam na ficha (antes só apareciam na tela de edição) */}
-      {canManagePatient && <PatientTasksSection patientId={id!} />}
+      {canManagePatient && (
+        <div id="tarefas" className="scroll-mt-20">
+          <PatientTasksSection patientId={id!} />
+        </div>
+      )}
 
       <PatientNotesSection key={`notes-${refreshKey}`} patientId={id!} />
 

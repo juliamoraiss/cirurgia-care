@@ -5,6 +5,7 @@ import { endOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isNavItemActive } from "@/lib/navigation";
+import { useTodayTomorrowAlerts } from "@/lib/surgeryAlerts";
 import { isIOS } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +45,11 @@ export function BottomNav() {
   const location = useLocation();
   const { isAdmin } = useUserRole();
   const dueTasks = useDueTasksCount(isAdmin, location.pathname);
+  // Cirurgias de hoje/amanhã com pendência (orientações, exames, autorização, data a confirmar)
+  const { count: surgeryAlerts } = useTodayTomorrowAlerts(location.pathname);
 
   const navItems = [
-    { icon: House, label: "Início", path: "/" },
+    { icon: House, label: "Início", path: "/", badge: surgeryAlerts },
     { icon: Users, label: "Pacientes", path: "/patients" },
     { icon: CalendarDays, label: "Agenda", path: "/calendar" },
     ...(isAdmin ? [{ icon: CheckSquare, label: "Tarefas", path: "/tasks", badge: dueTasks }] : []),
@@ -72,7 +75,13 @@ export function BottomNav() {
               key={item.path}
               onClick={() => navigate(item.path)}
               aria-current={isActive ? "page" : undefined}
-              aria-label={badge ? `${item.label} (${badge} pendentes)` : item.label}
+              aria-label={
+                badge
+                  ? item.path === "/"
+                    ? `${item.label} (${badge} cirurgia(s) de hoje ou amanhã com pendência)`
+                    : `${item.label} (${badge} pendentes)`
+                  : item.label
+              }
               className={cn(
                 "flex flex-col items-center justify-center flex-1 min-w-0",
                 isIOS
