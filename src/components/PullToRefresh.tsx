@@ -19,6 +19,8 @@ export const PullToRefresh = ({ onRefresh, children, className }: PullToRefreshP
   const threshold = 80;
   const maxPull = 120;
 
+  // Sem overflow aqui: um overflow neste container prenderia os cabeçalhos
+  // "sticky" (PageHeader) a ele, e eles sumiriam ao rolar.
   // Quem rola de fato é o <main> do Layout (pai deste container), então
   // checamos os dois para só ativar o gesto quando a tela está no topo.
   const isScrolledDown = (container: HTMLDivElement) =>
@@ -77,7 +79,7 @@ export const PullToRefresh = ({ onRefresh, children, className }: PullToRefreshP
   return (
     <div
       ref={containerRef}
-      className={cn("relative overflow-auto", className)}
+      className={cn("relative", className)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
